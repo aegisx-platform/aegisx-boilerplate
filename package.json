@@ -2,7 +2,20 @@
   "name": "@aegisx-boilerplate/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "db:setup": "docker-compose up -d postgres",
+    "db:migrate": "npx knex migrate:latest --knexfile knexfile.js",
+    "db:rollback": "npx knex migrate:rollback --knexfile knexfile.js",
+    "db:seed": "npx knex seed:run --knexfile knexfile.js",
+    "db:reset": "npx knex migrate:rollback --all --knexfile knexfile.js && npx knex migrate:latest --knexfile knexfile.js && npx knex seed:run --knexfile knexfile.js",
+    "db:status": "npx knex migrate:status --knexfile knexfile.js",
+    "db:make:migration": "npx knex migrate:make --knexfile knexfile.ts",
+    "db:make:seed": "npx knex seed:make --knexfile knexfile.ts",
+    "db:dev:migrate": "npx knex migrate:latest --knexfile knexfile.ts",
+    "db:dev:rollback": "npx knex migrate:rollback --knexfile knexfile.ts",
+    "db:dev:seed": "npx knex seed:run --knexfile knexfile.ts",
+    "db:dev:status": "npx knex migrate:status --knexfile knexfile.ts"
+  },
   "private": true,
   "dependencies": {
     "@fastify/autoload": "~6.0.3",
@@ -51,7 +64,7 @@
     "nx": "21.2.0",
     "prettier": "^2.6.2",
     "ts-jest": "^29.1.0",
-    "ts-node": "10.9.1",
+    "ts-node": "^10.9.1",
     "tslib": "^2.3.0",
     "typescript": "~5.8.2",
     "typescript-eslint": "^8.29.0"

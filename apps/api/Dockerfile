@@ -12,14 +12,30 @@ ENV PORT=3000
 WORKDIR /app
 
 RUN addgroup --system aegisx-boilerplate-api && \
-          adduser --system -G aegisx-boilerplate-api aegisx-boilerplate-api
+    adduser --system -G aegisx-boilerplate-api aegisx-boilerplate-api
 
+# Copy root package.json first (contains db scripts)
+COPY package.json .
+COPY package-lock.json* .
+
+# Copy knexfile and database files
+COPY knexfile.js .
+COPY knexfile.ts .
+COPY apps/api/database ./apps/api/database
+
+# Copy built application
 COPY apps/api/dist aegisx-boilerplate-api/
 COPY apps/api/package.json aegisx-boilerplate-api/
-RUN chown -R aegisx-boilerplate-api:aegisx-boilerplate-api .
 
-# You can remove this install step if you build with `--bundle` option.
-# The bundled output will include external dependencies.
+# Copy migration helper script
+COPY db-migrate.sh .
+
+# Install root dependencies (includes knex)
+RUN npm ci --only=production
+
+# Install app dependencies
 RUN npm --prefix aegisx-boilerplate-api --omit=dev -f install
+
+RUN chown -R aegisx-boilerplate-api:aegisx-boilerplate-api .
 
 CMD [ "node", "aegisx-boilerplate-api" ]

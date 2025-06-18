@@ -1,17 +1,60 @@
-# AegisxBoilerplate
+# AegisX Boilerplate
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+<a a### Core Features
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is almost ready ✨.
+- [🗄️ **Database Integration**](./docs/database.md) - Complete PostgreSQL + Knex.js setup
+- [⚡ **Quick Start Guide**](./docs/database-quickstart.md) - Get running in 5 minutes  
+- [📝 **API Examples**](./docs/database-examples.md) - CRUD, transactions, advanced queries
+- [🐳 **Docker Setup**](./docs/docker.md) - Complete Docker guide & container management
+- [� **Docker Quick Start**](./docs/docker-quickstart.md) - Get Docker running in 2 minutes
+- [�🔒 **Environment Config**](./.env.example) - Configuration referencelogo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/node?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+A production-ready Fastify API boilerplate built with Nx, TypeScript, and PostgreSQL.
 
-## Finish your CI setup
+## 🚀 Quick Start
 
-[Click here to finish setting up your workspace!](https://cloud.nx.app/connect/zpHoCQ7F7k)
+```bash
+# 1. Setup environment
+cp .env.example .env
 
+# 2. Start database
+docker-compose up -d postgres
 
-## Run tasks
+# 3. Start development server
+npx nx serve api
+```
+
+**🌐 Access Points:**
+- **API Server**: http://localhost:3000
+- **API Documentation**: http://localhost:3000/docs
+- **Database Admin**: http://localhost:8080 (pgAdmin)
+
+## 📚 Documentation
+
+### Core Features
+
+- [🗄️ **Database Integration**](./docs/database.md) - Complete PostgreSQL + Knex.js setup
+- [⚡ **Quick Start Guide**](./docs/database-quickstart.md) - Get running in 5 minutes  
+- [� **API Examples**](./docs/database-examples.md) - CRUD, transactions, advanced queries
+- [�🐳 **Docker Setup**](./docker/README.md) - PostgreSQL + pgAdmin containers
+- [🔒 **Environment Config**](./.env.example) - Configuration reference
+
+### API Features
+
+- ✅ **Fastify Framework** - High-performance web framework
+- ✅ **PostgreSQL Database** - Full ACID compliance with Knex.js
+- ✅ **JWT Authentication** - Secure token-based auth
+- ✅ **API Documentation** - Swagger/OpenAPI 3.0
+- ✅ **Rate Limiting** - DDoS protection  
+- ✅ **File Uploads** - Multipart form support
+- ✅ **WebSocket Support** - Real-time communication
+- ✅ **Health Monitoring** - Circuit breaker patterns
+- ✅ **Security Headers** - Helmet integration
+- ✅ **Response Compression** - Bandwidth optimization
+
+## 🛠️ Development
+
+### Run tasks
 
 To run the dev server for your app, use:
 

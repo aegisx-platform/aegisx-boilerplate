@@ -49,11 +49,13 @@ export default fp(async function (fastify: FastifyInstance) {
         max: parseInt(DB_POOL_MAX, 10)
       },
       migrations: {
-        directory: './database/migrations',
-        extension: 'ts'
+        directory: './apps/api/database/migrations',
+        extension: 'ts',
+        loadExtensions: ['.ts']
       },
       seeds: {
-        directory: './database/seeds'
+        directory: './apps/api/database/seeds',
+        loadExtensions: ['.ts']
       }
     };
   } else {
@@ -73,11 +75,13 @@ export default fp(async function (fastify: FastifyInstance) {
         max: parseInt(DB_POOL_MAX, 10)
       },
       migrations: {
-        directory: './database/migrations',
-        extension: 'ts'
+        directory: './apps/api/database/migrations',
+        extension: 'ts',
+        loadExtensions: ['.ts']
       },
       seeds: {
-        directory: './database/seeds'
+        directory: './apps/api/database/seeds',
+        loadExtensions: ['.ts']
       }
     };
   }
