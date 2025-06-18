@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import { authRoutes } from './routes/auth-routes';
+import rbacRoutes from './routes/rbac-routes';
 
 /**
  * Authentication Module Plugin
@@ -47,6 +48,9 @@ export default fp(async function authPlugin(fastify: FastifyInstance) {
 
   // Register authentication routes with /auth prefix
   await fastify.register(authRoutes, { prefix: '/auth' });
+  
+  // Register RBAC routes with /rbac prefix
+  await fastify.register(rbacRoutes, { prefix: '/rbac' });
 
   fastify.log.info('✅ Auth plugin registered with routes:');
   fastify.log.info('   POST   /auth/register');
@@ -57,8 +61,21 @@ export default fp(async function authPlugin(fastify: FastifyInstance) {
   fastify.log.info('   PUT    /auth/profile       (protected)');
   fastify.log.info('   PUT    /auth/change-password (protected)');
   fastify.log.info('   POST   /auth/verify-email  (protected)');
+  fastify.log.info('');
+  fastify.log.info('✅ RBAC plugin registered with routes:');
+  fastify.log.info('   GET    /rbac/roles         (admin)');
+  fastify.log.info('   POST   /rbac/roles         (admin)');
+  fastify.log.info('   GET    /rbac/roles/:id     (admin)');
+  fastify.log.info('   PUT    /rbac/roles/:id     (admin)');
+  fastify.log.info('   DELETE /rbac/roles/:id     (admin)');
+  fastify.log.info('   GET    /rbac/permissions   (admin)');
+  fastify.log.info('   POST   /rbac/roles/:id/permissions (admin)');
+  fastify.log.info('   GET    /rbac/users/:id/roles (admin)');
+  fastify.log.info('   POST   /rbac/users/:id/roles (admin)');
+  fastify.log.info('   DELETE /rbac/users/:userId/roles/:roleId (admin)');
+  fastify.log.info('   GET    /rbac/me/permissions (protected)');
 
 }, {
   name: 'auth-plugin',
-  dependencies: ['env-plugin', 'knex-plugin', 'jwt-plugin']
+  dependencies: ['env-plugin', 'knex-plugin', 'jwt-plugin', 'rbac']
 });

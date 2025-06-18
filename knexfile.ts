@@ -1,4 +1,4 @@
-import { Knex } from 'knex';
+import type { Knex } from 'knex';
 import * as dotenv from 'dotenv';
 
 // Load environment variables

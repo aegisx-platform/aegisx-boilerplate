@@ -11,6 +11,8 @@ import jwt from './core/jwt';
 import rateLimit from './core/rate-limit';
 import helmet from './core/helmet';
 import swagger from './core/swagger';
+import rbac from './core/rbac';
+// import compress from './core/compress';
 
 // modules
 import authModule from '../modules/core/auth';
@@ -24,6 +26,9 @@ const allPlugins: FastifyPluginAsync = async (fastify) => {
   await fastify.register(rateLimit);
   await fastify.register(helmet);
   await fastify.register(swagger);
+  await fastify.register(rbac);
+  // await fastify.register(compress);
+
 
   // Load other optional plugins (autoload)
   await fastify.register(autoload, {
