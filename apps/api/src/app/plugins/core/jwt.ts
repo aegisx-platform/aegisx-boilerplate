@@ -81,4 +81,6 @@ export default fp(async function (fastify: FastifyInstance) {
     fastify.decorate('generateRefreshToken', function (this: FastifyInstance, payload: JWTPayload) {
         return this.jwt.sign(payload, { expiresIn: '7d' });
     });
+}, {
+    name: 'jwt-plugin'
 });

@@ -10,6 +10,10 @@ import sensible from './core/sensible';
 import jwt from './core/jwt';
 import rateLimit from './core/rate-limit';
 import helmet from './core/helmet';
+import swagger from './core/swagger';
+
+// modules
+import authModule from '../modules/core/auth';
 
 const allPlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugin (มีลำดับ)
@@ -19,12 +23,16 @@ const allPlugins: FastifyPluginAsync = async (fastify) => {
   await fastify.register(jwt);
   await fastify.register(rateLimit);
   await fastify.register(helmet);
+  await fastify.register(swagger);
 
-  // Load optional plugin (autoload)
+  // Load other optional plugins (autoload)
   await fastify.register(autoload, {
     dir: path.join(__dirname, 'optional'),
-    options: {},
+    options: {}
   });
+
+  // Load core modules (after Swagger is ready)
+  await fastify.register(authModule);
 };
 
 export default fp(allPlugins, {
