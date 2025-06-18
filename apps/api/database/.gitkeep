@@ -1,0 +1,23 @@
+# Database Directory
+
+This directory contains database-related files:
+
+## Structure
+- `migrations/` - Database schema migrations
+- `seeds/` - Database seed files for development and testing
+
+## Usage
+```bash
+# Run migrations
+npm run db:migrate
+
+# Rollback migrations
+npm run db:rollback
+
+# Run seeds
+npm run db:seed
+```
+
+## File Naming Convention
+- Migrations: `YYYYMMDDHHMMSS_description.ts`
+- Seeds: `001_seed_name.ts`
