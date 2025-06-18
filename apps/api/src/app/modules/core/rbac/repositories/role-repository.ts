@@ -1,48 +1,13 @@
-import { Knex } from 'knex';
+import type { Knex } from 'knex';
+import {
+  Role,
+  Permission,
+  RoleWithPermissions,
+  UserWithRoles,
+  RoleRepositoryInterface
+} from '../types/rbac-types';
 
-export interface Role {
-  id: string;
-  name: string;
-  display_name: string;
-  description?: string;
-  is_system: boolean;
-  is_active: boolean;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface Permission {
-  id: string;
-  resource: string;
-  action: string;
-  scope: string;
-  display_name: string;
-  description?: string;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface UserRole {
-  id: string;
-  user_id: string;
-  role_id: string;
-  assigned_by?: string;
-  expires_at?: Date;
-  is_active: boolean;
-  created_at: Date;
-  updated_at: Date;
-}
-
-export interface RoleWithPermissions extends Role {
-  permissions: Permission[];
-}
-
-export interface UserWithRoles {
-  user_id: string;
-  roles: RoleWithPermissions[];
-}
-
-export class RoleRepository {
+export class RoleRepository implements RoleRepositoryInterface {
   constructor(private knex: Knex) {}
 
   async findById(id: string): Promise<Role | null> {

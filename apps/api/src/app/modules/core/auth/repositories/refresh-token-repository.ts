@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { RefreshToken, RefreshTokenRepository } from '../types';
+import { RefreshToken, RefreshTokenRepository } from '../types/auth-types';
 
 export class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
   constructor(private fastify: FastifyInstance) { }

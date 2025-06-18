@@ -1,16 +1,14 @@
 import { FastifyRequest } from 'fastify';
-import { RoleRepository, Permission, Role, UserWithRoles } from '../repositories/role-repository.js';
+import { RoleRepository } from '../repositories/role-repository';
+import {
+  Permission,
+  Role,
+  UserWithRoles,
+  RBACContext,
+  RBACServiceInterface
+} from '../types/rbac-types';
 
-export interface RBACContext {
-  userId: string;
-  resource: string;
-  action: string;
-  scope?: string;
-  resourceId?: string;
-  departmentId?: string;
-}
-
-export class RBACService {
+export class RBACService implements RBACServiceInterface {
   constructor(private roleRepository: RoleRepository) {}
 
   async getUserPermissions(userId: string): Promise<Permission[]> {
@@ -23,7 +21,7 @@ export class RBACService {
 
   async hasPermission(context: RBACContext): Promise<boolean> {
     const { userId, resource, action, scope } = context;
-    
+
     // Check basic permission
     const hasBasicPermission = await this.roleRepository.hasPermission(userId, resource, action, scope);
     if (!hasBasicPermission) {
@@ -41,15 +39,15 @@ export class RBACService {
       case 'own':
         // User can only access their own resources
         return this.checkOwnResource(userId, resourceId);
-      
+
       case 'department':
         // User can access resources within their department
         return this.checkDepartmentResource(userId, context.departmentId);
-      
+
       case 'all':
         // User has system-wide access
         return true;
-      
+
       default:
         return true;
     }
@@ -58,7 +56,7 @@ export class RBACService {
   private async checkOwnResource(userId: string, resourceId?: string): Promise<boolean> {
     // If no resourceId provided, assume it's about the user themselves
     if (!resourceId) return true;
-    
+
     // Check if the resource belongs to the user
     // This would need to be implemented based on your specific resource relationships
     return userId === resourceId;

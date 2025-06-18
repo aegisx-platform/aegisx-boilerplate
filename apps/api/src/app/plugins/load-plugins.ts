@@ -16,6 +16,7 @@ import rbac from './core/rbac';
 
 // modules
 import authModule from '../modules/core/auth';
+import rbacModule from '../modules/core/rbac';
 
 const allPlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugin (มีลำดับ)
@@ -38,6 +39,7 @@ const allPlugins: FastifyPluginAsync = async (fastify) => {
 
   // Load core modules (after Swagger is ready)
   await fastify.register(authModule);
+  await fastify.register(rbacModule);
 };
 
 export default fp(allPlugins, {

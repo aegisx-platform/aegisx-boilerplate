@@ -7,7 +7,7 @@ import {
   ChangePasswordRequest,
   UpdateProfileRequest,
   LogoutRequest
-} from '../types';
+} from '../types/auth-types';
 
 export class AuthController {
   private authService?: AuthService;

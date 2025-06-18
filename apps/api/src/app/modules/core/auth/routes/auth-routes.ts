@@ -8,7 +8,7 @@ import {
   ChangePasswordRequest,
   UpdateProfileRequest,
   LogoutRequest
-} from '../types';
+} from '../types/auth-types';
 
 // Route interface definitions
 interface RegisterRoute extends RouteGenericInterface {

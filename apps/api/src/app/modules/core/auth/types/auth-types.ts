@@ -11,7 +11,7 @@ import {
   ChangePasswordRequestSchema,
   UpdateProfileRequestSchema,
   LogoutRequestSchema
-} from './schemas/auth-schemas';
+} from '../schemas/auth-schemas';
 
 /**
  * TypeScript types derived from TypeBox schemas

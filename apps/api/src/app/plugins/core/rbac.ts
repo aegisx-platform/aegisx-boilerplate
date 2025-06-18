@@ -1,7 +1,7 @@
 import fp from 'fastify-plugin';
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { RoleRepository } from '../../modules/core/auth/repositories/role-repository';
-import { RBACService } from '../../modules/core/auth/services/rbac-service';
+import { RoleRepository } from '../../modules/core/rbac/repositories/role-repository';
+import { RBACService } from '../../modules/core/rbac/services/rbac-service';
 
 declare module 'fastify' {
   interface FastifyInstance {

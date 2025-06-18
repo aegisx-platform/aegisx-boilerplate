@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { InternalUser, RegisterRequest, UserRepository } from '../types';
+import { InternalUser, RegisterRequest, UserRepository } from '../types/auth-types';
 
 export class UserRepositoryImpl implements UserRepository {
   constructor(private fastify: FastifyInstance) { }

@@ -11,7 +11,7 @@ import {
   UserRepository,
   RefreshTokenRepository,
   RefreshTokenPayload
-} from '../types';
+} from '../types/auth-types';
 
 export class AuthService {
   constructor(
