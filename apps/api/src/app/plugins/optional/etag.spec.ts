@@ -1,5 +1,5 @@
 import Fastify, { FastifyInstance } from 'fastify';
-import { app } from '../app';
+import { app } from '../../app';
 
 describe('ETag Plugin', () => {
     let server: FastifyInstance;
