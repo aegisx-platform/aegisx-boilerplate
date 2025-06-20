@@ -89,14 +89,14 @@ export class AuthService {
    * Authenticate user login with security measures
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    // Normalize email for lookup
-    const email = credentials.email.toLowerCase();
+    // Normalize identifier for lookup
+    const identifier = credentials.identifier.toLowerCase().trim();
     
-    // Find user by email
-    const user: InternalUser | null = await this.userRepo.findByEmail(email);
+    // Find user by identifier (username or email)
+    const user: InternalUser | null = await this.userRepo.findByIdentifier(identifier);
     if (!user) {
-      // Use generic error message to prevent email enumeration
-      throw this.fastify.httpErrors.unauthorized('Invalid email or password');
+      // Use generic error message to prevent username/email enumeration
+      throw this.fastify.httpErrors.unauthorized('Invalid username/email or password');
     }
 
     // Check if account is active
@@ -108,21 +108,22 @@ export class AuthService {
       // Verify password
       const isPasswordValid = await this.verifyPassword(credentials.password, user.password_hash);
       if (!isPasswordValid) {
-        this.fastify.log.warn('Invalid password attempt', { userId: user.id, email });
-        throw this.fastify.httpErrors.unauthorized('Invalid email or password');
+        this.fastify.log.warn('Invalid password attempt', { userId: user.id, identifier });
+        throw this.fastify.httpErrors.unauthorized('Invalid username/email or password');
       }
 
       // Generate tokens
       const tokenPayload: JWTPayload = {
         id: user.id,
         email: user.email,
+        username: user.username,
         name: user.name
       };
       
       const access_token = this.generateAccessToken(tokenPayload);
       const refresh_token = await this.generateRefreshToken(user.id);
 
-      this.fastify.log.info('Successful login', { userId: user.id, email });
+      this.fastify.log.info('Successful login', { userId: user.id, identifier });
 
       return {
         access_token,
@@ -134,7 +135,7 @@ export class AuthService {
       if (error instanceof Error && error.message.includes('Invalid email or password')) {
         throw error;
       }
-      this.fastify.log.error('Login process failed', { email, error });
+      this.fastify.log.error('Login process failed', { identifier, error });
       throw this.fastify.httpErrors.internalServerError('Login failed');
     }
   }

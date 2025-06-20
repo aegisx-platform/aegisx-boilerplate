@@ -21,6 +21,7 @@ export const MessageResponseSchema = Type.Object({
 export const UserSchema = Type.Object({
   id: Type.String({ format: 'uuid' }),
   name: Type.String(),
+  username: Type.Union([Type.String(), Type.Null()]),
   email: Type.String({ format: 'email' }),
   status: Type.Union([
     Type.Literal('active'),
@@ -55,6 +56,12 @@ export const RegisterRequestSchema = Type.Object({
     maxLength: 100,
     description: 'User full name'
   }),
+  username: Type.Optional(Type.String({
+    minLength: 3,
+    maxLength: 50,
+    pattern: '^[a-zA-Z0-9_-]+$',
+    description: 'Username (3-50 characters, alphanumeric, underscore, hyphen only)'
+  })),
   email: Type.String({
     format: 'email',
     description: 'User email address'
@@ -68,9 +75,9 @@ export const RegisterRequestSchema = Type.Object({
 }, { additionalProperties: false });
 
 export const LoginRequestSchema = Type.Object({
-  email: Type.String({
-    format: 'email',
-    description: 'User email address'
+  identifier: Type.String({
+    minLength: 1,
+    description: 'Username or email address'
   }),
   password: Type.String({
     minLength: 1,

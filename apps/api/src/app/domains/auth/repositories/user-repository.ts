@@ -33,6 +33,41 @@ export class UserRepositoryImpl implements UserRepository {
   }
 
   /**
+   * Find user by username
+   */
+  async findByUsername(username: string): Promise<InternalUser | null> {
+    try {
+      const user = await this.fastify.knex(this.tableName)
+        .where('username', username)
+        .first();
+
+      return user || null;
+    } catch (error) {
+      this.fastify.log.error('Database error finding user by username', { error });
+      throw new Error('Database operation failed');
+    }
+  }
+
+  /**
+   * Find user by identifier (username or email)
+   */
+  async findByIdentifier(identifier: string): Promise<InternalUser | null> {
+    try {
+      // Check if identifier looks like an email
+      const isEmail = identifier.includes('@');
+      
+      if (isEmail) {
+        return await this.findByEmail(identifier);
+      } else {
+        return await this.findByUsername(identifier);
+      }
+    } catch (error) {
+      this.fastify.log.error('Database error finding user by identifier', { error });
+      throw new Error('Database operation failed');
+    }
+  }
+
+  /**
    * Find user by ID
    */
   async findById(id: string): Promise<InternalUser | null> {
@@ -56,6 +91,7 @@ export class UserRepositoryImpl implements UserRepository {
       const now = new Date();
       const userData = {
         name: data.name,
+        username: data.username || null,
         email: data.email,
         password_hash: data.password_hash,
         status: data.status || 'active',

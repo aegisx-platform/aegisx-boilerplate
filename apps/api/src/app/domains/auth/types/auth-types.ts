@@ -68,6 +68,7 @@ export interface CreateUserData extends RegisterRequest {
 export interface JWTPayload {
   id: string;
   email: string;
+  username?: string | null;
   name: string;
   iat?: number; // Issued at
   exp?: number; // Expires at
@@ -95,6 +96,8 @@ export interface AuthenticatedRequest {
 export interface UserRepository {
   // Read operations
   findByEmail(email: string): Promise<InternalUser | null>;
+  findByUsername(username: string): Promise<InternalUser | null>;
+  findByIdentifier(identifier: string): Promise<InternalUser | null>;
   findById(id: string): Promise<InternalUser | null>;
   
   // Write operations

@@ -56,7 +56,7 @@ export class AuthController {
    */
   async login(request: FastifyRequest<{ Body: LoginRequest }>, reply: FastifyReply) {
     try {
-      this.fastify.log.info('Login attempt', { email: request.body.email });
+      this.fastify.log.info('Login attempt', { identifier: request.body.identifier });
       
       const loginResponse = await this.authService.login(request.body);
       
@@ -68,7 +68,7 @@ export class AuthController {
       return reply.send(loginResponse);
     } catch (error) {
       this.fastify.log.warn('Login failed', { 
-        email: request.body.email,
+        identifier: request.body.identifier,
         error: error instanceof Error ? error.message : 'Unknown error'
       });
       throw error;

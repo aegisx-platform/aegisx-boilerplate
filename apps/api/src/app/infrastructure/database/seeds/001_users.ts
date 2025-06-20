@@ -14,6 +14,7 @@ export async function seed(knex: Knex): Promise<void> {
   await knex('users').insert([
     {
       name: 'Admin User',
+      username: 'admin',
       email: 'admin@aegisx.com',
       password_hash: hashedPassword,
       status: 'active',
@@ -23,6 +24,7 @@ export async function seed(knex: Knex): Promise<void> {
     },
     {
       name: 'Test User',
+      username: 'testuser',
       email: 'test@aegisx.com',
       password_hash: hashedPassword,
       status: 'active',
@@ -32,6 +34,7 @@ export async function seed(knex: Knex): Promise<void> {
     },
     {
       name: 'Demo User',
+      username: 'demo',
       email: 'demo@aegisx.com',
       password_hash: hashedPassword,
       status: 'active',
