@@ -18,11 +18,11 @@ const {
 const baseConfig: Knex.Config = {
   client: 'pg',
   migrations: {
-    directory: './apps/api/database/migrations',
+    directory: './apps/api/src/app/infrastructure/database/migrations',
     extension: 'ts'
   },
   seeds: {
-    directory: './apps/api/database/seeds'
+    directory: './apps/api/src/app/infrastructure/database/seeds'
   }
 };
 
