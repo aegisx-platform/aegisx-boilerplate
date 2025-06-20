@@ -1,5 +1,4 @@
 import { FastifyInstance } from 'fastify';
-import fp from 'fastify-plugin';
 
 // Core layers
 import corePlugins from './plugins';
@@ -7,7 +6,7 @@ import domainsPlugin from '../domains';
 import apiRoutes from '../api/routes';
 
 /* eslint-disable-next-line */
-export interface AppOptions { }
+export interface AppOptions {}
 
 const appPlugin = async (fastify: FastifyInstance, opts: AppOptions) => {
   // Load application layers in order
@@ -18,6 +17,4 @@ const appPlugin = async (fastify: FastifyInstance, opts: AppOptions) => {
   fastify.log.info('🚀 Application layers loaded successfully');
 };
 
-export default fp(appPlugin, {
-  name: 'aegisx-app'
-});
+export default appPlugin;

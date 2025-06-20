@@ -20,60 +20,60 @@ export default fp(async function (fastify: FastifyInstance) {
         version: '1.0.0',
         contact: {
           name: 'API Support',
-          email: 'support@aegisx.com'
+          email: 'support@aegisx.com',
         },
         license: {
           name: 'MIT',
-          url: 'https://opensource.org/licenses/MIT'
-        }
+          url: 'https://opensource.org/licenses/MIT',
+        },
       },
       servers: [
         {
-          url: 'http://localhost:3000/api/v1',
-          description: 'Development server (API v1)'
+          url: 'http://localhost:3000',
+          description: 'Development server (API v1)',
         },
         {
-          url: 'https://api.aegisx.com/api/v1',
-          description: 'Production server (API v1)'
-        }
+          url: 'https://api.aegisx.com',
+          description: 'Production server (API v1)',
+        },
       ],
       tags: [
         {
           name: 'Authentication',
-          description: 'User authentication and authorization endpoints'
+          description: 'User authentication and authorization endpoints',
         },
         {
           name: 'User Profile',
-          description: 'User profile management endpoints'
+          description: 'User profile management endpoints',
         },
         {
           name: 'RBAC - Roles',
-          description: 'Role-based access control - Role management'
+          description: 'Role-based access control - Role management',
         },
         {
           name: 'RBAC - Permissions',
-          description: 'Role-based access control - Permission management'
+          description: 'Role-based access control - Permission management',
         },
         {
           name: 'RBAC - User Management',
-          description: 'Role-based access control - User role assignments'
-        }
+          description: 'Role-based access control - User role assignments',
+        },
       ],
       components: {
         securitySchemes: {
           bearerAuth: {
             type: 'http',
             scheme: 'bearer',
-            bearerFormat: 'JWT'
+            bearerFormat: 'JWT',
           },
           apiKey: {
             type: 'apiKey',
             name: 'X-API-Key',
-            in: 'header'
-          }
-        }
-      }
-    }
+            in: 'header',
+          },
+        },
+      },
+    },
   });
 
   // Register Swagger UI
@@ -81,8 +81,8 @@ export default fp(async function (fastify: FastifyInstance) {
     routePrefix: '/docs',
     uiConfig: {
       docExpansion: 'list',
-      deepLinking: false
+      deepLinking: false,
     },
-    staticCSP: true
+    staticCSP: true,
   });
 });
