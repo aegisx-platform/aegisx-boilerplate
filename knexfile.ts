@@ -74,8 +74,8 @@ const connections: { [key: string]: Knex.Config } = {
       ssl: DB_SSL === 'true' ? { rejectUnauthorized: false } : false
     },
     pool: {
-      min: parseInt(process.env.DB_POOL_MIN || '5', 10),
-      max: parseInt(process.env.DB_POOL_MAX || '50', 10)
+      min: parseInt(DB_POOL_MIN || '5', 10),
+      max: parseInt(DB_POOL_MAX || '50', 10)
     }
   }
 };
