@@ -138,27 +138,7 @@ export async function userManagementRoutes(fastify: FastifyInstance) {
   // User status management endpoints
   // 6. POST /users/:id/activate - Activate user
   fastify.post<UserActionRoute>('/:id/activate', {
-    schema: {
-      summary: 'Activate user account',
-      description: 'Change user status to active',
-      params: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' }
-        },
-        required: ['id']
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            message: { type: 'string' },
-            success: { type: 'boolean' }
-          }
-        }
-      },
-      tags: ['User Management']
-    },
+    schema: UserManagementSchemas.activateUser,
     config: {
       rateLimit: {
         max: 20,
@@ -169,27 +149,7 @@ export async function userManagementRoutes(fastify: FastifyInstance) {
 
   // 7. POST /users/:id/deactivate - Deactivate user
   fastify.post<UserActionRoute>('/:id/deactivate', {
-    schema: {
-      summary: 'Deactivate user account',
-      description: 'Change user status to inactive',
-      params: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' }
-        },
-        required: ['id']
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            message: { type: 'string' },
-            success: { type: 'boolean' }
-          }
-        }
-      },
-      tags: ['User Management']
-    },
+    schema: UserManagementSchemas.deactivateUser,
     config: {
       rateLimit: {
         max: 20,
@@ -200,27 +160,7 @@ export async function userManagementRoutes(fastify: FastifyInstance) {
 
   // 8. POST /users/:id/suspend - Suspend user
   fastify.post<UserActionRoute>('/:id/suspend', {
-    schema: {
-      summary: 'Suspend user account',
-      description: 'Change user status to suspended',
-      params: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' }
-        },
-        required: ['id']
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            message: { type: 'string' },
-            success: { type: 'boolean' }
-          }
-        }
-      },
-      tags: ['User Management']
-    },
+    schema: UserManagementSchemas.suspendUser,
     config: {
       rateLimit: {
         max: 20,
@@ -231,27 +171,7 @@ export async function userManagementRoutes(fastify: FastifyInstance) {
 
   // 9. POST /users/:id/verify-email - Verify user email
   fastify.post<UserActionRoute>('/:id/verify-email', {
-    schema: {
-      summary: 'Verify user email address',
-      description: 'Mark user email as verified',
-      params: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' }
-        },
-        required: ['id']
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            message: { type: 'string' },
-            success: { type: 'boolean' }
-          }
-        }
-      },
-      tags: ['User Management']
-    },
+    schema: UserManagementSchemas.verifyUserEmail,
     config: {
       rateLimit: {
         max: 20,

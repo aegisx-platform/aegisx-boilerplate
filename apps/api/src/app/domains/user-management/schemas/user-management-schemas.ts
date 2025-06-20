@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox';
+import { UserSchema } from '../../auth/schemas/auth-schemas';
 
 /**
  * TypeBox Schema definitions for User Management API
@@ -6,38 +7,36 @@ import { Type } from '@sinclair/typebox';
  */
 
 // Common response schemas
-const ErrorResponseSchema = Type.Object({
+export const ErrorResponseSchema = Type.Object({
   error: Type.String(),
   message: Type.String(),
   statusCode: Type.Number()
 });
 
-const MessageResponseSchema = Type.Object({
+export const MessageResponseSchema = Type.Object({
   message: Type.String(),
   success: Type.Boolean()
 });
 
 // User object schema for management (extended from auth)
-const UserDetailSchema = Type.Object({
-  id: Type.String({ format: 'uuid' }),
-  name: Type.String(),
-  username: Type.Union([Type.String(), Type.Null()]),
-  email: Type.String({ format: 'email' }),
-  status: Type.Union([
-    Type.Literal('active'),
-    Type.Literal('inactive'),
-    Type.Literal('suspended')
-  ]),
-  email_verified_at: Type.Union([
-    Type.String({ format: 'date-time' }),
-    Type.Null()
-  ]),
-  created_at: Type.String({ format: 'date-time' }),
-  updated_at: Type.String({ format: 'date-time' }),
-  last_login_at: Type.Union([
-    Type.String({ format: 'date-time' }),
-    Type.Null()
-  ])
+const UserDetailSchema = Type.Intersect([
+  UserSchema,
+  Type.Object({
+    last_login_at: Type.Union([
+      Type.String({ format: 'date-time' }),
+      Type.Null()
+    ])
+  })
+]);
+
+// Action response schemas for user management
+export const UserActionResponseSchema = Type.Object({
+  message: Type.String(),
+  success: Type.Boolean()
+});
+
+export const UserActionParamsSchema = Type.Object({
+  id: Type.String({ format: 'uuid', description: 'User ID' })
 });
 
 // Response schemas
@@ -183,6 +182,80 @@ export const UserManagementSchemas = {
     description: 'Success message',
     type: 'object',
     properties: MessageResponseSchema.properties
+  },
+
+  // User action schemas
+  userActionParams: {
+    summary: 'User action parameters',
+    params: UserActionParamsSchema,
+    response: {
+      200: UserActionResponseSchema,
+      400: ErrorResponseSchema,
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
+      404: ErrorResponseSchema,
+      500: ErrorResponseSchema
+    }
+  },
+
+  activateUser: {
+    summary: 'Activate user account',
+    description: 'Change user status to active',
+    params: UserActionParamsSchema,
+    response: {
+      200: UserActionResponseSchema,
+      400: ErrorResponseSchema,
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
+      404: ErrorResponseSchema,
+      500: ErrorResponseSchema
+    },
+    tags: ['User Management']
+  },
+
+  deactivateUser: {
+    summary: 'Deactivate user account',
+    description: 'Change user status to inactive',
+    params: UserActionParamsSchema,
+    response: {
+      200: UserActionResponseSchema,
+      400: ErrorResponseSchema,
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
+      404: ErrorResponseSchema,
+      500: ErrorResponseSchema
+    },
+    tags: ['User Management']
+  },
+
+  suspendUser: {
+    summary: 'Suspend user account',
+    description: 'Change user status to suspended',
+    params: UserActionParamsSchema,
+    response: {
+      200: UserActionResponseSchema,
+      400: ErrorResponseSchema,
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
+      404: ErrorResponseSchema,
+      500: ErrorResponseSchema
+    },
+    tags: ['User Management']
+  },
+
+  verifyUserEmail: {
+    summary: 'Verify user email address',
+    description: 'Mark user email as verified',
+    params: UserActionParamsSchema,
+    response: {
+      200: UserActionResponseSchema,
+      400: ErrorResponseSchema,
+      401: ErrorResponseSchema,
+      403: ErrorResponseSchema,
+      404: ErrorResponseSchema,
+      500: ErrorResponseSchema
+    },
+    tags: ['User Management']
   },
 
   // User list endpoint
