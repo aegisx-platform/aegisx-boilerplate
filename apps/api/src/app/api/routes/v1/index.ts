@@ -4,11 +4,13 @@ import fp from 'fastify-plugin';
 // V1 API routes
 import authRoutes from './auth';
 import rbacRoutes from './rbac';
+import userManagementRoutes from './user-management';
 
 const v1Routes = async (fastify: FastifyInstance) => {
   // Register all v1 routes
   await fastify.register(authRoutes);
   await fastify.register(rbacRoutes);
+  await fastify.register(userManagementRoutes);
 
   fastify.log.info('✅ API v1 routes loaded');
 };
