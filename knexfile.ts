@@ -10,8 +10,10 @@ const {
   DB_PORT = '5432',
   DB_NAME = 'aegisx_db',
   DB_USER = 'postgres',
-  DB_PASSWORD = '',
+  DB_PASSWORD = 'postgres123',
   DB_SSL = 'false',
+  DB_POOL_MIN = '2',
+  DB_POOL_MAX = '10',
   NODE_ENV = 'development'
 } = process.env;
 
@@ -19,10 +21,12 @@ const baseConfig: Knex.Config = {
   client: 'pg',
   migrations: {
     directory: './apps/api/src/app/infrastructure/database/migrations',
-    extension: 'ts'
+    extension: 'ts',
+    loadExtensions: ['.ts']
   },
   seeds: {
-    directory: './apps/api/src/app/infrastructure/database/seeds'
+    directory: './apps/api/src/app/infrastructure/database/seeds',
+    loadExtensions: ['.ts']
   }
 };
 
@@ -38,8 +42,8 @@ const connections: { [key: string]: Knex.Config } = {
       ssl: DB_SSL === 'true' ? { rejectUnauthorized: false } : false
     },
     pool: {
-      min: 2,
-      max: 10
+      min: parseInt(DB_POOL_MIN, 10),
+      max: parseInt(DB_POOL_MAX, 10)
     }
   },
 
@@ -47,7 +51,7 @@ const connections: { [key: string]: Knex.Config } = {
     ...baseConfig,
     connection: DB_CONNECTION_STRING || {
       host: DB_HOST,
-      port: parseInt(DB_PORT, 10),
+      port: parseInt(DB_PORT === '5432' ? '5433' : DB_PORT, 10),
       database: `${DB_NAME}_test`,
       user: DB_USER,
       password: DB_PASSWORD,
@@ -55,7 +59,7 @@ const connections: { [key: string]: Knex.Config } = {
     },
     pool: {
       min: 1,
-      max: 1
+      max: 5
     }
   },
 
@@ -67,11 +71,11 @@ const connections: { [key: string]: Knex.Config } = {
       database: DB_NAME,
       user: DB_USER,
       password: DB_PASSWORD,
-      ssl: { rejectUnauthorized: false }
+      ssl: DB_SSL === 'true' ? { rejectUnauthorized: false } : false
     },
     pool: {
-      min: 2,
-      max: 20
+      min: parseInt(process.env.DB_POOL_MIN || '5', 10),
+      max: parseInt(process.env.DB_POOL_MAX || '50', 10)
     }
   }
 };

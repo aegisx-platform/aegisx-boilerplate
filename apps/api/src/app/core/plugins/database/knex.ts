@@ -36,6 +36,22 @@ export default fp(async function (fastify: FastifyInstance) {
     NODE_ENV
   } = fastify.config;
 
+  // Validate required environment variables
+  const requiredEnvVars = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER'];
+  if (NODE_ENV === 'production') {
+    requiredEnvVars.push('DB_PASSWORD');
+  }
+
+  for (const envVar of requiredEnvVars) {
+    if (!(fastify.config as any)[envVar]) {
+      throw new Error(`Required environment variable ${envVar} is not set`);
+    }
+  }
+
+  // Set defaults for pool configuration
+  const poolMin = parseInt(DB_POOL_MIN || '2', 10);
+  const poolMax = parseInt(DB_POOL_MAX || (NODE_ENV === 'production' ? '50' : '10'), 10);
+
   // Configure Knex connection
   let knexConfig: Knex.Knex.Config;
 
@@ -45,8 +61,8 @@ export default fp(async function (fastify: FastifyInstance) {
       client: 'pg',
       connection: DB_CONNECTION_STRING,
       pool: {
-        min: parseInt(DB_POOL_MIN, 10),
-        max: parseInt(DB_POOL_MAX, 10)
+        min: poolMin,
+        max: poolMax
       },
       migrations: {
         directory: './apps/api/src/app/infrastructure/database/migrations',
@@ -71,8 +87,8 @@ export default fp(async function (fastify: FastifyInstance) {
         ssl: DB_SSL === 'true' ? { rejectUnauthorized: false } : false
       },
       pool: {
-        min: parseInt(DB_POOL_MIN, 10),
-        max: parseInt(DB_POOL_MAX, 10)
+        min: poolMin,
+        max: poolMax
       },
       migrations: {
         directory: './apps/api/src/app/infrastructure/database/migrations',
@@ -128,14 +144,21 @@ export default fp(async function (fastify: FastifyInstance) {
     fastify.log.info('🔌 Testing database connection...');
     await knex.raw('SELECT 1');
     fastify.log.info('✅ Database connection established successfully');
-  } catch (error) {
-    fastify.log.error('Failed to connect to database:');
-    console.error(error);
-    if (NODE_ENV !== 'test') {
-      // Don't throw error in development to allow testing without database
-      if (NODE_ENV === 'production') {
-        throw error;
+  } catch (error: any) {
+    fastify.log.error({
+      error: error.message,
+      config: {
+        host: DB_HOST,
+        port: DB_PORT,
+        database: DB_NAME,
+        ssl: DB_SSL
       }
+    }, 'Failed to connect to database');
+    
+    if (NODE_ENV === 'production') {
+      throw new Error(`Database connection failed: ${error.message}`);
+    } else if (NODE_ENV !== 'test') {
+      fastify.log.warn('Database connection failed, but continuing in development mode');
     }
   }
 

@@ -2,11 +2,13 @@
 const baseConfig = {
   client: 'pg',
   migrations: {
-    directory: './apps/api/database/migrations',
-    extension: 'ts'
+    directory: './apps/api/src/app/infrastructure/database/migrations',
+    extension: 'ts',
+    loadExtensions: ['.ts']
   },
   seeds: {
-    directory: './apps/api/database/seeds'
+    directory: './apps/api/src/app/infrastructure/database/seeds',
+    loadExtensions: ['.ts']
   }
 };
 
