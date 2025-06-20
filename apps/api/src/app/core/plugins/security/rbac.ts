@@ -12,9 +12,10 @@ declare module 'fastify' {
 
 interface RBACOptions {
   // Add any configuration options here
+  [key: string]: unknown;
 }
 
-async function rbacPlugin(fastify: FastifyInstance, options: RBACOptions) {
+async function rbacPlugin(fastify: FastifyInstance, _options: RBACOptions) {
   // Initialize RBAC service
   const roleRepository = new RoleRepository(fastify.knex);
   const rbacService = new RBACService(roleRepository);
@@ -75,7 +76,7 @@ async function rbacPlugin(fastify: FastifyInstance, options: RBACOptions) {
   fastify.decorate('requireOwnProfile', requirePermission('users', 'read', 'own'));
 
   // Hook to add user permissions to request context (optional)
-  fastify.addHook('preHandler', async (request, reply) => {
+  fastify.addHook('preHandler', async (request, _reply) => {
     // Only add permissions for authenticated users
     const userContext = rbacService.getUserContext(request);
     if (userContext) {
@@ -84,8 +85,8 @@ async function rbacPlugin(fastify: FastifyInstance, options: RBACOptions) {
         const roles = await rbacService.getUserRoles(userContext.userId);
 
         // Add to request context for easy access in route handlers
-        (request as any).userPermissions = permissions;
-        (request as any).userRoles = roles;
+        (request as FastifyRequest & { userPermissions: unknown; userRoles: unknown }).userPermissions = permissions;
+        (request as FastifyRequest & { userPermissions: unknown; userRoles: unknown }).userRoles = roles;
       } catch (error) {
         fastify.log.warn('Failed to load user permissions:', error);
       }

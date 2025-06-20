@@ -433,7 +433,7 @@ export class UserManagementService implements IUserManagementService {
   /**
    * Get user activity (placeholder for future implementation)
    */
-  async getUserActivity(userId: string, limit: number = 50): Promise<any[]> {
+  async getUserActivity(userId: string, limit = 50): Promise<any[]> {
     // This would integrate with an activity logging system
     // For now, return empty array
     return [];

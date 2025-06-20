@@ -99,12 +99,12 @@ export interface UserRepository {
   findByUsername(username: string): Promise<InternalUser | null>;
   findByIdentifier(identifier: string): Promise<InternalUser | null>;
   findById(id: string): Promise<InternalUser | null>;
-  
+
   // Write operations
   create(data: CreateUserData): Promise<InternalUser>;
   update(id: string, data: Partial<InternalUser>): Promise<InternalUser | null>;
   delete(id: string): Promise<boolean>;
-  
+
   // Special operations
   verifyEmail(id: string): Promise<boolean>;
   getUserStats?(): Promise<UserStats>;
@@ -114,11 +114,11 @@ export interface RefreshTokenRepository {
   // Core operations
   create(user_id: string, token_hash: string, expires_at: Date): Promise<RefreshToken>;
   findByTokenHash(token_hash: string): Promise<RefreshToken | null>;
-  
+
   // Revocation operations
   revokeByUserId(user_id: string): Promise<void>;
   revokeByTokenHash(token_hash: string): Promise<void>;
-  
+
   // Maintenance operations
   cleanup(): Promise<void>;
   getTokenStats?(): Promise<TokenStats>;
@@ -195,7 +195,7 @@ export class AuthError extends Error {
   constructor(
     message: string,
     public readonly code: string,
-    public readonly statusCode: number = 400
+    public readonly statusCode = 400
   ) {
     super(message);
     this.name = 'AuthError';
@@ -210,14 +210,14 @@ export class ValidationError extends AuthError {
 }
 
 export class UnauthorizedError extends AuthError {
-  constructor(message: string = 'Unauthorized') {
+  constructor(message = 'Unauthorized') {
     super(message, 'UNAUTHORIZED', 401);
     this.name = 'UnauthorizedError';
   }
 }
 
 export class ForbiddenError extends AuthError {
-  constructor(message: string = 'Forbidden') {
+  constructor(message = 'Forbidden') {
     super(message, 'FORBIDDEN', 403);
     this.name = 'ForbiddenError';
   }

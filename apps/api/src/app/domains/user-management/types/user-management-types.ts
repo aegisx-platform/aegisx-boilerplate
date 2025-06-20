@@ -91,7 +91,7 @@ export interface UserActivity {
   id: string;
   user_id: string;
   action: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   ip_address?: string;
   user_agent?: string;
   created_at: Date;
@@ -131,10 +131,10 @@ export interface UserManagementService {
 export interface UserManagementRepository {
   // Enhanced search and filtering
   findWithFilters(filters: UserFilters, pagination: PaginationParams): Promise<{
-    users: any[];
+    users: UserDetailResponse[];
     total: number;
   }>;
-  searchUsers(query: string, filters?: UserFilters): Promise<any[]>;
+  searchUsers(query: string, filters?: UserFilters): Promise<UserDetailResponse[]>;
   
   // Bulk operations
   bulkUpdateStatus(userIds: string[], status: 'active' | 'inactive' | 'suspended'): Promise<number>;
@@ -153,7 +153,7 @@ export class UserManagementError extends Error {
   constructor(
     message: string,
     public readonly code: string,
-    public readonly statusCode: number = 400
+    public readonly statusCode = 400
   ) {
     super(message);
     this.name = 'UserManagementError';
