@@ -134,19 +134,6 @@ export default fp(
 
     // Test database connection
     try {
-      // Skip connection test in development if no database is running
-      if (NODE_ENV === 'development') {
-        fastify.log.info({
-          DB_CONNECTION_STRING,
-          DB_HOST,
-          DB_PORT,
-          DB_NAME,
-          DB_USER,
-          DB_SSL,
-          DB_POOL_MIN,
-          DB_POOL_MAX,
-        });
-      }
       fastify.log.info('🔌 Testing database connection...');
       await knex.raw('SELECT 1');
       fastify.log.info('✅ Database connection established successfully');

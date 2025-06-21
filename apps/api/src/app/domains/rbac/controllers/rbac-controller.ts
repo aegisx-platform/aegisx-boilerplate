@@ -230,7 +230,7 @@ export class RBACController {
       return {
         success: true,
         data: {
-          roles: userRoles.roles,
+          roles: userRoles,
           permissions
         }
       };

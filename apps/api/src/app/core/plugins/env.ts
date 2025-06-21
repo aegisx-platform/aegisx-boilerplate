@@ -90,6 +90,26 @@ const schema = {
     RATE_LIMIT_TIME_WINDOW: {
       type: 'string',
       default: '900000' // 15 minutes in ms
+    },
+    REDIS_HOST: {
+      type: 'string',
+      default: 'localhost'
+    },
+    REDIS_PORT: {
+      type: 'string',
+      default: '6379'
+    },
+    REDIS_PASSWORD: {
+      type: 'string',
+      default: ''
+    },
+    REDIS_DB: {
+      type: 'string',
+      default: '0'
+    },
+    REDIS_TTL: {
+      type: 'string',
+      default: '900' // 15 minutes in seconds
     }
   }
 };
@@ -117,6 +137,11 @@ declare module 'fastify' {
       LOG_LEVEL: string;
       RATE_LIMIT_MAX: string;
       RATE_LIMIT_TIME_WINDOW: string;
+      REDIS_HOST: string;
+      REDIS_PORT: string;
+      REDIS_PASSWORD: string;
+      REDIS_DB: string;
+      REDIS_TTL: string;
     };
   }
 }

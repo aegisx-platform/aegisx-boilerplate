@@ -7,6 +7,7 @@ declare module 'fastify' {
   interface FastifyInstance {
     rbac: RBACService;
     requirePermission: (resource: string, action: string, scope?: string) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    rbacRequire: (roles: string[]) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
 
@@ -69,6 +70,48 @@ async function rbacPlugin(fastify: FastifyInstance, _options: RBACOptions) {
 
   // Register permission middleware factory
   fastify.decorate('requirePermission', requirePermission);
+
+  // Role-based access control middleware factory
+  const rbacRequire = (roles: string[]) => {
+    return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+      try {
+        // Check if user is authenticated
+        const userContext = rbacService.getUserContext(request);
+        if (!userContext) {
+          return reply.code(401).send({
+            error: 'Unauthorized',
+            message: 'Authentication required'
+          });
+        }
+
+        // Get user roles
+        const userRoles = await rbacService.getUserRoles(userContext.userId);
+        const userRoleNames = userRoles.map(role => role.name);
+
+        // Check if user has any of the required roles
+        const hasRequiredRole = roles.some(role => userRoleNames.includes(role));
+        
+        if (!hasRequiredRole) {
+          return reply.code(403).send({
+            error: 'Forbidden',
+            message: `Insufficient permissions: requires one of ${roles.join(', ')}`,
+            required_roles: roles,
+            user_roles: userRoleNames
+          });
+        }
+
+        // Role check passed, continue to route handler
+      } catch (error) {
+        fastify.log.error('RBAC role check failed:', error);
+        return reply.code(500).send({
+          error: 'Internal Server Error',
+          message: 'Role check failed'
+        });
+      }
+    };
+  };
+
+  fastify.decorate('rbacRequire', rbacRequire);
 
   // Helper decorators for common permission patterns
   fastify.decorate('requireAdmin', requirePermission('system', 'configure', 'all'));

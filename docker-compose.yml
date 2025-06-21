@@ -18,10 +18,17 @@ services:
       DB_SSL: false
       DB_POOL_MIN: 2
       DB_POOL_MAX: 10
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: 
+      REDIS_DB: 0
+      REDIS_TTL: 900
     networks:
       - aegisx-network
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     # Keep container running for manual migration commands
     tty: true
@@ -86,6 +93,25 @@ services:
       retries: 5
       start_period: 10s
 
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: aegisx-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - aegisx-network
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   # Optional: pgAdmin for database management
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -109,6 +135,8 @@ volumes:
   postgres_data:
     driver: local
   postgres_test_data:
+    driver: local
+  redis_data:
     driver: local
   pgadmin_data:
     driver: local

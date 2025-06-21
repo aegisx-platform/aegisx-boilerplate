@@ -3,7 +3,6 @@ import { RoleRepository } from '../repositories/role-repository';
 import {
   Permission,
   Role,
-  UserWithRoles,
   RBACContext,
   RBACServiceInterface
 } from '../types/rbac-types';
@@ -15,8 +14,9 @@ export class RBACService implements RBACServiceInterface {
     return this.roleRepository.getUserPermissions(userId);
   }
 
-  async getUserRoles(userId: string): Promise<UserWithRoles> {
-    return this.roleRepository.findUserRoles(userId);
+  async getUserRoles(userId: string): Promise<Role[]> {
+    const userWithRoles = await this.roleRepository.findUserRoles(userId);
+    return userWithRoles.roles || [];
   }
 
   async hasPermission(context: RBACContext): Promise<boolean> {

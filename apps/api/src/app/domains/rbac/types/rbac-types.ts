@@ -75,7 +75,7 @@ export interface RoleRepositoryInterface {
  */
 export interface RBACServiceInterface {
   getUserPermissions(userId: string): Promise<Permission[]>;
-  getUserRoles(userId: string): Promise<UserWithRoles>;
+  getUserRoles(userId: string): Promise<Role[]>;
   hasPermission(context: RBACContext): Promise<boolean>;
   assignRoleToUser(userId: string, roleId: string, assignedBy?: string, expiresAt?: Date): Promise<void>;
   removeRoleFromUser(userId: string, roleId: string): Promise<void>;

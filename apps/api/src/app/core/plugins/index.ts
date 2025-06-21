@@ -3,6 +3,7 @@ import { FastifyPluginAsync } from 'fastify';
 
 // Core plugins (manual register with specific order)
 import env from './env';
+import redis from './database/redis';
 import knex from './database/knex';
 import sensible from './validation/sensible';
 import jwt from './security/jwt';
@@ -16,6 +17,7 @@ import healthCheck from './monitoring/health-check';
 const corePlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugins in specific order
   await fastify.register(env);
+  await fastify.register(redis);
   await fastify.register(knex);
   await fastify.register(sensible);
   await fastify.register(jwt);
