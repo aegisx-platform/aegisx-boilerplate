@@ -13,6 +13,7 @@ import swagger from './docs/swagger';
 import rbac from './security/rbac';
 import underPressure from './monitoring/under-pressure';
 import healthCheck from './monitoring/health-check';
+import { registerAuditMiddleware } from '../shared/middleware/audit-log-middleware';
 
 const corePlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugins in specific order
@@ -27,6 +28,17 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
   await fastify.register(swagger);
   await fastify.register(rbac);
   await fastify.register(healthCheck);
+
+  // Register audit logging middleware
+  registerAuditMiddleware(fastify, {
+    enabled: true,
+    excludeRoutes: ['/health', '/ready', '/docs', '/docs/*'],
+    excludeMethods: ['GET', 'HEAD', 'OPTIONS'],
+    logSuccessOnly: false,
+    logRequestBody: true,
+    logResponseBody: false,
+    maxBodySize: 1024 * 10 // 10KB
+  });
 
   fastify.log.info('✅ Core plugins loaded successfully');
 };
