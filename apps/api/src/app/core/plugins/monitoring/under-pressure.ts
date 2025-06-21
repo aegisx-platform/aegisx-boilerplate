@@ -4,9 +4,9 @@ import underPressure from '@fastify/under-pressure';
 
 const underPressurePlugin: FastifyPluginAsync = async (fastify) => {
   await fastify.register(underPressure, {
-    maxEventLoopDelay: 1000,
-    maxHeapUsedBytes: 100000000,
-    maxRssBytes: 100000000,
+    maxEventLoopDelay: 5000,
+    maxHeapUsedBytes: 500000000,
+    maxRssBytes: 500000000,
     maxEventLoopUtilization: 0.98,
     message: 'Under pressure!',
     retryAfter: 50,

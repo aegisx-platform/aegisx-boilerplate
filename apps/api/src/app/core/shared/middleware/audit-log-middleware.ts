@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply, preHandlerHookHandler } from 'fastify';
-import { AuditLogService } from '../../../domains/audit-log/services/audit-log-service';
-import { AuditLogRepositoryImpl } from '../../../domains/audit-log/repositories/audit-log-repository';
 import { AuditAction, AuditContext } from '../../../domains/audit-log/types/audit-log-types';
+import { AuditAdapter, AuditLogData } from '../audit/interfaces/audit-adapter.interface';
+import { AuditAdapterFactory } from '../audit/factory/audit-adapter-factory';
 
 export interface AuditConfig {
   enabled: boolean;
@@ -14,7 +14,7 @@ export interface AuditConfig {
 }
 
 export class AuditLogMiddleware {
-  private auditLogService: AuditLogService;
+  private auditAdapter: AuditAdapter;
   private config: AuditConfig;
 
   constructor(
@@ -31,9 +31,10 @@ export class AuditLogMiddleware {
       ...config
     };
 
-    // Initialize audit log service
-    const auditLogRepository = new AuditLogRepositoryImpl(fastify.knex);
-    this.auditLogService = new AuditLogService(auditLogRepository);
+    // Initialize audit adapter based on configuration
+    this.auditAdapter = AuditAdapterFactory.createFromEnv(fastify);
+    
+    fastify.log.info(`AuditLogMiddleware: Using ${this.auditAdapter.getType()} adapter`);
   }
 
   createPreHandler(): preHandlerHookHandler {
@@ -88,14 +89,20 @@ export class AuditLogMiddleware {
           const action = this.mapMethodToAction(request.method);
           const resourceType = this.extractResourceType(request.url);
 
-          await this.auditLogService.logError(
+          const auditData: AuditLogData = {
+            user_id: context.user_id || null,
             action,
-            resourceType,
-            error,
-            context,
-            this.extractResourceId(request.url) || undefined,
-            this.buildMetadata(request, reply, error)
-          );
+            resource_type: resourceType,
+            resource_id: this.extractResourceId(request.url) || null,
+            ip_address: context.ip_address,
+            user_agent: context.user_agent,
+            session_id: context.session_id,
+            metadata: this.buildMetadata(request, reply, error),
+            status: 'error',
+            error_message: error.message
+          };
+
+          await this.auditAdapter.process(auditData);
         } catch (auditError) {
           request.log.error('Failed to create error audit log', auditError);
         }
@@ -133,17 +140,20 @@ export class AuditLogMiddleware {
     const resourceId = this.extractResourceId(request.url);
     const status = reply.statusCode < 400 ? 'success' : 'failed';
 
-    await this.auditLogService.logAction(
+    const auditData: AuditLogData = {
+      user_id: context.user_id || null,
       action,
-      resourceType,
-      context,
-      {
-        resourceId: resourceId || undefined,
-        metadata: this.buildMetadata(request, reply),
-        status,
-        errorMessage: reply.statusCode >= 400 ? `HTTP ${reply.statusCode}` : undefined
-      }
-    );
+      resource_type: resourceType,
+      resource_id: resourceId || null,
+      ip_address: context.ip_address,
+      user_agent: context.user_agent,
+      session_id: context.session_id,
+      metadata: this.buildMetadata(request, reply),
+      status: status as 'success' | 'failed',
+      error_message: reply.statusCode >= 400 ? `HTTP ${reply.statusCode}` : undefined
+    };
+
+    await this.auditAdapter.process(auditData);
   }
 
   private extractContext(request: FastifyRequest): AuditContext {
@@ -326,6 +336,27 @@ export class AuditLogMiddleware {
     
     return result;
   }
+
+  /**
+   * Get audit adapter statistics
+   */
+  async getAdapterStats(): Promise<Record<string, any>> {
+    return this.auditAdapter.getStats ? await this.auditAdapter.getStats() : {};
+  }
+
+  /**
+   * Check audit adapter health
+   */
+  async isAdapterHealthy(): Promise<boolean> {
+    return await this.auditAdapter.health();
+  }
+
+  /**
+   * Get adapter type
+   */
+  getAdapterType(): string {
+    return this.auditAdapter.getType();
+  }
 }
 
 // Helper function to register audit middleware
@@ -339,4 +370,15 @@ export function registerAuditMiddleware(
   fastify.addHook('preHandler', auditMiddleware.createPreHandler());
   fastify.addHook('onResponse', auditMiddleware.createOnResponse());
   fastify.addHook('onError', auditMiddleware.createOnError());
+
+  // Expose audit middleware for stats access
+  fastify.decorate('auditMiddleware', auditMiddleware);
+}
+
+// Extend FastifyInstance interface
+declare module 'fastify' {
+  interface FastifyInstance {
+    auditMiddleware: AuditLogMiddleware;
+    auditWorker?: any; // AuditQueueWorker (optional for Redis adapter)
+  }
 }

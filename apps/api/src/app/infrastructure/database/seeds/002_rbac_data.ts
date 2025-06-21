@@ -167,4 +167,50 @@ export async function seed(knex: Knex): Promise<void> {
   }
 
   await knex('role_permissions').insert(rolePermissions);
+
+  // 5. Assign roles to existing users (from seed 001_users.ts)
+  const users = await knex('users').select('id', 'email', 'username');
+  const userRoleAssignments = [];
+
+  // Get admin user ID for assigned_by field
+  const adminUser = users.find(u => u.email === 'admin@aegisx.com');
+  const assignedByUserId = adminUser?.id || users[0]?.id; // Fallback to first user
+
+  for (const user of users) {
+    let roleToAssign = null;
+
+    // Assign roles based on email/username patterns
+    if (user.email === 'admin@aegisx.com' || user.username === 'admin') {
+      roleToAssign = adminId;
+    } else if (user.email?.includes('manager') || user.username?.includes('manager')) {
+      roleToAssign = managerId;
+    } else if (user.email?.includes('viewer') || user.username?.includes('viewer')) {
+      roleToAssign = viewerId;
+    } else {
+      // Default role for other users
+      roleToAssign = userId;
+    }
+
+    if (roleToAssign) {
+      userRoleAssignments.push({
+        id: knex.raw('gen_random_uuid()'),
+        user_id: user.id,
+        role_id: roleToAssign,
+        assigned_by: assignedByUserId, // Assigned by admin user ID
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+    }
+  }
+
+  if (userRoleAssignments.length > 0) {
+    await knex('user_roles').insert(userRoleAssignments);
+  }
+
+  console.log(`✅ RBAC seed completed:`);
+  console.log(`   - Created ${roles.length} roles`);
+  console.log(`   - Created ${permissions.length} permissions`);
+  console.log(`   - Assigned ${rolePermissions.length} role-permission mappings`);
+  console.log(`   - Assigned roles to ${userRoleAssignments.length} users`);
 }

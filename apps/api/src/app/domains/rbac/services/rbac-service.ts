@@ -107,10 +107,10 @@ export class RBACService implements RBACServiceInterface {
   // Helper method to extract user context from request
   getUserContext(request: FastifyRequest): { userId: string } | null {
     const user = (request as any).user;
-    if (!user || !user.sub) {
+    if (!user || !user.id) {
       return null;
     }
-    return { userId: user.sub };
+    return { userId: user.id };
   }
 
   // Permission check middleware helper

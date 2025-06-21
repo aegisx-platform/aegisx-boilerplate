@@ -14,6 +14,7 @@ import rbac from './security/rbac';
 import underPressure from './monitoring/under-pressure';
 import healthCheck from './monitoring/health-check';
 import { registerAuditMiddleware } from '../shared/middleware/audit-log-middleware';
+import { AuditQueueWorker } from '../workers/audit-queue-worker';
 
 const corePlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugins in specific order
@@ -39,6 +40,22 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
     logResponseBody: false,
     maxBodySize: parseInt(fastify.config.AUDIT_MAX_BODY_SIZE, 10)
   });
+
+  // Start audit queue worker if using Redis adapter
+  if (fastify.config.AUDIT_ADAPTER === 'redis' && fastify.config.AUDIT_ENABLED === 'true') {
+    const auditWorker = new AuditQueueWorker(fastify, 3000); // Process every 3 seconds
+    auditWorker.start();
+    
+    // Expose worker for monitoring
+    fastify.decorate('auditWorker', auditWorker);
+    
+    // Graceful shutdown
+    fastify.addHook('onClose', async () => {
+      auditWorker.stop();
+    });
+    
+    fastify.log.info('✅ Audit queue worker started');
+  }
 
   fastify.log.info('✅ Core plugins loaded successfully');
 };

@@ -1,123 +1,102 @@
 import { Role, Permission } from '../../../domains/rbac/types/rbac-types';
+import { FastifyInstance } from 'fastify';
 
-export interface RBACCacheEntry {
-  roles: Role[];
-  permissions: Permission[];
-  expiresAt: number;
+export interface RBACCacheData {
+  roles: string[];        // Role names: ["admin", "doctor"]
+  permissions: string[];  // Permission strings: ["users:read:all", "patients:write:own"]
 }
 
 export class RBACCache {
-  private cache = new Map<string, RBACCacheEntry>();
-  private readonly TTL_MS: number; // Time to live in milliseconds
+  private readonly TTL_SECONDS: number = 900; // 15 minutes
 
-  constructor(ttlMinutes: number = 15) {
-    this.TTL_MS = ttlMinutes * 60 * 1000;
-    
-    // Cleanup expired entries every 5 minutes
-    setInterval(() => {
-      this.cleanup();
-    }, 5 * 60 * 1000);
+  constructor(private readonly fastify: FastifyInstance) {}
+
+  private getUserRBACKey(userId: string): string {
+    return `rbac:${userId}`;
   }
 
-  private generateKey(userId: string, type: 'roles' | 'permissions'): string {
-    return `${userId}:${type}`;
+  /**
+   * Cache user RBAC data in Redis
+   */
+  async set(userId: string, roles: Role[], permissions: Permission[]): Promise<void> {
+    try {
+      const data: RBACCacheData = {
+        roles: roles.map(role => role.name),
+        permissions: permissions.map(permission => 
+          `${permission.resource}:${permission.action}${permission.scope ? `:${permission.scope}` : ''}`
+        )
+      };
+
+      const key = this.getUserRBACKey(userId);
+      await this.fastify.setToCache(key, data, this.TTL_SECONDS);
+      
+      this.fastify.log.debug('RBAC data cached', { userId, rolesCount: roles.length, permissionsCount: permissions.length });
+    } catch (error) {
+      this.fastify.log.error('Failed to cache RBAC data', { userId, error });
+    }
   }
 
-  set(userId: string, data: { roles?: Role[], permissions?: Permission[] }): void {
-    const expiresAt = Date.now() + this.TTL_MS;
-    
-    // Get existing entry or create new one
-    const existingEntry = this.cache.get(this.generateKey(userId, 'roles')) || {
-      roles: [],
-      permissions: [],
-      expiresAt
-    };
-
-    const entry: RBACCacheEntry = {
-      roles: data.roles || existingEntry.roles,
-      permissions: data.permissions || existingEntry.permissions,
-      expiresAt
-    };
-
-    // Store with both keys pointing to the same object
-    const rolesKey = this.generateKey(userId, 'roles');
-    const permissionsKey = this.generateKey(userId, 'permissions');
-    
-    this.cache.set(rolesKey, entry);
-    this.cache.set(permissionsKey, entry);
-  }
-
-  getRoles(userId: string): Role[] | null {
-    const key = this.generateKey(userId, 'roles');
-    const entry = this.cache.get(key);
-    
-    if (!entry || Date.now() > entry.expiresAt) {
-      this.invalidate(userId);
+  /**
+   * Get user RBAC data from Redis cache
+   */
+  async get(userId: string): Promise<RBACCacheData | null> {
+    try {
+      const key = this.getUserRBACKey(userId);
+      const data = await this.fastify.getFromCache(key);
+      
+      if (data) {
+        this.fastify.log.debug('RBAC cache hit', { userId });
+        return data as RBACCacheData;
+      }
+      
+      this.fastify.log.debug('RBAC cache miss', { userId });
+      return null;
+    } catch (error) {
+      this.fastify.log.error('Failed to get RBAC data from cache', { userId, error });
       return null;
     }
-    
-    return entry.roles;
   }
 
-  getPermissions(userId: string): Permission[] | null {
-    const key = this.generateKey(userId, 'permissions');
-    const entry = this.cache.get(key);
-    
-    if (!entry || Date.now() > entry.expiresAt) {
-      this.invalidate(userId);
-      return null;
-    }
-    
-    return entry.permissions;
-  }
-
-  invalidate(userId: string): void {
-    const rolesKey = this.generateKey(userId, 'roles');
-    const permissionsKey = this.generateKey(userId, 'permissions');
-    
-    this.cache.delete(rolesKey);
-    this.cache.delete(permissionsKey);
-  }
-
-  invalidateAll(): void {
-    this.cache.clear();
-  }
-
-  private cleanup(): void {
-    const now = Date.now();
-    const expiredKeys: string[] = [];
-
-    for (const [key, entry] of this.cache.entries()) {
-      if (now > entry.expiresAt) {
-        expiredKeys.push(key);
-      }
-    }
-
-    expiredKeys.forEach(key => this.cache.delete(key));
-    
-    if (expiredKeys.length > 0) {
-      console.log(`RBAC Cache: Cleaned up ${expiredKeys.length} expired entries`);
+  /**
+   * Invalidate user RBAC cache
+   */
+  async invalidate(userId: string): Promise<void> {
+    try {
+      const key = this.getUserRBACKey(userId);
+      await this.fastify.deleteFromCache(key);
+      
+      this.fastify.log.debug('RBAC cache invalidated', { userId });
+    } catch (error) {
+      this.fastify.log.error('Failed to invalidate RBAC cache', { userId, error });
     }
   }
 
-  getStats(): {
-    size: number;
-    totalEntries: number;
-    expiredEntries: number;
-  } {
-    const now = Date.now();
-    let expiredCount = 0;
-
-    for (const entry of this.cache.values()) {
-      if (now > entry.expiresAt) {
-        expiredCount++;
-      }
+  /**
+   * Invalidate all RBAC cache entries
+   */
+  async invalidateAll(): Promise<void> {
+    try {
+      await this.fastify.deleteCachePattern('rbac:*');
+      this.fastify.log.info('All RBAC cache invalidated');
+    } catch (error) {
+      this.fastify.log.error('Failed to invalidate all RBAC cache', { error });
     }
+  }
 
-    return {
-      size: this.cache.size,
-      totalEntries: this.cache.size / 2, // Each user has 2 entries (roles & permissions)
-      expiredEntries: expiredCount / 2
-    };
+  /**
+   * Get cache statistics
+   */
+  async getStats(): Promise<{ pattern: string; count: number; memoryUsage: string }> {
+    try {
+      const stats = await this.fastify.getCacheStats();
+      return {
+        pattern: 'rbac:*',
+        count: stats.keys || 0,
+        memoryUsage: stats.memory || '0'
+      };
+    } catch (error) {
+      this.fastify.log.error('Failed to get RBAC cache stats', { error });
+      return { pattern: 'rbac:*', count: 0, memoryUsage: '0' };
+    }
   }
 }

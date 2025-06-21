@@ -126,6 +126,35 @@ const schema = {
     AUDIT_MAX_BODY_SIZE: {
       type: 'string',
       default: '5120' // 5KB in bytes
+    },
+    AUDIT_ADAPTER: {
+      type: 'string',
+      enum: ['direct', 'redis', 'rabbitmq', 'hybrid'],
+      default: 'direct'
+    },
+    AUDIT_BATCH_SIZE: {
+      type: 'string',
+      default: '100'
+    },
+    AUDIT_BATCH_TIMEOUT: {
+      type: 'string',
+      default: '5000' // 5 seconds in ms
+    },
+    AUDIT_QUEUE_NAME: {
+      type: 'string',
+      default: 'audit_logs_queue'
+    },
+    AUDIT_EXCHANGE_NAME: {
+      type: 'string',
+      default: 'audit_exchange'
+    },
+    AUDIT_MAX_RETRIES: {
+      type: 'string',
+      default: '3'
+    },
+    AUDIT_RETRY_DELAY: {
+      type: 'string',
+      default: '1000' // 1 second in ms
     }
   }
 };
@@ -162,6 +191,13 @@ declare module 'fastify' {
       AUDIT_LOG_BODY: string;
       AUDIT_SUCCESS_ONLY: string;
       AUDIT_MAX_BODY_SIZE: string;
+      AUDIT_ADAPTER: string;
+      AUDIT_BATCH_SIZE: string;
+      AUDIT_BATCH_TIMEOUT: string;
+      AUDIT_QUEUE_NAME: string;
+      AUDIT_EXCHANGE_NAME: string;
+      AUDIT_MAX_RETRIES: string;
+      AUDIT_RETRY_DELAY: string;
     };
   }
 }

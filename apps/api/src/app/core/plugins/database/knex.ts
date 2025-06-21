@@ -66,6 +66,7 @@ export default fp(
       knexConfig = {
         client: 'pg',
         connection: DB_CONNECTION_STRING,
+        debug: NODE_ENV === 'development',
         pool: {
           min: poolMin,
           max: poolMax,
@@ -84,6 +85,7 @@ export default fp(
       // Use individual connection parameters
       knexConfig = {
         client: 'pg',
+        debug: NODE_ENV === 'development',
         connection: {
           host: DB_HOST,
           port: parseInt(DB_PORT, 10),
@@ -129,6 +131,20 @@ export default fp(
 
     // Create Knex instance
     const knex = Knex(knexConfig);
+    /*
+        knex.on('query', (query) => {
+          console.log('SQL:', query.sql);
+          console.log('Bindings:', query.bindings);
+        });
+
+        knex.on('query-response', (response, query) => {
+          console.log('Response:', response);
+        });
+
+        knex.on('query-error', (error, query) => {
+          console.error('Error:', error);
+        });
+    */
 
     fastify.log.info('✅ Knex plugin registered');
 

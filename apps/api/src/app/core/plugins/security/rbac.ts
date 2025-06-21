@@ -24,45 +24,49 @@ async function rbacPlugin(fastify: FastifyInstance, _options: RBACOptions) {
   // Register RBAC service
   fastify.decorate('rbac', rbacService);
 
-  // Permission checking middleware factory
+  // JWT-based permission checking middleware factory (HIGH PERFORMANCE)
   const requirePermission = (resource: string, action: string, scope?: string) => {
     return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
-        // Check if user is authenticated
-        const userContext = rbacService.getUserContext(request);
-        if (!userContext) {
+        // Check if user is authenticated and has JWT payload
+        const user = (request as any).user;
+        if (!user || !user.permissions) {
           return reply.code(401).send({
-            error: 'Unauthorized',
-            message: 'Authentication required'
+            success: false,
+            error: 'Authentication required'
           });
         }
 
-        // Check permission
-        const hasPermission = await rbacService.checkPermission(
-          request,
-          resource,
-          action,
-          scope
-        );
+        // Build required permission string
+        const requiredPermission = `${resource}:${action}${scope ? `:${scope}` : ''}`;
+        
+        // Check if user has the required permission in JWT (NO DATABASE QUERY!)
+        const hasPermission = user.permissions.includes(requiredPermission);
 
         if (!hasPermission) {
+          // Log for audit purposes
+          fastify.log.warn('Permission denied', { 
+            userId: user.id, 
+            required: requiredPermission, 
+            userPermissions: user.permissions 
+          });
+
+          // Audit log for security events
+          // Note: Will be logged by audit middleware automatically for 403 responses
+          
           return reply.code(403).send({
-            error: 'Forbidden',
-            message: `Insufficient permissions: ${resource}:${action}${scope ? `:${scope}` : ''}`,
-            required_permission: {
-              resource,
-              action,
-              scope
-            }
+            success: false,
+            error: `Insufficient permissions: ${requiredPermission}`
           });
         }
 
         // Permission granted, continue to route handler
-      } catch (error) {
+        fastify.log.debug('Permission granted', { userId: user.id, permission: requiredPermission });
+      } catch (error: any) {
         fastify.log.error('RBAC permission check failed:', error);
         return reply.code(500).send({
-          error: 'Internal Server Error',
-          message: 'Permission check failed'
+          success: false,
+          error: 'Permission check failed'
         });
       }
     };
@@ -71,41 +75,46 @@ async function rbacPlugin(fastify: FastifyInstance, _options: RBACOptions) {
   // Register permission middleware factory
   fastify.decorate('requirePermission', requirePermission);
 
-  // Role-based access control middleware factory
+  // JWT-based role checking middleware factory (HIGH PERFORMANCE)
   const rbacRequire = (roles: string[]) => {
     return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
       try {
-        // Check if user is authenticated
-        const userContext = rbacService.getUserContext(request);
-        if (!userContext) {
+        // Check if user is authenticated and has JWT payload
+        const user = (request as any).user;
+        if (!user || !user.roles) {
           return reply.code(401).send({
-            error: 'Unauthorized',
-            message: 'Authentication required'
+            success: false,
+            error: 'Authentication required'
           });
         }
 
-        // Get user roles
-        const userRoles = await rbacService.getUserRoles(userContext.userId);
-        const userRoleNames = userRoles.map(role => role.name);
-
-        // Check if user has any of the required roles
-        const hasRequiredRole = roles.some(role => userRoleNames.includes(role));
+        // Check if user has any of the required roles from JWT (NO DATABASE QUERY!)
+        const hasRequiredRole = roles.some(role => user.roles.includes(role));
         
         if (!hasRequiredRole) {
+          // Log for audit purposes
+          fastify.log.warn('Role access denied', { 
+            userId: user.id, 
+            requiredRoles: roles, 
+            userRoles: user.roles 
+          });
+
+          // Audit log for security events  
+          // Note: Will be logged by audit middleware automatically for 403 responses
+          
           return reply.code(403).send({
-            error: 'Forbidden',
-            message: `Insufficient permissions: requires one of ${roles.join(', ')}`,
-            required_roles: roles,
-            user_roles: userRoleNames
+            success: false,
+            error: `Insufficient permissions: requires one of ${roles.join(', ')}`
           });
         }
 
         // Role check passed, continue to route handler
-      } catch (error) {
+        fastify.log.debug('Role access granted', { userId: user.id, roles: roles });
+      } catch (error: any) {
         fastify.log.error('RBAC role check failed:', error);
         return reply.code(500).send({
-          error: 'Internal Server Error',
-          message: 'Role check failed'
+          success: false,
+          error: 'Role check failed'
         });
       }
     };
@@ -114,27 +123,14 @@ async function rbacPlugin(fastify: FastifyInstance, _options: RBACOptions) {
   fastify.decorate('rbacRequire', rbacRequire);
 
   // Helper decorators for common permission patterns
-  fastify.decorate('requireAdmin', requirePermission('system', 'configure', 'all'));
+  fastify.decorate('requireAdmin', rbacRequire(['admin']));
   fastify.decorate('requireUserManagement', requirePermission('users', 'read', 'all'));
   fastify.decorate('requireOwnProfile', requirePermission('users', 'read', 'own'));
 
-  // Hook to add user permissions to request context (optional)
-  fastify.addHook('preHandler', async (request, _reply) => {
-    // Only add permissions for authenticated users
-    const userContext = rbacService.getUserContext(request);
-    if (userContext) {
-      try {
-        const permissions = await rbacService.getUserPermissions(userContext.userId);
-        const roles = await rbacService.getUserRoles(userContext.userId);
-
-        // Add to request context for easy access in route handlers
-        (request as FastifyRequest & { userPermissions: unknown; userRoles: unknown }).userPermissions = permissions;
-        (request as FastifyRequest & { userPermissions: unknown; userRoles: unknown }).userRoles = roles;
-      } catch (error) {
-        fastify.log.warn('Failed to load user permissions:', error);
-      }
-    }
-  });
+  // No more preHandler hook for database queries!
+  // All permissions and roles are now available directly from JWT in request.user
+  
+  fastify.log.info('✅ High-performance JWT-based RBAC plugin loaded (no database queries per request)');
 }
 
 // Export the plugin

@@ -4,6 +4,8 @@ import { AuthService } from '../services/auth-service';
 import { UserRepositoryImpl } from '../repositories/user-repository';
 import { RefreshTokenRepositoryImpl } from '../repositories/refresh-token-repository';
 import { AuthSchemas } from '../schemas/auth-schemas';
+import { RBACService } from '../../rbac/services/rbac-service';
+import { RoleRepository } from '../../rbac/repositories/role-repository';
 import {
   RegisterRequest,
   LoginRequest,
@@ -61,9 +63,13 @@ export async function authRoutes(fastify: FastifyInstance) {
   // Initialize repositories
   const userRepository = new UserRepositoryImpl(fastify);
   const refreshTokenRepository = new RefreshTokenRepositoryImpl(fastify);
+  const roleRepository = new RoleRepository(fastify.knex);
 
-  // Initialize service
-  const authService = new AuthService(fastify, userRepository, refreshTokenRepository);
+  // Initialize RBAC service
+  const rbacService = new RBACService(roleRepository);
+
+  // Initialize service with RBAC dependency
+  const authService = new AuthService(fastify, userRepository, refreshTokenRepository, rbacService);
 
   // Initialize controller
   const authController = new AuthController(fastify, authService);
@@ -111,6 +117,64 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
     }
   }, refresh);
+
+  // 3.5. GET /check-token - Check if token needs refresh (Protected)
+  fastify.get('/check-token', {
+    schema: {
+      summary: 'Check token freshness and RBAC changes',
+      description: 'Returns whether the current token should be refreshed due to role/permission changes',
+      tags: ['Authentication'],
+      security: [{ bearerAuth: [] }],
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            should_refresh: { type: 'boolean' },
+            reason: { type: 'string' },
+            expires_in: { type: 'number', description: 'Seconds until token expires' },
+            roles_changed: { type: 'boolean' },
+            permissions_changed: { type: 'boolean' }
+          }
+        }
+      }
+    },
+    preHandler: [fastify.authenticate]
+  }, async (request, reply) => {
+    try {
+      const user = (request as any).user;
+      
+      // Calculate time until expiration
+      const expiresIn = user.exp ? user.exp - Math.floor(Date.now() / 1000) : 0;
+      
+      // Check if roles/permissions changed
+      const shouldRefresh = await authService.shouldRefreshToken(
+        user.id, 
+        user.roles || [], 
+        user.permissions || []
+      );
+      
+      let reason = '';
+      if (expiresIn < 300) { // Less than 5 minutes
+        reason = 'Token expires soon';
+      } else if (shouldRefresh) {
+        reason = 'Roles or permissions changed';
+      }
+      
+      return {
+        should_refresh: expiresIn < 300 || shouldRefresh,
+        reason,
+        expires_in: Math.max(0, expiresIn),
+        roles_changed: shouldRefresh,
+        permissions_changed: shouldRefresh
+      };
+    } catch (error: any) {
+      fastify.log.error('Token check failed:', error);
+      return reply.status(500).send({
+        success: false,
+        error: 'Failed to check token status'
+      });
+    }
+  });
 
   // 4. POST /logout - Logout user (Protected)
   fastify.post<LogoutRoute>('/logout', {

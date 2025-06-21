@@ -58,6 +58,18 @@ export default fp(async function (fastify: FastifyInstance) {
           name: 'RBAC - User Management',
           description: 'Role-based access control - User role assignments',
         },
+        {
+          name: 'RBAC Admin',
+          description: 'Administrative tools for RBAC cache management and monitoring',
+        },
+        {
+          name: 'Audit Logs',
+          description: 'Audit logging and security monitoring endpoints',
+        },
+        {
+          name: 'audit-adapter',
+          description: 'Audit system adapter management and statistics',
+        },
       ],
       components: {
         securitySchemes: {

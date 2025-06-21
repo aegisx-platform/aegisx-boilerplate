@@ -70,6 +70,8 @@ export interface JWTPayload {
   email: string;
   username?: string | null;
   name: string;
+  roles: string[];        // User roles: ["admin", "doctor", "nurse"]
+  permissions: string[];  // User permissions: ["patients:read:own", "appointments:write:department"]
   iat?: number; // Issued at
   exp?: number; // Expires at
 }
@@ -177,7 +179,12 @@ export interface PasswordValidation {
  * Type guards for runtime type checking
  */
 export function isJWTPayload(obj: any): obj is JWTPayload {
-  return obj && typeof obj.id === 'string' && typeof obj.email === 'string' && typeof obj.name === 'string';
+  return obj && 
+    typeof obj.id === 'string' && 
+    typeof obj.email === 'string' && 
+    typeof obj.name === 'string' &&
+    Array.isArray(obj.roles) &&
+    Array.isArray(obj.permissions);
 }
 
 export function isRefreshTokenPayload(obj: any): obj is RefreshTokenPayload {
