@@ -1,6 +1,11 @@
 import { FastifyInstance } from 'fastify';
 import { RBACController } from '../controllers/rbac-controller';
 import { RBACSchemas } from '../schemas/rbac-schemas';
+import {
+  InvalidateUserCacheSchema,
+  InvalidateAllCacheSchema,
+  GetCacheStatsSchema
+} from '../schemas/rbac-admin-schemas';
 
 /**
  * RBAC Routes
@@ -98,29 +103,7 @@ export default async function rbacRoutes(fastify: FastifyInstance) {
   // Invalidate user RBAC cache (when roles/permissions change)
   fastify.post('/admin/cache/invalidate-user/:userId', {
     preHandler: [fastify.rbacRequire(['admin'])],
-    schema: {
-      summary: 'Invalidate specific user RBAC cache',
-      description: 'Force refresh of user roles and permissions cache. Use after role assignments.',
-      tags: ['RBAC Admin'],
-      security: [{ bearerAuth: [] }],
-      params: {
-        type: 'object',
-        properties: {
-          userId: { type: 'string', format: 'uuid' }
-        },
-        required: ['userId']
-      },
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            message: { type: 'string' },
-            userId: { type: 'string' }
-          }
-        }
-      }
-    }
+    schema: InvalidateUserCacheSchema
   }, async (request, reply) => {
     try {
       const { userId } = request.params as { userId: string };
@@ -155,21 +138,7 @@ export default async function rbacRoutes(fastify: FastifyInstance) {
   // Invalidate all RBAC cache
   fastify.post('/admin/cache/invalidate-all', {
     preHandler: [fastify.rbacRequire(['admin'])],
-    schema: {
-      summary: 'Invalidate all RBAC cache',
-      description: 'Clear all cached roles and permissions. Use after system-wide changes.',
-      tags: ['RBAC Admin'],
-      security: [{ bearerAuth: [] }],
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            message: { type: 'string' }
-          }
-        }
-      }
-    }
+    schema: InvalidateAllCacheSchema
   }, async (request, reply) => {
     try {
       const currentUser = (request as any).user;
@@ -196,29 +165,7 @@ export default async function rbacRoutes(fastify: FastifyInstance) {
   // Get RBAC cache statistics
   fastify.get('/admin/cache/stats', {
     preHandler: [fastify.rbacRequire(['admin'])],
-    schema: {
-      summary: 'Get RBAC cache statistics',
-      description: 'View cache performance metrics and usage statistics',
-      tags: ['RBAC Admin'],
-      security: [{ bearerAuth: [] }],
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            data: {
-              type: 'object',
-              properties: {
-                pattern: { type: 'string' },
-                count: { type: 'number' },
-                memoryUsage: { type: 'string' },
-                timestamp: { type: 'string' }
-              }
-            }
-          }
-        }
-      }
-    }
+    schema: GetCacheStatsSchema
   }, async (request, reply) => {
     try {
       // We'll need to get stats from the cache system

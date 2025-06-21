@@ -210,7 +210,8 @@ export const UserManagementSchemas = {
       404: ErrorResponseSchema,
       500: ErrorResponseSchema
     },
-    tags: ['User Management']
+    tags: ['User Management'],
+    security: [{ bearerAuth: [] }]
   },
 
   deactivateUser: {
@@ -225,7 +226,8 @@ export const UserManagementSchemas = {
       404: ErrorResponseSchema,
       500: ErrorResponseSchema
     },
-    tags: ['User Management']
+    tags: ['User Management'],
+    security: [{ bearerAuth: [] }]
   },
 
   suspendUser: {
@@ -240,7 +242,8 @@ export const UserManagementSchemas = {
       404: ErrorResponseSchema,
       500: ErrorResponseSchema
     },
-    tags: ['User Management']
+    tags: ['User Management'],
+    security: [{ bearerAuth: [] }]
   },
 
   verifyUserEmail: {
@@ -255,7 +258,8 @@ export const UserManagementSchemas = {
       404: ErrorResponseSchema,
       500: ErrorResponseSchema
     },
-    tags: ['User Management']
+    tags: ['User Management'],
+    security: [{ bearerAuth: [] }]
   },
 
   // User list endpoint
@@ -270,7 +274,8 @@ export const UserManagementSchemas = {
       403: ErrorResponseSchema,
       500: ErrorResponseSchema
     },
-    tags: ['User Management']
+    tags: ['User Management'],
+    security: [{ bearerAuth: [] }]
   },
 
   // Get user by ID
@@ -288,7 +293,8 @@ export const UserManagementSchemas = {
       404: ErrorResponseSchema,
       500: ErrorResponseSchema
     },
-    tags: ['User Management']
+    tags: ['User Management'],
+    security: [{ bearerAuth: [] }]
   },
 
   // Create user
@@ -304,7 +310,8 @@ export const UserManagementSchemas = {
       409: ErrorResponseSchema,
       500: ErrorResponseSchema
     },
-    tags: ['User Management']
+    tags: ['User Management'],
+    security: [{ bearerAuth: [] }]
   },
 
   // Update user
@@ -324,7 +331,8 @@ export const UserManagementSchemas = {
       409: ErrorResponseSchema,
       500: ErrorResponseSchema
     },
-    tags: ['User Management']
+    tags: ['User Management'],
+    security: [{ bearerAuth: [] }]
   },
 
   // Delete user
@@ -342,7 +350,8 @@ export const UserManagementSchemas = {
       404: ErrorResponseSchema,
       500: ErrorResponseSchema
     },
-    tags: ['User Management']
+    tags: ['User Management'],
+    security: [{ bearerAuth: [] }]
   },
 
   // User statistics
@@ -355,7 +364,8 @@ export const UserManagementSchemas = {
       403: ErrorResponseSchema,
       500: ErrorResponseSchema
     },
-    tags: ['User Management']
+    tags: ['User Management'],
+    security: [{ bearerAuth: [] }]
   },
 
   // Bulk actions
@@ -370,6 +380,7 @@ export const UserManagementSchemas = {
       403: ErrorResponseSchema,
       500: ErrorResponseSchema
     },
-    tags: ['User Management']
+    tags: ['User Management'],
+    security: [{ bearerAuth: [] }]
   }
 };

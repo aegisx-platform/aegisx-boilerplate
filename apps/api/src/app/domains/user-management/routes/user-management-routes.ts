@@ -77,12 +77,14 @@ export async function userManagementRoutes(fastify: FastifyInstance) {
 
   // User statistics endpoint (placed first to avoid conflict with :id routes)  
   fastify.get('/stats', {
-    schema: UserManagementSchemas.getUserStats
+    schema: UserManagementSchemas.getUserStats,
+    preHandler: [fastify.authenticate, fastify.rbacRequire(['admin', 'manager'])]
   }, getUserStats);
 
   // Bulk actions endpoint
   fastify.post<BulkActionRoute>('/bulk-action', {
     schema: UserManagementSchemas.bulkAction,
+    preHandler: [fastify.authenticate, fastify.rbacRequire(['admin'])],
     config: {
       rateLimit: {
         max: 5,
@@ -95,11 +97,13 @@ export async function userManagementRoutes(fastify: FastifyInstance) {
   // 1. GET /users - List users with pagination and filtering
   fastify.get<ListUsersRoute>('/', {
     schema: UserManagementSchemas.listUsers,
+    preHandler: [fastify.authenticate, fastify.requirePermission('users', 'read', 'all')]
   }, listUsers);
 
   // 2. POST /users - Create new user
   fastify.post<CreateUserRoute>('/', {
     schema: UserManagementSchemas.createUser,
+    preHandler: [fastify.authenticate, fastify.requirePermission('users', 'create', 'all')],
     config: {
       rateLimit: {
         max: 10,
@@ -111,11 +115,13 @@ export async function userManagementRoutes(fastify: FastifyInstance) {
   // 3. GET /users/:id - Get user by ID
   fastify.get<GetUserRoute>('/:id', {
     schema: UserManagementSchemas.getUser,
+    preHandler: [fastify.authenticate, fastify.requirePermission('users', 'read', 'all')]
   }, getUser);
 
   // 4. PUT /users/:id - Update user
   fastify.put<UpdateUserRoute>('/:id', {
     schema: UserManagementSchemas.updateUser,
+    preHandler: [fastify.authenticate, fastify.requirePermission('users', 'update', 'all')],
     config: {
       rateLimit: {
         max: 20,
@@ -127,6 +133,7 @@ export async function userManagementRoutes(fastify: FastifyInstance) {
   // 5. DELETE /users/:id - Delete user
   fastify.delete<DeleteUserRoute>('/:id', {
     schema: UserManagementSchemas.deleteUser,
+    preHandler: [fastify.authenticate, fastify.requirePermission('users', 'delete', 'all')],
     config: {
       rateLimit: {
         max: 5,
@@ -139,6 +146,7 @@ export async function userManagementRoutes(fastify: FastifyInstance) {
   // 6. POST /users/:id/activate - Activate user
   fastify.post<UserActionRoute>('/:id/activate', {
     schema: UserManagementSchemas.activateUser,
+    preHandler: [fastify.authenticate, fastify.requirePermission('users', 'update', 'all')],
     config: {
       rateLimit: {
         max: 20,
@@ -150,6 +158,7 @@ export async function userManagementRoutes(fastify: FastifyInstance) {
   // 7. POST /users/:id/deactivate - Deactivate user
   fastify.post<UserActionRoute>('/:id/deactivate', {
     schema: UserManagementSchemas.deactivateUser,
+    preHandler: [fastify.authenticate, fastify.requirePermission('users', 'update', 'all')],
     config: {
       rateLimit: {
         max: 20,
@@ -161,6 +170,7 @@ export async function userManagementRoutes(fastify: FastifyInstance) {
   // 8. POST /users/:id/suspend - Suspend user
   fastify.post<UserActionRoute>('/:id/suspend', {
     schema: UserManagementSchemas.suspendUser,
+    preHandler: [fastify.authenticate, fastify.requirePermission('users', 'update', 'all')],
     config: {
       rateLimit: {
         max: 20,
@@ -172,6 +182,7 @@ export async function userManagementRoutes(fastify: FastifyInstance) {
   // 9. POST /users/:id/verify-email - Verify user email
   fastify.post<UserActionRoute>('/:id/verify-email', {
     schema: UserManagementSchemas.verifyUserEmail,
+    preHandler: [fastify.authenticate, fastify.requirePermission('users', 'update', 'all')],
     config: {
       rateLimit: {
         max: 20,

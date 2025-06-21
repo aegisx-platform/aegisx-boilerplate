@@ -4,6 +4,7 @@ import { AuthService } from '../services/auth-service';
 import { UserRepositoryImpl } from '../repositories/user-repository';
 import { RefreshTokenRepositoryImpl } from '../repositories/refresh-token-repository';
 import { AuthSchemas } from '../schemas/auth-schemas';
+import { CheckTokenSchema } from '../schemas/auth-route-schemas';
 import { RBACService } from '../../rbac/services/rbac-service';
 import { RoleRepository } from '../../rbac/repositories/role-repository';
 import {
@@ -120,24 +121,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
   // 3.5. GET /check-token - Check if token needs refresh (Protected)
   fastify.get('/check-token', {
-    schema: {
-      summary: 'Check token freshness and RBAC changes',
-      description: 'Returns whether the current token should be refreshed due to role/permission changes',
-      tags: ['Authentication'],
-      security: [{ bearerAuth: [] }],
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            should_refresh: { type: 'boolean' },
-            reason: { type: 'string' },
-            expires_in: { type: 'number', description: 'Seconds until token expires' },
-            roles_changed: { type: 'boolean' },
-            permissions_changed: { type: 'boolean' }
-          }
-        }
-      }
-    },
+    schema: CheckTokenSchema,
     preHandler: [fastify.authenticate]
   }, async (request, reply) => {
     try {
