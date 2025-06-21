@@ -40,16 +40,16 @@ interface ChangePasswordRoute extends RouteGenericInterface {
 
 /**
  * Authentication Routes
- * 
+ *
  * Handles all authentication-related endpoints with proper:
  * - Input validation using TypeBox schemas
  * - Error handling and logging
  * - Rate limiting for security
  * - JWT authentication for protected routes
- * 
+ *
  * Routes provided:
  * - POST /register - User registration
- * - POST /login - User authentication  
+ * - POST /login - User authentication
  * - POST /refresh - Token refresh
  * - POST /logout - User logout (protected)
  * - GET /profile - Get user profile (protected)
@@ -61,10 +61,10 @@ export async function authRoutes(fastify: FastifyInstance) {
   // Initialize repositories
   const userRepository = new UserRepositoryImpl(fastify);
   const refreshTokenRepository = new RefreshTokenRepositoryImpl(fastify);
-  
+
   // Initialize service
   const authService = new AuthService(fastify, userRepository, refreshTokenRepository);
-  
+
   // Initialize controller
   const authController = new AuthController(fastify, authService);
 
@@ -85,7 +85,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     config: {
       rateLimit: {
         max: 5, // 5 registration attempts
-        timeWindow: '15 minutes'
+        timeWindow: '5 minutes'
       }
     }
   }, register);
@@ -96,7 +96,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     config: {
       rateLimit: {
         max: 10, // 10 login attempts
-        timeWindow: '15 minutes'
+        timeWindow: '5 minutes'
       }
     }
   }, login);
@@ -107,7 +107,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     config: {
       rateLimit: {
         max: 20, // 20 refresh attempts
-        timeWindow: '15 minutes'
+        timeWindow: '5 minutes'
       }
     }
   }, refresh);
