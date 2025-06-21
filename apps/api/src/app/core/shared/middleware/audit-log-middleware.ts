@@ -63,12 +63,15 @@ export class AuditLogMiddleware {
         return;
       }
 
-      try {
-        await this.logRequest(request, reply);
-      } catch (error) {
-        // Don't let audit logging failure affect the main request
-        request.log.error('Failed to create audit log', error);
-      }
+      // Use setImmediate for non-blocking audit logging
+      setImmediate(async () => {
+        try {
+          await this.logRequest(request, reply);
+        } catch (error) {
+          // Don't let audit logging failure affect the main request
+          request.log.error('Failed to create audit log', error);
+        }
+      });
     };
   }
 
@@ -78,22 +81,25 @@ export class AuditLogMiddleware {
         return;
       }
 
-      try {
-        const context = this.extractContext(request);
-        const action = this.mapMethodToAction(request.method);
-        const resourceType = this.extractResourceType(request.url);
+      // Use setImmediate for non-blocking error audit logging
+      setImmediate(async () => {
+        try {
+          const context = this.extractContext(request);
+          const action = this.mapMethodToAction(request.method);
+          const resourceType = this.extractResourceType(request.url);
 
-        await this.auditLogService.logError(
-          action,
-          resourceType,
-          error,
-          context,
-          this.extractResourceId(request.url) || undefined,
-          this.buildMetadata(request, reply, error)
-        );
-      } catch (auditError) {
-        request.log.error('Failed to create error audit log', auditError);
-      }
+          await this.auditLogService.logError(
+            action,
+            resourceType,
+            error,
+            context,
+            this.extractResourceId(request.url) || undefined,
+            this.buildMetadata(request, reply, error)
+          );
+        } catch (auditError) {
+          request.log.error('Failed to create error audit log', auditError);
+        }
+      });
     };
   }
 

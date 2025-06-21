@@ -31,13 +31,13 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
 
   // Register audit logging middleware
   registerAuditMiddleware(fastify, {
-    enabled: true,
+    enabled: fastify.config.AUDIT_ENABLED === 'true' && fastify.config.NODE_ENV !== 'test',
     excludeRoutes: ['/health', '/ready', '/docs', '/docs/*'],
-    excludeMethods: ['GET', 'HEAD', 'OPTIONS'],
-    logSuccessOnly: false,
-    logRequestBody: true,
+    excludeMethods: ['GET', 'HEAD', 'OPTIONS'], // Exclude read operations for performance
+    logSuccessOnly: fastify.config.AUDIT_SUCCESS_ONLY === 'true',
+    logRequestBody: fastify.config.AUDIT_LOG_BODY === 'true',
     logResponseBody: false,
-    maxBodySize: 1024 * 10 // 10KB
+    maxBodySize: parseInt(fastify.config.AUDIT_MAX_BODY_SIZE, 10)
   });
 
   fastify.log.info('✅ Core plugins loaded successfully');

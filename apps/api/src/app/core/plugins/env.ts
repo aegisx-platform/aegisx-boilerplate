@@ -110,6 +110,22 @@ const schema = {
     REDIS_TTL: {
       type: 'string',
       default: '900' // 15 minutes in seconds
+    },
+    AUDIT_ENABLED: {
+      type: 'string',
+      default: 'true'
+    },
+    AUDIT_LOG_BODY: {
+      type: 'string',
+      default: 'false'
+    },
+    AUDIT_SUCCESS_ONLY: {
+      type: 'string',
+      default: 'false'
+    },
+    AUDIT_MAX_BODY_SIZE: {
+      type: 'string',
+      default: '5120' // 5KB in bytes
     }
   }
 };
@@ -142,6 +158,10 @@ declare module 'fastify' {
       REDIS_PASSWORD: string;
       REDIS_DB: string;
       REDIS_TTL: string;
+      AUDIT_ENABLED: string;
+      AUDIT_LOG_BODY: string;
+      AUDIT_SUCCESS_ONLY: string;
+      AUDIT_MAX_BODY_SIZE: string;
     };
   }
 }
