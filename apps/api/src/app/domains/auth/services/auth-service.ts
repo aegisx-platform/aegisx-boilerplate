@@ -13,31 +13,39 @@ import {
   RefreshTokenPayload,
   JWTPayload
 } from '../types/auth-types';
+import { RBACService } from '../../rbac/services/rbac-service';
+import { RBACCache } from '../../../core/shared/cache/rbac-cache';
 
 /**
  * Authentication Service
- * 
+ *
  * Handles all authentication business logic including:
  * - User registration and validation
  * - Authentication and authorization
  * - Token management (JWT + Refresh tokens)
  * - Password security operations
  * - Profile management
- * 
+ *
  * This service is responsible for enforcing business rules and security policies.
  */
 export class AuthService {
-  // Security constants
+  // Security constants - Shorter tokens for better security
   private readonly BCRYPT_ROUNDS = 12;
-  private readonly ACCESS_TOKEN_EXPIRY = '1h';
+  private readonly ACCESS_TOKEN_EXPIRY = '15m';  // Reduced from 1h to 15m
   private readonly REFRESH_TOKEN_EXPIRY = '7d';
+  // private readonly RBAC_CACHE_TTL = 900; // 15 minutes (same as access token) - Future use
   // TODO: Implement rate limiting with MAX_LOGIN_ATTEMPTS = 5
-  
+
+  private readonly rbacCache: RBACCache;
+
   constructor(
     private readonly fastify: FastifyInstance,
     private readonly userRepo: UserRepository,
-    private readonly refreshTokenRepo: RefreshTokenRepository
-  ) {}
+    private readonly refreshTokenRepo: RefreshTokenRepository,
+    private readonly rbacService: RBACService
+  ) {
+    this.rbacCache = new RBACCache(fastify);
+  }
 
   /**
    * Register a new user with comprehensive validation
@@ -45,7 +53,7 @@ export class AuthService {
   async register(data: RegisterRequest): Promise<User> {
     // Validate input data
     this.validateRegistrationData(data);
-    
+
     // Check if user already exists
     const existingUser = await this.userRepo.findByEmail(data.email.toLowerCase());
     if (existingUser) {
@@ -70,7 +78,7 @@ export class AuthService {
       return this.sanitizeUser(user);
     } catch (error) {
       this.fastify.log.error('Failed to create user', { email: data.email, error });
-      
+
       // Handle repository-specific errors
       if (error instanceof Error) {
         if (error.message === 'DUPLICATE_EMAIL') {
@@ -80,7 +88,7 @@ export class AuthService {
           throw this.fastify.httpErrors.badRequest('Missing required user information');
         }
       }
-      
+
       throw this.fastify.httpErrors.internalServerError('Failed to create user account');
     }
   }
@@ -91,7 +99,7 @@ export class AuthService {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     // Normalize identifier for lookup
     const identifier = credentials.identifier.toLowerCase().trim();
-    
+
     // Find user by identifier (username or email)
     const user: InternalUser | null = await this.userRepo.findByIdentifier(identifier);
     if (!user) {
@@ -112,30 +120,50 @@ export class AuthService {
         throw this.fastify.httpErrors.unauthorized('Invalid username/email or password');
       }
 
-      // Generate tokens
+      // Fetch user roles and permissions with cache optimization
+      this.fastify.log.debug('Fetching RBAC data for user', { userId: user.id });
+      const rbacData = await this.getUserRBACDataWithCache(user.id);
+      this.fastify.log.debug('RBAC data fetched', { userId: user.id, rolesCount: rbacData.roles.length, permissionsCount: rbacData.permissions.length });
+
+      // Generate tokens with RBAC data
       const tokenPayload: JWTPayload = {
         id: user.id,
         email: user.email,
         username: user.username,
-        name: user.name
+        name: user.name,
+        roles: rbacData.roles,
+        permissions: rbacData.permissions
       };
-      
+
+      this.fastify.log.debug('Generating access token', { userId: user.id });
       const access_token = this.generateAccessToken(tokenPayload);
+
+      this.fastify.log.debug('Generating refresh token', { userId: user.id });
       const refresh_token = await this.generateRefreshToken(user.id);
 
-      this.fastify.log.info('Successful login', { userId: user.id, identifier });
+      this.fastify.log.info('Successful login', { userId: user.id, identifier, rolesCount: rbacData.roles.length });
 
       return {
         access_token,
         refresh_token,
         user: this.sanitizeUser(user),
-        expires_in: 3600 // 1 hour in seconds
+        expires_in: 900  // 15 minutes in seconds
       };
     } catch (error) {
-      if (error instanceof Error && error.message.includes('Invalid email or password')) {
+      if (error instanceof Error && error.message.includes('Invalid username/email or password')) {
         throw error;
       }
-      this.fastify.log.error('Login process failed', { identifier, error });
+
+      // Log detailed error information
+      this.fastify.log.error('Login process failed', {
+        identifier,
+        error: {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          name: error instanceof Error ? error.name : 'Unknown'
+        }
+      });
+
       throw this.fastify.httpErrors.internalServerError('Login failed');
     }
   }
@@ -178,13 +206,19 @@ export class AuthService {
         throw this.fastify.httpErrors.unauthorized('User account is not valid');
       }
 
-      // Generate new tokens
+      // Fetch current user roles and permissions with cache optimization
+      const rbacData = await this.getUserRBACDataWithCache(user.id);
+
+      // Generate new tokens with fresh RBAC data
       const tokenPayload: JWTPayload = {
         id: user.id,
         email: user.email,
-        name: user.name
+        username: user.username,
+        name: user.name,
+        roles: rbacData.roles,
+        permissions: rbacData.permissions
       };
-      
+
       const access_token = this.generateAccessToken(tokenPayload);
       const new_refresh_token = await this.generateRefreshToken(user.id);
 
@@ -312,7 +346,7 @@ export class AuthService {
       }
 
       this.fastify.log.info('Profile updated', { userId: user_id, fields: Object.keys(data) });
-      
+
       return this.sanitizeUser(updatedUser);
     } catch (error) {
       this.fastify.log.error('Failed to update profile', { userId: user_id, error });
@@ -366,7 +400,7 @@ export class AuthService {
       token_id: token_id,
       type: 'refresh'
     };
-    
+
     const refresh_token = this.fastify.jwt.sign(refreshPayload as any, { expiresIn: this.REFRESH_TOKEN_EXPIRY });
 
     // Hash and store refresh token
@@ -400,6 +434,144 @@ export class AuthService {
   }
 
   /**
+   * Get user RBAC data with Redis cache optimization
+   * This reduces database queries by using cache-first approach
+   */
+  private async getUserRBACDataWithCache(userId: string): Promise<{ roles: string[], permissions: string[] }> {
+    try {
+      // Try to get from cache first
+      this.fastify.log.debug('Attempting to get RBAC data from cache', { userId });
+      const cachedData = await this.rbacCache.get(userId);
+      if (cachedData) {
+        this.fastify.log.debug('RBAC cache hit for user', { userId, rolesCount: cachedData.roles.length });
+        return cachedData;
+      }
+
+      // Cache miss - fetch from database
+      this.fastify.log.debug('RBAC cache miss, fetching from database', { userId });
+
+      this.fastify.log.debug('Fetching user roles', { userId });
+      const userRoles = await this.rbacService.getUserRoles(userId);
+      this.fastify.log.debug('User roles fetched', { userId, rolesCount: userRoles.length });
+
+      this.fastify.log.debug('Fetching user permissions', { userId });
+      const userPermissions = await this.rbacService.getUserPermissions(userId);
+      this.fastify.log.debug('User permissions fetched', { userId, permissionsCount: userPermissions.length });
+
+      const rbacData = {
+        roles: userRoles.map(role => role.name),
+        permissions: userPermissions.map(permission =>
+          `${permission.resource}:${permission.action}${permission.scope ? `:${permission.scope}` : ''}`
+        )
+      };
+
+      // Cache the data for future requests
+      try {
+        await this.rbacCache.set(userId, userRoles, userPermissions);
+        this.fastify.log.debug('RBAC data cached successfully', { userId });
+      } catch (cacheError) {
+        this.fastify.log.warn('Failed to cache RBAC data, continuing without cache', { userId, error: cacheError });
+      }
+
+      return rbacData;
+    } catch (error) {
+      this.fastify.log.error('Failed to get user RBAC data from cache, trying direct database query', {
+        userId,
+        error: {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        }
+      });
+
+      try {
+        // Fallback to direct database query without cache
+        this.fastify.log.debug('Fallback: Fetching user roles directly', { userId });
+        const userRoles = await this.rbacService.getUserRoles(userId);
+
+        this.fastify.log.debug('Fallback: Fetching user permissions directly', { userId });
+        const userPermissions = await this.rbacService.getUserPermissions(userId);
+
+        return {
+          roles: userRoles.map(role => role.name),
+          permissions: userPermissions.map(permission =>
+            `${permission.resource}:${permission.action}${permission.scope ? `:${permission.scope}` : ''}`
+          )
+        };
+      } catch (fallbackError) {
+        this.fastify.log.error('Failed to get RBAC data even with direct database query', {
+          userId,
+          error: {
+            message: fallbackError instanceof Error ? fallbackError.message : 'Unknown error',
+            stack: fallbackError instanceof Error ? fallbackError.stack : undefined
+          }
+        });
+
+        // Return empty RBAC data to prevent login failure
+        this.fastify.log.warn('Returning empty RBAC data to allow login', { userId });
+        return {
+          roles: [],
+          permissions: []
+        };
+      }
+    }
+  }
+
+  /**
+   * Invalidate user RBAC cache when roles/permissions change
+   * Call this method after role assignments or permission changes
+   */
+  async invalidateUserRBACCache(userId: string): Promise<void> {
+    try {
+      await this.rbacCache.invalidate(userId);
+      this.fastify.log.info('User RBAC cache invalidated', { userId });
+    } catch (error) {
+      this.fastify.log.error('Failed to invalidate user RBAC cache', { userId, error });
+    }
+  }
+
+  /**
+   * Invalidate all RBAC cache (use when system-wide role changes occur)
+   */
+  async invalidateAllRBACCache(): Promise<void> {
+    try {
+      await this.rbacCache.invalidateAll();
+      this.fastify.log.info('All RBAC cache invalidated');
+    } catch (error) {
+      this.fastify.log.error('Failed to invalidate all RBAC cache', { error });
+    }
+  }
+
+  /**
+   * Check if user roles/permissions changed since token was issued
+   * Returns true if refresh is recommended
+   */
+  async shouldRefreshToken(userId: string, tokenRoles: string[], tokenPermissions: string[]): Promise<boolean> {
+    try {
+      const currentRbacData = await this.getUserRBACDataWithCache(userId);
+
+      // Compare roles
+      const rolesChanged = JSON.stringify(tokenRoles.sort()) !== JSON.stringify(currentRbacData.roles.sort());
+
+      // Compare permissions
+      const permissionsChanged = JSON.stringify(tokenPermissions.sort()) !== JSON.stringify(currentRbacData.permissions.sort());
+
+      if (rolesChanged || permissionsChanged) {
+        this.fastify.log.info('User RBAC data changed, refresh recommended', {
+          userId,
+          rolesChanged,
+          permissionsChanged
+        });
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      this.fastify.log.error('Failed to check if token should refresh', { userId, error });
+      return false; // Don't force refresh on error
+    }
+  }
+
+  /**
    * Remove sensitive data from user object
    */
   private sanitizeUser(user: InternalUser): User {
@@ -415,29 +587,29 @@ export class AuthService {
     if (!data.email?.trim()) {
       throw this.fastify.httpErrors.badRequest('Email is required');
     }
-    
+
     // Email format validation (basic)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(data.email.trim())) {
       throw this.fastify.httpErrors.badRequest('Invalid email format');
     }
-    
+
     if (!data.name?.trim()) {
       throw this.fastify.httpErrors.badRequest('Name is required');
     }
-    
+
     if (data.name.trim().length < 2) {
       throw this.fastify.httpErrors.badRequest('Name must be at least 2 characters');
     }
-    
+
     if (!data.password?.trim()) {
       throw this.fastify.httpErrors.badRequest('Password is required');
     }
-    
+
     // Password strength validation
     this.validatePasswordStrength(data.password);
   }
-  
+
   /**
    * Validate password strength
    */
@@ -445,15 +617,15 @@ export class AuthService {
     if (password.length < 8) {
       throw this.fastify.httpErrors.badRequest('Password must be at least 8 characters long');
     }
-    
+
     if (!/(?=.*[a-z])/.test(password)) {
       throw this.fastify.httpErrors.badRequest('Password must contain at least one lowercase letter');
     }
-    
+
     if (!/(?=.*[A-Z])/.test(password)) {
       throw this.fastify.httpErrors.badRequest('Password must contain at least one uppercase letter');
     }
-    
+
     if (!/(?=.*\d)/.test(password)) {
       throw this.fastify.httpErrors.badRequest('Password must contain at least one number');
     }
@@ -469,7 +641,7 @@ export class AuthService {
     if (data.name && !data.name.trim()) {
       throw this.fastify.httpErrors.badRequest('Name cannot be empty');
     }
-    
+
     // Prevent updating sensitive fields
     const restrictedFields = ['id', 'created_at', 'updated_at'];
     for (const field of restrictedFields) {

@@ -13,6 +13,11 @@ export default fp(async function (fastify: FastifyInstance) {
     max: 100,
     // Time window in milliseconds (15 minutes)
     timeWindow: 15 * 60 * 1000,
+    // Skip rate limiting for specific routes using allowList
+    allowList: function (request: FastifyRequest) {
+      // Skip rate limiting for Swagger documentation routes
+      return request.url.startsWith('/docs');
+    },
     // Error response when rate limit is exceeded
     errorResponseBuilder: function (request, context) {
       return {
