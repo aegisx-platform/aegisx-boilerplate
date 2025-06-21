@@ -17,9 +17,9 @@ import healthCheck from './monitoring/health-check';
 const corePlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugins in specific order
   await fastify.register(env);
+  await fastify.register(sensible);
   await fastify.register(redis);
   await fastify.register(knex);
-  await fastify.register(sensible);
   await fastify.register(jwt);
   await fastify.register(rateLimit);
   await fastify.register(helmet);

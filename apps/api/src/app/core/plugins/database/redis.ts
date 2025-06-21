@@ -26,9 +26,9 @@ export default fp(async function (fastify: FastifyInstance) {
 
   try {
     await fastify.register(redis, redisConfig);
-    fastify.log.info('Redis plugin registered successfully');
+    fastify.log.info('✅ Redis plugin registered successfully');
   } catch (error) {
-    fastify.log.error('Failed to register Redis plugin:', error);
+    fastify.log.error('❌ Failed to register Redis plugin:', error);
     throw fastify.httpErrors.internalServerError('Redis initialization failed');
   }
 
@@ -37,7 +37,7 @@ export default fp(async function (fastify: FastifyInstance) {
     // Validate input
     fastify.assert(key, 400, 'Cache key is required');
     fastify.assert(typeof key === 'string', 400, 'Cache key must be a string');
-    
+
     try {
       const result = await fastify.redis.get(key);
       return result ? JSON.parse(result) : null;
@@ -52,11 +52,11 @@ export default fp(async function (fastify: FastifyInstance) {
     fastify.assert(key, 400, 'Cache key is required');
     fastify.assert(typeof key === 'string', 400, 'Cache key must be a string');
     fastify.assert(value !== undefined, 400, 'Cache value cannot be undefined');
-    
+
     try {
       const ttl = ttlSeconds || parseInt(fastify.config.REDIS_TTL, 10);
       const serialized = JSON.stringify(value);
-      
+
       if (ttl > 0) {
         await fastify.redis.setex(key, ttl, serialized);
       } else {
@@ -73,7 +73,7 @@ export default fp(async function (fastify: FastifyInstance) {
     // Validate input
     fastify.assert(key, 400, 'Cache key is required');
     fastify.assert(typeof key === 'string', 400, 'Cache key must be a string');
-    
+
     try {
       const deletedCount = await fastify.redis.del(key);
       return deletedCount > 0;
@@ -87,7 +87,7 @@ export default fp(async function (fastify: FastifyInstance) {
     // Validate input
     fastify.assert(pattern, 400, 'Cache pattern is required');
     fastify.assert(typeof pattern === 'string', 400, 'Cache pattern must be a string');
-    
+
     try {
       const keys = await fastify.redis.keys(pattern);
       if (keys.length > 0) {
@@ -108,7 +108,7 @@ export default fp(async function (fastify: FastifyInstance) {
         fastify.redis.info('keyspace'),
         fastify.redis.info('server')
       ]);
-      
+
       return {
         connected: fastify.redis.status === 'ready',
         status: fastify.redis.status,
