@@ -127,6 +127,22 @@ const schema = {
       type: 'string',
       default: '5120' // 5KB in bytes
     },
+    AUDIT_EXCLUDE_ROUTES: {
+      type: 'string',
+      default: '/health,/ready,/docs,/docs/*'
+    },
+    AUDIT_EXCLUDE_METHODS: {
+      type: 'string',
+      default: 'GET,HEAD,OPTIONS'
+    },
+    AUDIT_INCLUDE_DOMAINS: {
+      type: 'string',
+      default: '' // Empty = all domains, or comma-separated: 'users,roles,reports'
+    },
+    AUDIT_EXCLUDE_DOMAINS: {
+      type: 'string',
+      default: '' // Empty = no exclusions, or comma-separated: 'logs,metrics'
+    },
     AUDIT_ADAPTER: {
       type: 'string',
       enum: ['direct', 'redis', 'rabbitmq', 'hybrid'],
@@ -155,6 +171,55 @@ const schema = {
     AUDIT_RETRY_DELAY: {
       type: 'string',
       default: '1000' // 1 second in ms
+    },
+    // RabbitMQ Configuration
+    RABBITMQ_URL: {
+      type: 'string',
+      default: 'amqp://guest:guest@localhost:5672'
+    },
+    RABBITMQ_CONNECTION_TIMEOUT: {
+      type: 'string',
+      default: '5000'
+    },
+    AUDIT_RABBITMQ_EXCHANGE: {
+      type: 'string',
+      default: 'audit.logs'
+    },
+    AUDIT_RABBITMQ_QUEUE: {
+      type: 'string',
+      default: 'audit_logs_simple'
+    },
+    AUDIT_RABBITMQ_ROUTING_KEY: {
+      type: 'string',
+      default: 'audit.log'
+    },
+    AUDIT_RABBITMQ_PRIORITY: {
+      type: 'string',
+      default: 'true'
+    },
+    AUDIT_RABBITMQ_DURABLE: {
+      type: 'string',
+      default: 'true'
+    },
+    AUDIT_RABBITMQ_PERSISTENT: {
+      type: 'string',
+      default: 'true'
+    },
+    AUDIT_MESSAGE_TTL: {
+      type: 'string',
+      default: '86400000' // 24 hours in ms
+    },
+    AUDIT_WORKER_CONCURRENCY: {
+      type: 'string',
+      default: '3'
+    },
+    AUDIT_WORKER_PREFETCH: {
+      type: 'string',
+      default: '10'
+    },
+    AUDIT_ACK_TIMEOUT: {
+      type: 'string',
+      default: '30000' // 30 seconds in ms
     }
   }
 };
@@ -198,6 +263,17 @@ declare module 'fastify' {
       AUDIT_EXCHANGE_NAME: string;
       AUDIT_MAX_RETRIES: string;
       AUDIT_RETRY_DELAY: string;
+      RABBITMQ_URL: string;
+      AUDIT_RABBITMQ_EXCHANGE: string;
+      AUDIT_RABBITMQ_QUEUE: string;
+      AUDIT_RABBITMQ_ROUTING_KEY: string;
+      AUDIT_RABBITMQ_PRIORITY: string;
+      AUDIT_RABBITMQ_DURABLE: string;
+      AUDIT_RABBITMQ_PERSISTENT: string;
+      AUDIT_MESSAGE_TTL: string;
+      AUDIT_WORKER_CONCURRENCY: string;
+      AUDIT_WORKER_PREFETCH: string;
+      AUDIT_ACK_TIMEOUT: string;
     };
   }
 }

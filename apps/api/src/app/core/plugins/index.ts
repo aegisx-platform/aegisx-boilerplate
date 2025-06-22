@@ -15,6 +15,7 @@ import underPressure from './monitoring/under-pressure';
 import healthCheck from './monitoring/health-check';
 import { registerAuditMiddleware } from '../shared/middleware/audit-log-middleware';
 import { AuditQueueWorker } from '../workers/audit-queue-worker';
+import { RabbitMQAuditWorker } from '../workers/rabbitmq-audit-worker';
 
 const corePlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugins in specific order
@@ -31,30 +32,49 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
   await fastify.register(healthCheck);
 
   // Register audit logging middleware
+  const config = fastify.config as any;
   registerAuditMiddleware(fastify, {
-    enabled: fastify.config.AUDIT_ENABLED === 'true' && fastify.config.NODE_ENV !== 'test',
-    excludeRoutes: ['/health', '/ready', '/docs', '/docs/*'],
-    excludeMethods: ['GET', 'HEAD', 'OPTIONS'], // Exclude read operations for performance
-    logSuccessOnly: fastify.config.AUDIT_SUCCESS_ONLY === 'true',
-    logRequestBody: fastify.config.AUDIT_LOG_BODY === 'true',
+    enabled: config.AUDIT_ENABLED === 'true' && config.NODE_ENV !== 'test',
+    excludeRoutes: config.AUDIT_EXCLUDE_ROUTES ? config.AUDIT_EXCLUDE_ROUTES.split(',').map((r: string) => r.trim()) : ['/health', '/ready', '/docs', '/docs/*'],
+    excludeMethods: config.AUDIT_EXCLUDE_METHODS ? config.AUDIT_EXCLUDE_METHODS.split(',').map((m: string) => m.trim()) : ['GET', 'HEAD', 'OPTIONS'],
+    includeDomains: config.AUDIT_INCLUDE_DOMAINS ? config.AUDIT_INCLUDE_DOMAINS.split(',').map((d: string) => d.trim()) : [],
+    excludeDomains: config.AUDIT_EXCLUDE_DOMAINS ? config.AUDIT_EXCLUDE_DOMAINS.split(',').map((d: string) => d.trim()) : [],
+    logSuccessOnly: config.AUDIT_SUCCESS_ONLY === 'true',
+    logRequestBody: config.AUDIT_LOG_BODY === 'true',
     logResponseBody: false,
-    maxBodySize: parseInt(fastify.config.AUDIT_MAX_BODY_SIZE, 10)
+    maxBodySize: parseInt(config.AUDIT_MAX_BODY_SIZE, 10)
   });
 
-  // Start audit queue worker if using Redis adapter
-  if (fastify.config.AUDIT_ADAPTER === 'redis' && fastify.config.AUDIT_ENABLED === 'true') {
-    const auditWorker = new AuditQueueWorker(fastify, 3000); // Process every 3 seconds
-    auditWorker.start();
-    
-    // Expose worker for monitoring
-    fastify.decorate('auditWorker', auditWorker);
-    
-    // Graceful shutdown
-    fastify.addHook('onClose', async () => {
-      auditWorker.stop();
-    });
-    
-    fastify.log.info('✅ Audit queue worker started');
+  // Start audit queue worker based on adapter type
+  if (fastify.config.AUDIT_ENABLED === 'true') {
+    if (fastify.config.AUDIT_ADAPTER === 'redis') {
+      const auditWorker = new AuditQueueWorker(fastify, 3000); // Process every 3 seconds
+      auditWorker.start();
+      
+      // Expose worker for monitoring
+      fastify.decorate('auditWorker', auditWorker);
+      
+      // Graceful shutdown
+      fastify.addHook('onClose', async () => {
+        auditWorker.stop();
+      });
+
+      fastify.log.info('✅ Redis audit queue worker started');
+      
+    } else if (fastify.config.AUDIT_ADAPTER === 'rabbitmq') {
+      const rabbitMQWorker = new RabbitMQAuditWorker(fastify, fastify.knex);
+      await rabbitMQWorker.start();
+      
+      // Expose worker for monitoring
+      fastify.decorate('rabbitMQWorker', rabbitMQWorker);
+      
+      // Graceful shutdown
+      fastify.addHook('onClose', async () => {
+        await rabbitMQWorker.stop();
+      });
+
+      fastify.log.info('✅ RabbitMQ audit worker started');
+    }
   }
 
   fastify.log.info('✅ Core plugins loaded successfully');

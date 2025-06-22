@@ -1,0 +1,152 @@
+{
+  "rabbit_version": "3.13.0",
+  "rabbitmq_version": "3.13.0",
+  "product_name": "RabbitMQ",
+  "product_version": "3.13.0",
+  "users": [
+    {
+      "name": "guest",
+      "password": "guest",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "guest",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "topic_permissions": [],
+  "parameters": [],
+  "global_parameters": [
+    {
+      "name": "cluster_name",
+      "value": "aegisx-rabbitmq"
+    }
+  ],
+  "policies": [
+    {
+      "vhost": "/",
+      "name": "audit-ha-policy",
+      "pattern": "^audit\\.",
+      "apply-to": "all",
+      "definition": {
+        "ha-mode": "all",
+        "ha-sync-mode": "automatic",
+        "message-ttl": 86400000
+      },
+      "priority": 0
+    },
+    {
+      "vhost": "/",
+      "name": "audit-dlx-policy",
+      "pattern": "^audit\\.logs\\.queue$",
+      "apply-to": "queues",
+      "definition": {
+        "dead-letter-exchange": "audit.dlx",
+        "dead-letter-routing-key": "failed"
+      },
+      "priority": 1
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "audit.logs",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "audit.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "audit.logs.queue",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-max-priority": 10,
+        "x-message-ttl": 86400000,
+        "x-dead-letter-exchange": "audit.dlx",
+        "x-dead-letter-routing-key": "failed"
+      }
+    },
+    {
+      "name": "audit.logs.queue.priority",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-max-priority": 255,
+        "x-message-ttl": 86400000,
+        "x-dead-letter-exchange": "audit.dlx",
+        "x-dead-letter-routing-key": "failed.priority"
+      }
+    },
+    {
+      "name": "audit.logs.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic",
+        "x-message-ttl": 604800000
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "source": "audit.logs",
+      "vhost": "/",
+      "destination": "audit.logs.queue",
+      "destination_type": "queue",
+      "routing_key": "audit.log.#",
+      "arguments": {}
+    },
+    {
+      "source": "audit.logs",
+      "vhost": "/",
+      "destination": "audit.logs.queue.priority",
+      "destination_type": "queue",
+      "routing_key": "audit.log.priority.#",
+      "arguments": {}
+    },
+    {
+      "source": "audit.dlx",
+      "vhost": "/",
+      "destination": "audit.logs.dlq",
+      "destination_type": "queue",
+      "routing_key": "failed",
+      "arguments": {}
+    },
+    {
+      "source": "audit.dlx",
+      "vhost": "/",
+      "destination": "audit.logs.dlq",
+      "destination_type": "queue",
+      "routing_key": "failed.priority",
+      "arguments": {}
+    }
+  ]
+}

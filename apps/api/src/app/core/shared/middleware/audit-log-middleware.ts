@@ -7,6 +7,8 @@ export interface AuditConfig {
   enabled: boolean;
   excludeRoutes?: string[];
   excludeMethods?: string[];
+  includeDomains?: string[];
+  excludeDomains?: string[];
   logSuccessOnly?: boolean;
   logRequestBody?: boolean;
   logResponseBody?: boolean;
@@ -24,6 +26,8 @@ export class AuditLogMiddleware {
     this.config = {
       excludeRoutes: ['/health', '/ready', '/docs', '/docs/*'],
       excludeMethods: ['GET', 'HEAD', 'OPTIONS'],
+      includeDomains: [],
+      excludeDomains: [],
       logSuccessOnly: false,
       logRequestBody: false,
       logResponseBody: false,
@@ -127,6 +131,21 @@ export class AuditLogMiddleware {
 
     // Skip excluded methods
     if (this.config.excludeMethods?.includes(request.method)) {
+      return false;
+    }
+
+    // Check domain filtering
+    const resourceType = this.extractResourceType(request.url);
+    
+    // If includeDomains is specified, only audit those domains
+    if (this.config.includeDomains && this.config.includeDomains.length > 0) {
+      if (!this.config.includeDomains.includes(resourceType)) {
+        return false;
+      }
+    }
+    
+    // Skip excluded domains
+    if (this.config.excludeDomains && this.config.excludeDomains.includes(resourceType)) {
       return false;
     }
 

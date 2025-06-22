@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { AuditAdapter, AuditAdapterConfig } from '../interfaces/audit-adapter.interface';
 import { DirectDatabaseAdapter } from '../adapters/direct-database-adapter';
 import { RedisQueueAdapter } from '../adapters/redis-queue-adapter';
+import { RabbitMQAdapter } from '../adapters/rabbitmq-adapter';
 
 /**
  * Audit Adapter Factory
@@ -26,8 +27,9 @@ export class AuditAdapterFactory {
         return new RedisQueueAdapter(fastify, config);
         
       case 'rabbitmq':
-        // TODO: Implement RabbitMQAdapter
-        throw new Error('RabbitMQ adapter not yet implemented');
+        // Create RabbitMQ adapter with fallback to direct
+        const fallbackAdapter = new DirectDatabaseAdapter(fastify);
+        return new RabbitMQAdapter(fastify, fallbackAdapter);
         
       case 'hybrid':
         // TODO: Implement HybridAdapter
