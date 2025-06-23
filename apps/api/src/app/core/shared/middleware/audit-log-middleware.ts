@@ -16,11 +16,12 @@ export interface AuditConfig {
 }
 
 export class AuditLogMiddleware {
-  private auditAdapter: AuditAdapter;
+  private auditAdapter!: AuditAdapter;
   private config: AuditConfig;
+  private initialized = false;
 
   constructor(
-    fastify: FastifyInstance,
+    private fastify: FastifyInstance,
     config: AuditConfig = { enabled: true }
   ) {
     this.config = {
@@ -34,11 +35,21 @@ export class AuditLogMiddleware {
       maxBodySize: 1024 * 10, // 10KB
       ...config
     };
+  }
+
+  /**
+   * Initialize the middleware (must be called before use)
+   */
+  async initialize(): Promise<void> {
+    if (this.initialized) {
+      return;
+    }
 
     // Initialize audit adapter based on configuration
-    this.auditAdapter = AuditAdapterFactory.createFromEnv(fastify);
+    this.auditAdapter = await AuditAdapterFactory.createFromEnv(this.fastify);
     
-    fastify.log.info(`AuditLogMiddleware: Using ${this.auditAdapter.getType()} adapter`);
+    this.fastify.log.info(`AuditLogMiddleware: Using ${this.auditAdapter.getType()} adapter`);
+    this.initialized = true;
   }
 
   createPreHandler(): preHandlerHookHandler {
@@ -379,11 +390,14 @@ export class AuditLogMiddleware {
 }
 
 // Helper function to register audit middleware
-export function registerAuditMiddleware(
+export async function registerAuditMiddleware(
   fastify: FastifyInstance,
   config?: AuditConfig
-): void {
+): Promise<void> {
   const auditMiddleware = new AuditLogMiddleware(fastify, config);
+  
+  // Initialize the middleware (this sets up the audit adapter)
+  await auditMiddleware.initialize();
   
   // Register hooks
   fastify.addHook('preHandler', auditMiddleware.createPreHandler());

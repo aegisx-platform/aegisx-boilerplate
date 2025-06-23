@@ -2,7 +2,6 @@ import { FastifyInstance } from 'fastify';
 import { AuditLogController } from '../controllers/audit-log-controller';
 import { AuditLogService } from '../services/audit-log-service';
 import { AuditLogRepositoryImpl } from '../repositories/audit-log-repository';
-import { auditAdapterRoutes } from './audit-adapter-routes';
 import {
   GetAuditLogsSchema,
   GetAuditLogByIdSchema,
@@ -11,7 +10,6 @@ import {
   GetAuditLogStatsSchema,
   CleanupAuditLogsSchema
 } from '../schemas/audit-log-route-schemas';
-
 const auditLogRoutes = async (fastify: FastifyInstance) => {
   // Initialize dependencies
   const auditLogRepository = new AuditLogRepositoryImpl(fastify.knex);
@@ -60,8 +58,6 @@ const auditLogRoutes = async (fastify: FastifyInstance) => {
     handler: auditLogController.cleanupAuditLogs.bind(auditLogController)
   });
 
-  // Register audit adapter routes
-  await fastify.register(auditAdapterRoutes);
 };
 
 export default auditLogRoutes;

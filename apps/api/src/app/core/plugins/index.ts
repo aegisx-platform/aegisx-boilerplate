@@ -14,8 +14,8 @@ import rbac from './security/rbac';
 import underPressure from './monitoring/under-pressure';
 import healthCheck from './monitoring/health-check';
 import { registerAuditMiddleware } from '../shared/middleware/audit-log-middleware';
-import { AuditQueueWorker } from '../workers/audit-queue-worker';
 import { RabbitMQAuditWorker } from '../workers/rabbitmq-audit-worker';
+import { RedisWorker } from '../workers/redis-worker';
 
 const corePlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugins in specific order
@@ -33,7 +33,7 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
 
   // Register audit logging middleware
   const config = fastify.config as any;
-  registerAuditMiddleware(fastify, {
+  await registerAuditMiddleware(fastify, {
     enabled: config.AUDIT_ENABLED === 'true' && config.NODE_ENV !== 'test',
     excludeRoutes: config.AUDIT_EXCLUDE_ROUTES ? config.AUDIT_EXCLUDE_ROUTES.split(',').map((r: string) => r.trim()) : ['/health', '/ready', '/docs', '/docs/*'],
     excludeMethods: config.AUDIT_EXCLUDE_METHODS ? config.AUDIT_EXCLUDE_METHODS.split(',').map((m: string) => m.trim()) : ['GET', 'HEAD', 'OPTIONS'],
@@ -45,24 +45,26 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
     maxBodySize: parseInt(config.AUDIT_MAX_BODY_SIZE, 10)
   });
 
-  // Start audit queue worker based on adapter type
+  // Start audit workers based on adapter type
   if (fastify.config.AUDIT_ENABLED === 'true') {
     if (fastify.config.AUDIT_ADAPTER === 'redis') {
-      const auditWorker = new AuditQueueWorker(fastify, 3000); // Process every 3 seconds
-      auditWorker.start();
+      const redisWorker = new RedisWorker(fastify);
+      await redisWorker.initialize();
+      await redisWorker.start();
       
       // Expose worker for monitoring
-      fastify.decorate('auditWorker', auditWorker);
+      fastify.decorate('auditRedisWorker', redisWorker);
       
       // Graceful shutdown
       fastify.addHook('onClose', async () => {
-        auditWorker.stop();
+        await redisWorker.stop();
       });
 
-      fastify.log.info('✅ Redis audit queue worker started');
+      fastify.log.info('✅ Redis audit worker started');
       
     } else if (fastify.config.AUDIT_ADAPTER === 'rabbitmq') {
       const rabbitMQWorker = new RabbitMQAuditWorker(fastify, fastify.knex);
+      await rabbitMQWorker.initialize();
       await rabbitMQWorker.start();
       
       // Expose worker for monitoring

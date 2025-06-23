@@ -1,24 +1,33 @@
 import { FastifyInstance } from 'fastify';
 import * as amqp from 'amqplib';
 import { Knex } from 'knex';
+import { AuditLogService } from '../../domains/audit-log/services/audit-log-service';
+import { AuditLogRepositoryImpl } from '../../domains/audit-log/repositories/audit-log-repository';
+import { SecureAuditService } from '../shared/services/secure-audit.service';
+import { AuditLogData } from '../shared/audit/interfaces/audit-adapter.interface';
 
 /**
  * Simple RabbitMQ Audit Worker
  * 
  * Consumes audit log messages from RabbitMQ and saves them to the database.
+ * Supports both basic audit logging and secure audit with integrity system.
  * 
  * Features:
- * - Simple queue consumption
- * - Message acknowledgment for reliability
+ * - Simple queue consumption with message acknowledgment
+ * - Optional audit integrity system (hash chains + digital signatures)
  * - Error handling and retry mechanism
  * - Graceful shutdown
  * - Basic monitoring and metrics
+ * - Automatic fallback to basic logging
  */
 export class RabbitMQAuditWorker {
   private connection: any = null;
   private channel: any = null;
   private isRunning = false;
   private consumerTag: string | null = null;
+  private auditLogService: AuditLogService;
+  private secureAuditService: SecureAuditService | null = null;
+  private integrityEnabled: boolean;
   
   // Statistics
   private processedMessages = 0;
@@ -38,8 +47,20 @@ export class RabbitMQAuditWorker {
 
   constructor(
     private readonly fastify: FastifyInstance,
-    private readonly knex: Knex
+    _knex: Knex // keeping for interface compatibility
   ) {
+    this.integrityEnabled = (fastify.config as any).AUDIT_INTEGRITY_ENABLED === 'true';
+
+    // Initialize audit services  
+    const auditLogRepository = new AuditLogRepositoryImpl(fastify.knex);
+    this.auditLogService = new AuditLogService(auditLogRepository);
+
+    if (this.integrityEnabled) {
+      this.secureAuditService = new SecureAuditService(fastify);
+      this.fastify.log.info('RabbitMQAuditWorker: Integrity system enabled');
+    } else {
+      this.fastify.log.info('RabbitMQAuditWorker: Using basic audit logging');
+    }
     this.config = {
       url: fastify.config.RABBITMQ_URL || 'amqp://localhost:5672',
       queue: fastify.config.AUDIT_RABBITMQ_QUEUE || 'audit_logs_simple',
@@ -51,8 +72,27 @@ export class RabbitMQAuditWorker {
 
     this.fastify.log.info('RabbitMQ Audit Worker initialized', {
       queue: this.config.queue,
-      prefetchCount: this.config.prefetchCount
+      prefetchCount: this.config.prefetchCount,
+      integrity_enabled: this.integrityEnabled
     });
+  }
+
+  /**
+   * Initialize the worker (required for integrity system)
+   */
+  async initialize(): Promise<void> {
+    if (this.integrityEnabled && this.secureAuditService) {
+      try {
+        await this.secureAuditService.initialize();
+        this.fastify.log.info('RabbitMQAuditWorker: Secure audit service initialized');
+      } catch (error) {
+        this.fastify.log.error('RabbitMQAuditWorker: Failed to initialize secure audit service', error);
+        // Fallback to basic audit logging
+        this.integrityEnabled = false;
+        this.secureAuditService = null;
+        this.fastify.log.warn('RabbitMQAuditWorker: Falling back to basic audit logging');
+      }
+    }
   }
 
   /**
@@ -262,40 +302,93 @@ export class RabbitMQAuditWorker {
 
   /**
    * Process audit log into database
+   * Uses either secure audit service (with integrity) or basic database insertion
    */
   private async processAuditLog(auditLog: any): Promise<void> {
     try {
-      // Prepare data for database
-      const dbData = {
-        id: auditLog.id || undefined, // Let DB generate if not provided
-        user_id: auditLog.user_id || null,
-        action: auditLog.action,
-        resource_type: auditLog.resource_type,
-        resource_id: auditLog.resource_id || null,
-        ip_address: auditLog.ip_address || null,
-        user_agent: auditLog.user_agent || null,
-        session_id: auditLog.session_id || null,
-        old_values: auditLog.old_values ? JSON.stringify(auditLog.old_values) : null,
-        new_values: auditLog.new_values ? JSON.stringify(auditLog.new_values) : null,
-        metadata: auditLog.metadata ? JSON.stringify(auditLog.metadata) : null,
-        status: auditLog.status || 'success',
-        error_message: auditLog.error_message || null,
-        created_at: auditLog.created_at ? new Date(auditLog.created_at) : new Date()
-      };
+      // Check if integrity system should be used (either globally or for this specific message)
+      const useIntegrity = this.integrityEnabled || auditLog.integrity_enabled;
+      
+      if (useIntegrity && this.secureAuditService) {
+        try {
+          // Use secure audit service with integrity features
+          const auditData: AuditLogData = {
+            user_id: auditLog.user_id || null,
+            action: auditLog.action,
+            resource_type: auditLog.resource_type,
+            resource_id: auditLog.resource_id || null,
+            ip_address: auditLog.ip_address || null,
+            user_agent: auditLog.user_agent || null,
+            session_id: auditLog.session_id || null,
+            old_values: auditLog.old_values || null,
+            new_values: auditLog.new_values || null,
+            metadata: auditLog.metadata || null,
+            status: auditLog.status || 'success',
+            error_message: auditLog.error_message || null
+          };
 
-      // Insert into database
-      await this.knex('audit_logs').insert(dbData);
+          await this.secureAuditService.logSecureAudit(auditData);
+          this.fastify.log.debug('Audit log processed with integrity system', {
+            action: auditLog.action,
+            resourceType: auditLog.resource_type,
+            integrity_enabled: useIntegrity
+          });
+        } catch (integrityError) {
+          this.fastify.log.error('RabbitMQAuditWorker: Failed to process with integrity system, falling back to basic', integrityError);
+          // Fallback to basic audit logging
+          await this.auditLogService.logAction(
+            auditLog.action,
+            auditLog.resource_type,
+            {
+              user_id: auditLog.user_id || undefined,
+              ip_address: auditLog.ip_address || undefined,
+              user_agent: auditLog.user_agent || undefined,
+              session_id: auditLog.session_id || undefined
+            },
+            {
+              resourceId: auditLog.resource_id || undefined,
+              oldValues: auditLog.old_values || undefined,
+              newValues: auditLog.new_values || undefined,
+              metadata: auditLog.metadata || undefined,
+              status: auditLog.status,
+              errorMessage: auditLog.error_message || undefined
+            }
+          );
+          this.fastify.log.debug('RabbitMQAuditWorker: Processed audit log with fallback to basic system');
+        }
+      } else {
+        // Use basic audit service 
+        await this.auditLogService.logAction(
+          auditLog.action,
+          auditLog.resource_type,
+          {
+            user_id: auditLog.user_id || undefined,
+            ip_address: auditLog.ip_address || undefined,
+            user_agent: auditLog.user_agent || undefined,
+            session_id: auditLog.session_id || undefined
+          },
+          {
+            resourceId: auditLog.resource_id || undefined,
+            oldValues: auditLog.old_values || undefined,
+            newValues: auditLog.new_values || undefined,
+            metadata: auditLog.metadata || undefined,
+            status: auditLog.status,
+            errorMessage: auditLog.error_message || undefined
+          }
+        );
 
-      this.fastify.log.debug('Audit log saved to database', {
-        id: dbData.id,
-        action: dbData.action,
-        resourceType: dbData.resource_type
-      });
+        this.fastify.log.debug('Audit log processed with basic system', {
+          action: auditLog.action,
+          resourceType: auditLog.resource_type,
+          integrity_enabled: useIntegrity
+        });
+      }
 
     } catch (error) {
-      this.fastify.log.error('Failed to save audit log to database', {
+      this.fastify.log.error('Failed to process audit log', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        auditLogId: auditLog.id
+        auditLogId: auditLog.id,
+        integrity_enabled: this.integrityEnabled || auditLog.integrity_enabled
       });
       throw error;
     }

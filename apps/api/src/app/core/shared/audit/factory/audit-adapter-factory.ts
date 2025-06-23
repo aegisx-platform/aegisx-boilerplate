@@ -1,8 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { AuditAdapter, AuditAdapterConfig } from '../interfaces/audit-adapter.interface';
 import { DirectDatabaseAdapter } from '../adapters/direct-database-adapter';
-import { RedisQueueAdapter } from '../adapters/redis-queue-adapter';
 import { RabbitMQAdapter } from '../adapters/rabbitmq-adapter';
+import { RedisAdapter } from '../adapters/redis-adapter';
 
 /**
  * Audit Adapter Factory
@@ -15,21 +15,27 @@ export class AuditAdapterFactory {
   /**
    * Create audit adapter based on configuration
    */
-  static create(
+  static async create(
     fastify: FastifyInstance,
     config: AuditAdapterConfig
-  ): AuditAdapter {
+  ): Promise<AuditAdapter> {
+    let adapter: AuditAdapter;
+
     switch (config.type) {
       case 'direct':
-        return new DirectDatabaseAdapter(fastify);
+        adapter = new DirectDatabaseAdapter(fastify);
+        break;
         
       case 'redis':
-        return new RedisQueueAdapter(fastify, config);
+        adapter = new RedisAdapter(fastify);
+        break;
         
       case 'rabbitmq':
         // Create RabbitMQ adapter with fallback to direct
         const fallbackAdapter = new DirectDatabaseAdapter(fastify);
-        return new RabbitMQAdapter(fastify, fallbackAdapter);
+        await fallbackAdapter.initialize?.();
+        adapter = new RabbitMQAdapter(fastify, fallbackAdapter);
+        break;
         
       case 'hybrid':
         // TODO: Implement HybridAdapter
@@ -37,14 +43,28 @@ export class AuditAdapterFactory {
         
       default:
         fastify.log.warn(`Unknown audit adapter type: ${config.type}, falling back to direct`);
-        return new DirectDatabaseAdapter(fastify);
+        adapter = new DirectDatabaseAdapter(fastify);
+        break;
     }
+
+    // Initialize adapter if it has an initialize method
+    if (adapter && typeof (adapter as any).initialize === 'function') {
+      try {
+        await (adapter as any).initialize();
+        fastify.log.info(`AuditAdapterFactory: ${config.type} adapter initialized successfully`);
+      } catch (error) {
+        fastify.log.error(`AuditAdapterFactory: Failed to initialize ${config.type} adapter`, error);
+        // Don't throw here - let the adapter decide how to handle initialization failures
+      }
+    }
+
+    return adapter;
   }
 
   /**
    * Create adapter from environment configuration
    */
-  static createFromEnv(fastify: FastifyInstance): AuditAdapter {
+  static async createFromEnv(fastify: FastifyInstance): Promise<AuditAdapter> {
     const config: AuditAdapterConfig = {
       type: (fastify.config.AUDIT_ADAPTER as any) || 'direct',
       enabled: fastify.config.AUDIT_ENABLED === 'true',
@@ -98,16 +118,19 @@ export class AuditAdapterFactory {
   /**
    * Create multiple adapters for testing/comparison
    */
-  static createMultiple(
+  static async createMultiple(
     fastify: FastifyInstance,
     configs: AuditAdapterConfig[]
-  ): AuditAdapter[] {
-    return configs.map(config => {
-      const errors = this.validateConfig(config);
-      if (errors.length > 0) {
-        throw new Error(`Invalid adapter config: ${errors.join(', ')}`);
-      }
-      return this.create(fastify, config);
-    });
+  ): Promise<AuditAdapter[]> {
+    const adapters = await Promise.all(
+      configs.map(async config => {
+        const errors = this.validateConfig(config);
+        if (errors.length > 0) {
+          throw new Error(`Invalid adapter config: ${errors.join(', ')}`);
+        }
+        return await this.create(fastify, config);
+      })
+    );
+    return adapters;
   }
 }

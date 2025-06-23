@@ -148,6 +148,18 @@ const schema = {
       enum: ['direct', 'redis', 'rabbitmq', 'hybrid'],
       default: 'direct'
     },
+    AUDIT_INTEGRITY_ENABLED: {
+      type: 'string',
+      default: 'true'
+    },
+    AUDIT_HASH_ALGORITHM: {
+      type: 'string',
+      default: 'sha256'
+    },
+    AUDIT_SIGNATURE_ALGORITHM: {
+      type: 'string',
+      default: 'RSA-SHA256'
+    },
     AUDIT_BATCH_SIZE: {
       type: 'string',
       default: '100'
@@ -220,6 +232,10 @@ const schema = {
     AUDIT_ACK_TIMEOUT: {
       type: 'string',
       default: '30000' // 30 seconds in ms
+    },
+    AUDIT_REDIS_CHANNEL: {
+      type: 'string',
+      default: 'audit_events'
     }
   }
 };
@@ -274,6 +290,7 @@ declare module 'fastify' {
       AUDIT_WORKER_CONCURRENCY: string;
       AUDIT_WORKER_PREFETCH: string;
       AUDIT_ACK_TIMEOUT: string;
+      AUDIT_REDIS_CHANNEL: string;
     };
   }
 }

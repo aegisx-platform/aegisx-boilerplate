@@ -1,0 +1,7 @@
+{
+  "keyId": "audit_key_db784b29f30f315e",
+  "createdAt": "2025-06-23T00:42:24.156Z",
+  "algorithm": "RSASHA256",
+  "keySize": 2048,
+  "status": "active"
+}

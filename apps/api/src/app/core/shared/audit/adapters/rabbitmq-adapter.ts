@@ -9,17 +9,19 @@ import { AuditAdapter, AuditLogData } from '../interfaces/audit-adapter.interfac
  * 
  * Features:
  * - Direct queue publishing (no complex exchanges)
+ * - Optional audit integrity system (hash chains + digital signatures)
  * - Automatic fallback to alternative adapter
  * - Simple connection management
  * - Basic error handling and retry
  * 
  * Architecture:
- * API → RabbitMQ Queue → Worker → Database
+ * API → RabbitMQ Queue → Worker → Database (with optional integrity processing)
  */
 export class RabbitMQAdapter implements AuditAdapter {
   private connection: any = null;
   private channel: any = null;
   private isConnecting = false;
+  private integrityEnabled: boolean;
   
   // Statistics
   private processedCount = 0;
@@ -38,6 +40,8 @@ export class RabbitMQAdapter implements AuditAdapter {
     private readonly fastify: FastifyInstance,
     private readonly fallbackAdapter?: AuditAdapter
   ) {
+    this.integrityEnabled = (fastify.config as any).AUDIT_INTEGRITY_ENABLED === 'true';
+    
     this.config = {
       url: fastify.config.RABBITMQ_URL || 'amqp://localhost:5672',
       queue: fastify.config.AUDIT_RABBITMQ_QUEUE || 'audit_logs_simple',
@@ -47,7 +51,8 @@ export class RabbitMQAdapter implements AuditAdapter {
 
     this.fastify.log.info('RabbitMQ Adapter initialized', {
       queue: this.config.queue,
-      fallback: this.fallbackAdapter?.getType() || 'none'
+      fallback: this.fallbackAdapter?.getType() || 'none',
+      integrity_enabled: this.integrityEnabled
     });
   }
 
@@ -161,7 +166,8 @@ export class RabbitMQAdapter implements AuditAdapter {
       const message = {
         ...auditData,
         timestamp: new Date().toISOString(),
-        source: 'aegisx-api'
+        source: 'aegisx-api',
+        integrity_enabled: this.integrityEnabled // Pass integrity flag to worker
       };
 
       const messageBuffer = Buffer.from(JSON.stringify(message));
@@ -182,7 +188,8 @@ export class RabbitMQAdapter implements AuditAdapter {
         this.processedCount++;
         this.fastify.log.debug('Audit log sent to RabbitMQ', {
           queue: this.config.queue,
-          action: auditData.action
+          action: auditData.action,
+          integrity_enabled: this.integrityEnabled
         });
       } else {
         throw new Error('Failed to send message to queue');

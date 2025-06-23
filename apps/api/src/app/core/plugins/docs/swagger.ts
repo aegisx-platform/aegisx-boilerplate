@@ -67,6 +67,10 @@ export default fp(async function (fastify: FastifyInstance) {
           description: 'Audit logging and security monitoring endpoints',
         },
         {
+          name: 'Audit',
+          description: 'Audit system integrity verification and security monitoring',
+        },
+        {
           name: 'audit-adapter',
           description: 'Audit system adapter management and statistics',
         },
@@ -94,7 +98,9 @@ export default fp(async function (fastify: FastifyInstance) {
     uiConfig: {
       docExpansion: 'list',
       deepLinking: false,
+      persistAuthorization: true,
     },
     staticCSP: true,
+    initOAuth: {},
   });
 });
