@@ -45,12 +45,21 @@ export default fp(async function authModule(fastify: FastifyInstance) {
     throw new Error('Auth module requires jwt authenticate decorator to be available');
   }
 
+  // Setup authentication event subscribers
+  try {
+    const { setupAuthEventSubscribers } = await import('./subscribers/auth-event-subscribers.js')
+    await setupAuthEventSubscribers(fastify)
+  } catch (error) {
+    fastify.log.error('Failed to setup auth event subscribers', { error })
+    throw error
+  }
+  
   // Auth module only provides services and controllers
   // Routes are registered at API layer for proper versioning
   
-  fastify.log.info('✅ Auth module registered successfully (routes handled by API layer)');
+  fastify.log.info('✅ Auth module registered successfully with event subscribers');
 
 }, {
   name: 'auth-module',
-  dependencies: ['env-plugin', 'knex-plugin', 'jwt-plugin']
+  dependencies: ['env-plugin', 'knex-plugin', 'jwt-plugin', 'event-bus']
 });

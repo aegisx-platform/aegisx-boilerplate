@@ -15,6 +15,8 @@ import {
 } from '../types/auth-types';
 import { RBACService } from '../../rbac/services/rbac-service';
 import { RBACCache } from '../../../core/shared/cache/rbac-cache';
+// EventFactory imported for future use if needed
+// import { EventFactory } from '../../../core/shared/events';
 
 /**
  * Authentication Service
@@ -75,6 +77,21 @@ export class AuthService {
 
       this.fastify.log.info('User created successfully', { userId: user.id, email: user.email });
 
+      // Publish user registration event
+      try {
+        await this.fastify.eventBus.publish('auth.user.registered', {
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+          registeredAt: new Date()
+        })
+      } catch (eventError) {
+        this.fastify.log.warn('Failed to publish user registration event', { 
+          userId: user.id, 
+          error: eventError 
+        })
+      }
+
       return this.sanitizeUser(user);
     } catch (error) {
       this.fastify.log.error('Failed to create user', { email: data.email, error });
@@ -117,6 +134,18 @@ export class AuthService {
       const isPasswordValid = await this.verifyPassword(credentials.password, user.password_hash);
       if (!isPasswordValid) {
         this.fastify.log.warn('Invalid password attempt', { userId: user.id, identifier });
+
+        // Publish login failed event
+        try {
+          await this.fastify.eventBus.publish('auth.user.login.failed', {
+            identifier,
+            reason: 'invalid_credentials',
+            attemptedAt: new Date()
+          })
+        } catch (eventError) {
+          this.fastify.log.warn('Failed to publish login failed event', { eventError })
+        }
+
         throw this.fastify.httpErrors.unauthorized('Invalid username/email or password');
       }
 
@@ -142,6 +171,23 @@ export class AuthService {
       const refresh_token = await this.generateRefreshToken(user.id);
 
       this.fastify.log.info('Successful login', { userId: user.id, identifier, rolesCount: rbacData.roles.length });
+
+      // Publish successful login event
+      try {
+        await this.fastify.eventBus.publish('auth.user.login', {
+          userId: user.id,
+          email: user.email,
+          username: user.username,
+          loginAt: new Date(),
+          roles: rbacData.roles,
+          permissions: rbacData.permissions
+        })
+      } catch (eventError) {
+        this.fastify.log.warn('Failed to publish login event', { 
+          userId: user.id, 
+          error: eventError 
+        })
+      }
 
       return {
         access_token,
@@ -227,6 +273,21 @@ export class AuthService {
 
       this.fastify.log.info('Token refreshed successfully', { userId: user.id });
 
+      // Publish token refresh event
+      try {
+        await this.fastify.eventBus.publish('auth.token.refreshed', {
+          userId: user.id,
+          oldTokenId: payload.token_id,
+          newTokenId: crypto.randomUUID(), // Generate new token ID for tracking
+          refreshedAt: new Date()
+        })
+      } catch (eventError) {
+        this.fastify.log.warn('Failed to publish token refresh event', { 
+          userId: user.id, 
+          error: eventError 
+        })
+      }
+
       return {
         access_token,
         refresh_token: new_refresh_token
@@ -247,6 +308,9 @@ export class AuthService {
       throw this.fastify.httpErrors.badRequest('User ID is required');
     }
 
+    const user = await this.userRepo.findById(user_id);
+    const logoutType = refresh_token ? 'manual' : 'all_devices';
+
     try {
       if (refresh_token?.trim()) {
         // Revoke specific refresh token
@@ -257,6 +321,21 @@ export class AuthService {
         // Revoke all refresh tokens for user (logout from all devices)
         await this.refreshTokenRepo.revokeByUserId(user_id);
         this.fastify.log.info('All refresh tokens revoked for user', { userId: user_id });
+      }
+
+      // Publish logout event
+      try {
+        await this.fastify.eventBus.publish('auth.user.logout', {
+          userId: user_id,
+          email: user?.email || 'unknown',
+          logoutAt: new Date(),
+          logoutType
+        })
+      } catch (eventError) {
+        this.fastify.log.warn('Failed to publish logout event', { 
+          userId: user_id, 
+          error: eventError 
+        })
       }
     } catch (error) {
       this.fastify.log.error('Failed to revoke tokens during logout', { userId: user_id, error });
@@ -303,6 +382,21 @@ export class AuthService {
       await this.refreshTokenRepo.revokeByUserId(user_id);
 
       this.fastify.log.info('Password changed successfully', { userId: user_id });
+
+      // Publish password change event
+      try {
+        await this.fastify.eventBus.publish('auth.password.changed', {
+          userId: user_id,
+          email: user.email,
+          changedAt: new Date(),
+          allTokensRevoked: true
+        })
+      } catch (eventError) {
+        this.fastify.log.warn('Failed to publish password change event', { 
+          userId: user_id, 
+          error: eventError 
+        })
+      }
     } catch (error) {
       if (error instanceof Error && error.message.includes('Current password is incorrect')) {
         throw error;
@@ -347,6 +441,31 @@ export class AuthService {
 
       this.fastify.log.info('Profile updated', { userId: user_id, fields: Object.keys(data) });
 
+      // Publish profile update event
+      try {
+        const changes: Record<string, { old: any, new: any }> = {}
+        for (const [key, newValue] of Object.entries(data)) {
+          if (key in updatedUser) {
+            changes[key] = {
+              old: (updatedUser as any)[key],
+              new: newValue
+            }
+          }
+        }
+
+        await this.fastify.eventBus.publish('auth.profile.updated', {
+          userId: user_id,
+          changes,
+          updatedAt: new Date(),
+          updatedBy: user_id // User updating their own profile
+        })
+      } catch (eventError) {
+        this.fastify.log.warn('Failed to publish profile update event', { 
+          userId: user_id, 
+          error: eventError 
+        })
+      }
+
       return this.sanitizeUser(updatedUser);
     } catch (error) {
       this.fastify.log.error('Failed to update profile', { userId: user_id, error });
@@ -369,6 +488,21 @@ export class AuthService {
       }
 
       this.fastify.log.info('Email verified successfully', { userId: user_id });
+
+      // Publish email verification event
+      try {
+        const user = await this.userRepo.findById(user_id);
+        await this.fastify.eventBus.publish('auth.email.verified', {
+          userId: user_id,
+          email: user?.email || 'unknown',
+          verifiedAt: new Date()
+        })
+      } catch (eventError) {
+        this.fastify.log.warn('Failed to publish email verification event', { 
+          userId: user_id, 
+          error: eventError 
+        })
+      }
     } catch (error) {
       this.fastify.log.error('Failed to verify email', { userId: user_id, error });
       if (error instanceof Error && error.message.includes('User not found')) {

@@ -13,6 +13,7 @@ import swagger from './docs/swagger';
 import rbac from './security/rbac';
 import underPressure from './monitoring/under-pressure';
 import healthCheck from './monitoring/health-check';
+import eventBus from './event-bus';
 import { registerAuditMiddleware } from '../shared/middleware/audit-log-middleware';
 import { RabbitMQAuditWorker } from '../workers/rabbitmq-audit-worker';
 import { RedisWorker } from '../workers/redis-worker';
@@ -29,6 +30,7 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
   await fastify.register(underPressure);
   await fastify.register(swagger);
   await fastify.register(rbac);
+  await fastify.register(eventBus);
   await fastify.register(healthCheck);
 
   // Register audit logging middleware

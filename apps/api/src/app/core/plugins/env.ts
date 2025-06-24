@@ -236,6 +236,80 @@ const schema = {
     AUDIT_REDIS_CHANNEL: {
       type: 'string',
       default: 'audit_events'
+    },
+    // Event Bus Configuration
+    EVENT_BUS_ADAPTER: {
+      type: 'string',
+      enum: ['memory', 'redis', 'rabbitmq'],
+      default: 'memory'
+    },
+    EVENT_BUS_REDIS_URL: {
+      type: 'string',
+      default: ''
+    },
+    EVENT_BUS_REDIS_HOST: {
+      type: 'string',
+      default: 'localhost'
+    },
+    EVENT_BUS_REDIS_PORT: {
+      type: 'string',
+      default: '6379'
+    },
+    EVENT_BUS_REDIS_PASSWORD: {
+      type: 'string',
+      default: ''
+    },
+    EVENT_BUS_REDIS_DB: {
+      type: 'string',
+      default: '1'
+    },
+    EVENT_BUS_REDIS_KEY_PREFIX: {
+      type: 'string',
+      default: 'events:'
+    },
+    EVENT_BUS_REDIS_MAX_RETRIES: {
+      type: 'string',
+      default: '3'
+    },
+    EVENT_BUS_RABBITMQ_URL: {
+      type: 'string',
+      default: 'amqp://guest:guest@localhost:5672'
+    },
+    EVENT_BUS_RABBITMQ_HOST: {
+      type: 'string',
+      default: 'localhost'
+    },
+    EVENT_BUS_RABBITMQ_PORT: {
+      type: 'string',
+      default: '5672'
+    },
+    EVENT_BUS_RABBITMQ_USERNAME: {
+      type: 'string',
+      default: 'guest'
+    },
+    EVENT_BUS_RABBITMQ_PASSWORD: {
+      type: 'string',
+      default: 'guest'
+    },
+    EVENT_BUS_RABBITMQ_VHOST: {
+      type: 'string',
+      default: '/'
+    },
+    EVENT_BUS_RABBITMQ_EXCHANGE: {
+      type: 'string',
+      default: 'events'
+    },
+    EVENT_BUS_RABBITMQ_EXCHANGE_TYPE: {
+      type: 'string',
+      default: 'topic'
+    },
+    EVENT_BUS_RABBITMQ_DLX: {
+      type: 'string',
+      default: 'events.dlx'
+    },
+    EVENT_BUS_RABBITMQ_PREFETCH: {
+      type: 'string',
+      default: '10'
     }
   }
 };
@@ -291,6 +365,24 @@ declare module 'fastify' {
       AUDIT_WORKER_PREFETCH: string;
       AUDIT_ACK_TIMEOUT: string;
       AUDIT_REDIS_CHANNEL: string;
+      EVENT_BUS_ADAPTER: string;
+      EVENT_BUS_REDIS_URL: string;
+      EVENT_BUS_REDIS_HOST: string;
+      EVENT_BUS_REDIS_PORT: string;
+      EVENT_BUS_REDIS_PASSWORD: string;
+      EVENT_BUS_REDIS_DB: string;
+      EVENT_BUS_REDIS_KEY_PREFIX: string;
+      EVENT_BUS_REDIS_MAX_RETRIES: string;
+      EVENT_BUS_RABBITMQ_URL: string;
+      EVENT_BUS_RABBITMQ_HOST: string;
+      EVENT_BUS_RABBITMQ_PORT: string;
+      EVENT_BUS_RABBITMQ_USERNAME: string;
+      EVENT_BUS_RABBITMQ_PASSWORD: string;
+      EVENT_BUS_RABBITMQ_VHOST: string;
+      EVENT_BUS_RABBITMQ_EXCHANGE: string;
+      EVENT_BUS_RABBITMQ_EXCHANGE_TYPE: string;
+      EVENT_BUS_RABBITMQ_DLX: string;
+      EVENT_BUS_RABBITMQ_PREFETCH: string;
     };
   }
 }

@@ -1,0 +1,119 @@
+# Claude Context for AegisX Boilerplate
+
+## Project Overview
+AegisX Boilerplate is a production-ready Fastify API boilerplate designed for Healthcare Information Systems (HIS) and ERP applications. Built with TypeScript, PostgreSQL, and enterprise-grade infrastructure.
+
+## Technology Stack
+- **Framework**: Fastify v5.2.1 (high-performance)
+- **Language**: TypeScript with strict typing
+- **Database**: PostgreSQL + Knex.js for migrations/queries
+- **Validation**: TypeBox for schema validation
+- **Architecture**: Nx monorepo with layered architecture
+- **Caching**: Redis with connection pooling
+- **Message Queue**: RabbitMQ for enterprise messaging
+- **Authentication**: JWT + Refresh tokens
+- **Authorization**: RBAC (Role-Based Access Control)
+- **Documentation**: Swagger/OpenAPI 3.0
+
+## Project Structure
+
+### Core Architecture (4 Layers)
+1. **Core Layer** (`apps/api/src/core/`): Infrastructure, plugins, shared components
+2. **Domains Layer** (`apps/api/src/domains/`): Business logic (auth, RBAC, audit, user management)
+3. **Features Layer** (`apps/api/src/features/`): Healthcare-specific features (structured but not implemented)
+4. **Infrastructure Layer** (`apps/api/src/infrastructure/`): Database, external services
+
+### Key Directories
+- `apps/api/src/core/plugins/` - Infrastructure plugins (database, security, validation)
+- `apps/api/src/core/shared/` - Shared components (audit system, middleware, utils)
+- `apps/api/src/domains/` - Implemented business domains
+- `apps/api/src/features/` - Healthcare features (ready for implementation)
+- `apps/api/src/infrastructure/database/migrations/` - Database schema
+- `docs/` - Comprehensive documentation
+
+## Current Implementation Status
+
+### ✅ Implemented & Ready
+- JWT Authentication with refresh tokens
+- RBAC system with permission model: `resource:action:scope`
+- Advanced audit system with multiple adapters (Direct DB, Redis Pub/Sub, RabbitMQ)
+- Database schema with migrations and seeds
+- Security middleware (Helmet, Rate Limiting, CORS)
+- API documentation with Swagger
+- Docker setup with health checks
+
+### 🚧 Structured But Not Implemented
+Healthcare features in `/features/` directory:
+- Patient Management
+- Appointment Scheduling  
+- Medical Records
+- Billing
+- Inventory
+- Reporting
+
+## Key Systems
+
+### Audit System
+- **Adapters**: Direct Database, Redis Pub/Sub, RabbitMQ
+- **Features**: Configurable filtering, data sanitization, integrity checking
+- **Configuration**: Via environment variables in audit adapter factory
+
+### RBAC System
+- **Model**: `resource:action:scope` (e.g., `patients:read:department`)
+- **Caching**: Redis-based permission caching
+- **Integration**: Middleware for route protection
+
+### Database Schema
+Current tables: users, refresh_tokens, roles, permissions, user_roles, role_permissions, audit_logs
+
+## Development Commands
+
+### Database
+- `npm run db:setup` - Start PostgreSQL container
+- `npm run db:migrate` - Run migrations
+- `npm run db:seed` - Seed data
+- `npm run db:reset` - Full reset
+
+### Development
+- `npx nx serve api` - Start development server
+- `npx nx build api` - Production build
+- `npx nx test api` - Run tests
+
+### Access Points
+- API Server: http://localhost:3000
+- API Docs: http://localhost:3000/docs
+- pgAdmin: http://localhost:8080
+
+## Important Files
+- `knexfile.ts` / `knexfile.prod.js` - Database configuration
+- `docker-compose.yml` - Service orchestration
+- `.env.example` - Environment configuration template
+- `apps/api/src/core/shared/audit/` - Audit system implementation
+- `apps/api/src/core/plugins/security/rbac.ts` - RBAC implementation
+
+## Code Conventions
+- **Architecture**: Follow domain-driven design patterns
+- **Naming**: Use kebab-case for routes, camelCase for TypeScript
+- **Structure**: Each domain/feature has: controllers, services, repositories, schemas, types, routes
+- **Validation**: Use TypeBox schemas for request/response validation
+- **Error Handling**: Use Fastify's error handling patterns
+- **Security**: Always validate input, sanitize audit data
+
+## Healthcare Context
+This is designed for healthcare applications requiring:
+- HIPAA compliance considerations
+- Comprehensive audit trails
+- Role-based access for healthcare roles
+- Scalable architecture for enterprise healthcare systems
+
+## Recent Development Focus
+- Audit system optimization (Redis Pub/Sub pattern)
+- RBAC integration with authentication
+- RabbitMQ message queuing implementation
+- Comprehensive documentation
+
+## Next Priority Areas
+1. Implement healthcare features in `/features/` directory
+2. Add comprehensive testing coverage
+3. Production deployment configuration
+4. Healthcare-specific compliance features
