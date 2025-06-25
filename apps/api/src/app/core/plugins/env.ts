@@ -238,6 +238,10 @@ const schema = {
       default: 'audit_events'
     },
     // Event Bus Configuration
+    EVENT_BUS_ENABLED: {
+      type: 'string',
+      default: 'true'
+    },
     EVENT_BUS_ADAPTER: {
       type: 'string',
       enum: ['memory', 'redis', 'rabbitmq'],
@@ -365,6 +369,7 @@ declare module 'fastify' {
       AUDIT_WORKER_PREFETCH: string;
       AUDIT_ACK_TIMEOUT: string;
       AUDIT_REDIS_CHANNEL: string;
+      EVENT_BUS_ENABLED: string;
       EVENT_BUS_ADAPTER: string;
       EVENT_BUS_REDIS_URL: string;
       EVENT_BUS_REDIS_HOST: string;

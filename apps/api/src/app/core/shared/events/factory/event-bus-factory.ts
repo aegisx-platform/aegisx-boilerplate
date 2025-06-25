@@ -6,11 +6,13 @@ import {
   RedisAdapterConfig,
   RabbitMQAdapterConfig
 } from '../adapters'
+import { NoOpAdapter } from '../adapters/noop-adapter'
 
 export type EventBusAdapterType = 'memory' | 'redis' | 'rabbitmq'
 
 export interface EventBusConfig {
   adapter: EventBusAdapterType
+  enabled?: boolean
   redis?: RedisAdapterConfig
   rabbitmq?: RabbitMQAdapterConfig
 }
@@ -19,6 +21,11 @@ export class EventBusFactory {
   private static instance: EventBus | null = null
 
   static create(config: EventBusConfig): EventBus {
+    // If event bus is disabled, return NoOp adapter
+    if (config.enabled === false) {
+      return new NoOpAdapter()
+    }
+
     let adapter: EventBus
 
     switch (config.adapter) {
@@ -43,9 +50,11 @@ export class EventBusFactory {
 
   static createFromEnv(): EventBus {
     const adapterType = (process.env.EVENT_BUS_ADAPTER || 'memory') as EventBusAdapterType
+    const enabled = process.env.EVENT_BUS_ENABLED !== 'false'
 
     const config: EventBusConfig = {
-      adapter: adapterType
+      adapter: adapterType,
+      enabled
     }
 
     // Redis configuration

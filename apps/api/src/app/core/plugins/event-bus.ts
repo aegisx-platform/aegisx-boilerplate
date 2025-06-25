@@ -149,6 +149,7 @@ async function eventBusPlugin(
   // Create event bus config from environment
   const config: EventBusConfig = {
     adapter: fastify.config.EVENT_BUS_ADAPTER as 'memory' | 'redis' | 'rabbitmq',
+    enabled: fastify.config.EVENT_BUS_ENABLED === 'true',
     redis: {
       url: fastify.config.EVENT_BUS_REDIS_URL || undefined,
       host: fastify.config.EVENT_BUS_REDIS_HOST,
@@ -229,7 +230,11 @@ async function eventBusPlugin(
   })
 
   // Log successful initialization
-  fastify.log.info(`Event Bus initialized with ${enhancedEventBus.getType()} adapter`)
+  if (fastify.config.EVENT_BUS_ENABLED === 'true') {
+    fastify.log.info(`✅ Event Bus enabled with ${enhancedEventBus.getType()} adapter`)
+  } else {
+    fastify.log.info(`ℹ️ Event Bus disabled (using ${enhancedEventBus.getType()} adapter - events will be dropped)`)
+  }
 }
 
 export default fp(eventBusPlugin, {
