@@ -13,6 +13,8 @@ import swagger from './docs/swagger';
 import rbac from './security/rbac';
 import underPressure from './monitoring/under-pressure';
 import healthCheck from './monitoring/health-check';
+import structuredLogging from './logging';
+import apmIntegration from './logging/apm-integration';
 import eventBus from './event-bus';
 import audit from './audit';
 
@@ -20,6 +22,8 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugins in specific order
   await fastify.register(env);
   await fastify.register(sensible);
+  await fastify.register(structuredLogging);
+  await fastify.register(apmIntegration);
   await fastify.register(redis);
   await fastify.register(knex);
   await fastify.register(jwt);

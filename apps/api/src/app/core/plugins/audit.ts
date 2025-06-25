@@ -13,7 +13,7 @@ import { RedisWorker } from '../workers/redis-worker';
 async function auditPlugin(fastify: FastifyInstance): Promise<void> {
   const config = fastify.config as any;
 
-  // Register audit logging middleware
+  // Register audit logging middleware with structured logging integration
   await registerAuditMiddleware(fastify, {
     enabled: config.AUDIT_ENABLED === 'true' && config.NODE_ENV !== 'test',
     excludeRoutes: config.AUDIT_EXCLUDE_ROUTES 
@@ -31,7 +31,26 @@ async function auditPlugin(fastify: FastifyInstance): Promise<void> {
     logSuccessOnly: config.AUDIT_SUCCESS_ONLY === 'true',
     logRequestBody: config.AUDIT_LOG_BODY === 'true',
     logResponseBody: false,
-    maxBodySize: parseInt(config.AUDIT_MAX_BODY_SIZE, 10)
+    maxBodySize: parseInt(config.AUDIT_MAX_BODY_SIZE, 10),
+    // Integration with structured logging
+    onAuditEvent: (auditData: any, request: any) => {
+      if (fastify.structuredLogger) {
+        fastify.structuredLogger.audit(`${auditData.action}`, {
+          correlationId: request?.correlationId,
+          userId: auditData.userId,
+          operation: auditData.action,
+          resource: auditData.resourceType,
+          statusCode: auditData.statusCode,
+          duration: auditData.duration,
+          ip: auditData.ipAddress,
+          metadata: {
+            auditId: auditData.id,
+            adapter: config.AUDIT_ADAPTER,
+            complianceLevel: 'HIPAA'
+          }
+        })
+      }
+    }
   });
 
   // Start audit workers based on adapter type

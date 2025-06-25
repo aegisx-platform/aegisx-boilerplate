@@ -13,6 +13,7 @@ export interface AuditConfig {
   logRequestBody?: boolean;
   logResponseBody?: boolean;
   maxBodySize?: number;
+  onAuditEvent?: (auditData: any, request: any) => void;
 }
 
 export class AuditLogMiddleware {
@@ -118,6 +119,15 @@ export class AuditLogMiddleware {
           };
 
           await this.auditAdapter.process(auditData);
+          
+          // Call structured logging callback if provided
+          if (this.config.onAuditEvent) {
+            try {
+              this.config.onAuditEvent(auditData, request);
+            } catch (callbackError) {
+              request.log.error('Failed to execute audit event callback', callbackError);
+            }
+          }
         } catch (auditError) {
           request.log.error('Failed to create error audit log', auditError);
         }
@@ -184,6 +194,15 @@ export class AuditLogMiddleware {
     };
 
     await this.auditAdapter.process(auditData);
+    
+    // Call structured logging callback if provided
+    if (this.config.onAuditEvent) {
+      try {
+        this.config.onAuditEvent(auditData, request);
+      } catch (error) {
+        request.log.error('Failed to execute audit event callback', error);
+      }
+    }
   }
 
   private extractContext(request: FastifyRequest): AuditContext {

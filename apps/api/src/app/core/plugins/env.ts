@@ -314,6 +314,48 @@ const schema = {
     EVENT_BUS_RABBITMQ_PREFETCH: {
       type: 'string',
       default: '10'
+    },
+    // Structured Logging Configuration
+    STRUCTURED_LOGGING_ENABLED: {
+      type: 'string',
+      default: 'true'
+    },
+    LOG_CONSOLE_ENABLED: {
+      type: 'string',
+      default: 'true'
+    },
+    LOG_FILE_ENABLED: {
+      type: 'string',
+      default: 'false'
+    },
+    LOG_CORRELATION_HEADER: {
+      type: 'string',
+      default: 'x-correlation-id'
+    },
+    SERVICE_NAME: {
+      type: 'string',
+      default: 'aegisx-api'
+    },
+    SERVICE_VERSION: {
+      type: 'string',
+      default: '1.0.0'
+    },
+    // APM Configuration
+    APM_ENABLED: {
+      type: 'string',
+      default: 'false'
+    },
+    APM_SERVICE_NAME: {
+      type: 'string',
+      default: 'aegisx-api'
+    },
+    APM_SERVICE_VERSION: {
+      type: 'string',
+      default: '1.0.0'
+    },
+    APM_METRICS_PORT: {
+      type: 'string',
+      default: '9090'
     }
   }
 };
@@ -388,6 +430,16 @@ declare module 'fastify' {
       EVENT_BUS_RABBITMQ_EXCHANGE_TYPE: string;
       EVENT_BUS_RABBITMQ_DLX: string;
       EVENT_BUS_RABBITMQ_PREFETCH: string;
+      STRUCTURED_LOGGING_ENABLED: string;
+      LOG_CONSOLE_ENABLED: string;
+      LOG_FILE_ENABLED: string;
+      LOG_CORRELATION_HEADER: string;
+      SERVICE_NAME: string;
+      SERVICE_VERSION: string;
+      APM_ENABLED: string;
+      APM_SERVICE_NAME: string;
+      APM_SERVICE_VERSION: string;
+      APM_METRICS_PORT: string;
     };
   }
 }
