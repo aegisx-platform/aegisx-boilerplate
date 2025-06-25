@@ -107,10 +107,11 @@ This is designed for healthcare applications requiring:
 - Scalable architecture for enterprise healthcare systems
 
 ## Recent Development Focus
+- Event Bus system with multi-adapter support (Memory, Redis, RabbitMQ)
+- Event Bus enable/disable functionality using NoOp pattern
 - Audit system optimization (Redis Pub/Sub pattern)
 - RBAC integration with authentication
-- RabbitMQ message queuing implementation
-- Comprehensive documentation
+- Comprehensive documentation and health monitoring
 
 ## Next Priority Areas
 1. Implement healthcare features in `/features/` directory

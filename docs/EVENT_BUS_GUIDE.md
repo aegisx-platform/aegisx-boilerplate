@@ -100,21 +100,29 @@ apps/api/src/app/core/shared/events/
 ```bash
 # .env
 # Event Bus Configuration
-EVENT_BUS_ADAPTER=memory  # memory | redis | rabbitmq
+EVENT_BUS_ENABLED=true         # เปิด/ปิด Event Bus (true/false)
+EVENT_BUS_ADAPTER=memory       # memory | redis | rabbitmq
 
-# Redis Configuration (เมื่อใช้ redis adapter)
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-REDIS_DB=0
+# Redis Event Bus Configuration (เมื่อใช้ redis adapter)
+EVENT_BUS_REDIS_URL=
+EVENT_BUS_REDIS_HOST=localhost
+EVENT_BUS_REDIS_PORT=6379
+EVENT_BUS_REDIS_PASSWORD=
+EVENT_BUS_REDIS_DB=1
+EVENT_BUS_REDIS_KEY_PREFIX=events:
+EVENT_BUS_REDIS_MAX_RETRIES=3
 
-# RabbitMQ Configuration (เมื่อใช้ rabbitmq adapter)
-RABBITMQ_URL=amqp://localhost:5672
-RABBITMQ_HOST=localhost
-RABBITMQ_PORT=5672
-RABBITMQ_USERNAME=guest
-RABBITMQ_PASSWORD=guest
-RABBITMQ_VHOST=/
+# RabbitMQ Event Bus Configuration (เมื่อใช้ rabbitmq adapter)
+EVENT_BUS_RABBITMQ_URL=amqp://guest:guest@localhost:5672
+EVENT_BUS_RABBITMQ_HOST=localhost
+EVENT_BUS_RABBITMQ_PORT=5672
+EVENT_BUS_RABBITMQ_USERNAME=guest
+EVENT_BUS_RABBITMQ_PASSWORD=guest
+EVENT_BUS_RABBITMQ_VHOST=/
+EVENT_BUS_RABBITMQ_EXCHANGE=events
+EVENT_BUS_RABBITMQ_EXCHANGE_TYPE=topic
+EVENT_BUS_RABBITMQ_DLX=events.dlx
+EVENT_BUS_RABBITMQ_PREFETCH=10
 ```
 
 ### 2. Fastify Plugin Registration
@@ -206,6 +214,7 @@ await fastify.eventBus.publish('order.created', orderData, {
 
 ```typescript
 // กำหนดค่าใน .env
+EVENT_BUS_ENABLED=true
 EVENT_BUS_ADAPTER=memory
 ```
 
@@ -230,10 +239,13 @@ if (process.env.NODE_ENV === 'development') {
 
 ```typescript
 // กำหนดค่าใน .env
+EVENT_BUS_ENABLED=true
 EVENT_BUS_ADAPTER=redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=your_password
+EVENT_BUS_REDIS_HOST=localhost
+EVENT_BUS_REDIS_PORT=6379
+EVENT_BUS_REDIS_PASSWORD=your_password
+EVENT_BUS_REDIS_DB=1
+EVENT_BUS_REDIS_KEY_PREFIX=events:
 ```
 
 **คุณสมบัติ**:
@@ -258,12 +270,15 @@ Publisher ──publish──▶ Redis Channel ──subscribe──▶ Subscrib
 
 ```typescript
 // กำหนดค่าใน .env  
+EVENT_BUS_ENABLED=true
 EVENT_BUS_ADAPTER=rabbitmq
-RABBITMQ_URL=amqp://localhost:5672
-RABBITMQ_HOST=localhost
-RABBITMQ_PORT=5672
-RABBITMQ_USERNAME=guest
-RABBITMQ_PASSWORD=guest
+EVENT_BUS_RABBITMQ_URL=amqp://guest:guest@localhost:5672
+EVENT_BUS_RABBITMQ_HOST=localhost
+EVENT_BUS_RABBITMQ_PORT=5672
+EVENT_BUS_RABBITMQ_USERNAME=guest
+EVENT_BUS_RABBITMQ_PASSWORD=guest
+EVENT_BUS_RABBITMQ_EXCHANGE=events
+EVENT_BUS_RABBITMQ_EXCHANGE_TYPE=topic
 ```
 
 **คุณสมบัติ**:
@@ -282,6 +297,42 @@ Publisher ──▶ Exchange ──▶ Queue ──▶ Consumer
             [Routing Key]   [Dead Letter]
             user.created    user.created.dlx
             order.*         order.failed.dlx
+```
+
+### 4. NoOp Adapter (Disabled Mode)
+**เหมาะสำหรับ**: การปิด Event Bus โดยไม่กระทบต่อ application code
+
+```typescript
+// กำหนดค่าใน .env
+EVENT_BUS_ENABLED=false  # ปิด Event Bus
+EVENT_BUS_ADAPTER=memory # อะไรก็ได้ (จะใช้ NoOp แทน)
+```
+
+**คุณสมบัติ**:
+- ✅ รับ events แต่ drop ทิ้งเงียบๆ
+- ✅ รับ subscriptions แต่ไม่ส่ง events
+- ✅ ไม่มี external dependencies
+- ✅ API compatibility เต็มรูปแบบ
+- ✅ Health checks ยังทำงานได้
+- ✅ Stats แสดง events ที่ถูก drop
+
+**ตัวอย่างการใช้งาน**:
+```typescript
+// ปิด Event Bus ใน testing environment
+if (process.env.NODE_ENV === 'test') {
+  process.env.EVENT_BUS_ENABLED = 'false'
+  // Events จะถูก drop แต่ไม่ error
+}
+
+// Health check ยังใช้ได้
+const health = await fastify.eventBus.health()
+console.log(health)
+// {
+//   "status": "healthy",
+//   "adapter": "noop", 
+//   "message": "Event bus is disabled (NoOp adapter)",
+//   "eventsDropped": 25
+// }
 ```
 
 ---
@@ -904,8 +955,9 @@ Event Bus System ใน AegisX ให้ความสามารถในก�
 
 ### 🚀 **การใช้งาน**
 1. **Development**: ใช้ Memory adapter สำหรับ testing
-2. **Staging**: ใช้ Redis adapter สำหรับ performance testing  
-3. **Production**: ใช้ RabbitMQ adapter สำหรับ enterprise reliability
+2. **Testing**: ปิด Event Bus ด้วย `EVENT_BUS_ENABLED=false`
+3. **Staging**: ใช้ Redis adapter สำหรับ performance testing  
+4. **Production**: ใช้ RabbitMQ adapter สำหรับ enterprise reliability
 
 ### 📈 **Next Steps**
 - เพิ่ม Event Sourcing patterns
