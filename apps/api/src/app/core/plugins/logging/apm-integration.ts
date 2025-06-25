@@ -1,6 +1,5 @@
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node'
 import { NodeSDK } from '@opentelemetry/sdk-node'
-import { PrometheusExporter } from '@opentelemetry/exporter-prometheus'
 import { FastifyInstance } from 'fastify'
 import fp from 'fastify-plugin'
 
@@ -15,7 +14,6 @@ export interface APMConfig {
 export class APMIntegration {
   private sdk: NodeSDK | null = null
   private config: APMConfig
-  private metricsExporter: PrometheusExporter | null = null
 
   constructor(config: APMConfig) {
     this.config = config
@@ -28,25 +26,24 @@ export class APMIntegration {
     }
 
     try {
-      // Initialize Prometheus metrics exporter
-      this.metricsExporter = new PrometheusExporter({
-        port: this.config.metricsPort,
-        endpoint: '/metrics'
-      }, () => {
-        console.log(`Prometheus metrics available on port ${this.config.metricsPort}/metrics`)
-      })
-
-      // Initialize OpenTelemetry SDK
+      // Initialize OpenTelemetry SDK first (without metrics for now)
       this.sdk = new NodeSDK({
-        metricReader: this.metricsExporter,
-        instrumentations: [getNodeAutoInstrumentations()]
+        instrumentations: [getNodeAutoInstrumentations({
+          '@opentelemetry/instrumentation-fs': {
+            enabled: false
+          }
+        })]
       })
 
       this.sdk.start()
-      console.log('APM Integration initialized successfully')
+      console.log(`APM Integration initialized successfully - Tracing enabled`)
+      
+      // Note: Prometheus metrics can be added later when needed
+      console.log(`For Prometheus metrics, install additional packages and configure metric readers`)
     } catch (error) {
       console.error('Failed to initialize APM Integration:', error)
-      throw error
+      // Don't throw error, just disable APM
+      this.config.enabled = false
     }
   }
 
@@ -58,7 +55,7 @@ export class APMIntegration {
   }
 
   getMetricsEndpoint(): string {
-    return `http://localhost:${this.config.metricsPort}/metrics`
+    return `APM tracing enabled - Prometheus metrics require additional configuration`
   }
 
   isEnabled(): boolean {

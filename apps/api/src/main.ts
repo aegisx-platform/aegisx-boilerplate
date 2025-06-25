@@ -5,25 +5,25 @@ const host = process.env.HOST ?? 'localhost';
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 // Instantiate Fastify with some config
-const envToLogger = {
-  development: {
-    transport: {
-      target: 'pino-pretty',
-      options: {
-        translateTime: 'HH:MM:ss Z',
-        ignore: 'pid,hostname',
-      },
-    },
-  },
-  production: true,
-  test: false,
-} as const;
+// const envToLogger = {
+//   development: {
+//     transport: {
+//       target: 'pino-pretty',
+//       options: {
+//         translateTime: 'HH:MM:ss Z',
+//         ignore: 'pid,hostname',
+//       },
+//     },
+//   },
+//   production: true,
+//   test: false,
+// } as const;
 
-type Env = keyof typeof envToLogger;
-const environment: Env = (process.env.NODE_ENV as Env) ?? 'development';
+// type Env = keyof typeof envToLogger;
+// const environment: Env = (process.env.NODE_ENV as Env) ?? 'development';
 
 const server = Fastify({
-  logger: envToLogger[environment] ?? true
+  logger: true
 });
 
 // Register your application as a normal plugin.
