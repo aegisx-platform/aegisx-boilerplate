@@ -324,6 +324,110 @@ const schema = {
       type: 'string',
       default: 'secrets'
     },
+
+    // Background Jobs Configuration
+    JOBS_ADAPTER_TYPE: {
+      type: 'string',
+      enum: ['memory', 'redis', 'rabbitmq', 'database'],
+      default: 'memory'
+    },
+    JOBS_WORKERS: {
+      type: 'string',
+      default: '2'
+    },
+    JOBS_CONCURRENCY: {
+      type: 'string', 
+      default: '5'
+    },
+    JOBS_MAX_CONCURRENCY: {
+      type: 'string',
+      default: '20'
+    },
+    JOBS_DEFAULT_QUEUE: {
+      type: 'string',
+      default: 'default'
+    },
+    JOBS_DEFAULT_TIMEOUT: {
+      type: 'string',
+      default: '300000' // 5 minutes
+    },
+    JOBS_DEFAULT_TTL: {
+      type: 'string',
+      default: '86400000' // 24 hours
+    },
+    JOBS_DEFAULT_ATTEMPTS: {
+      type: 'string',
+      default: '3'
+    },
+    JOBS_CLEANUP_INTERVAL: {
+      type: 'string',
+      default: '3600000' // 1 hour
+    },
+    JOBS_STALLED_INTERVAL: {
+      type: 'string',
+      default: '30000' // 30 seconds
+    },
+    JOBS_MAX_STALLED: {
+      type: 'string',
+      default: '1'
+    },
+    JOBS_MONITORING_ENABLED: {
+      type: 'string',
+      default: 'true'
+    },
+    JOBS_METRICS_INTERVAL: {
+      type: 'string',
+      default: '60000' // 1 minute
+    },
+    JOBS_HEALTH_INTERVAL: {
+      type: 'string',
+      default: '30000' // 30 seconds
+    },
+    JOBS_AUDIT_ENABLED: {
+      type: 'string',
+      default: 'false'
+    },
+    JOBS_ENCRYPT_DATA: {
+      type: 'string',
+      default: 'false'
+    },
+    JOBS_COMPLIANCE_MODE: {
+      type: 'string',
+      default: 'false'
+    },
+    JOBS_RETENTION_PERIOD: {
+      type: 'string',
+      default: '2592000000' // 30 days
+    },
+    REDIS_JOBS_DB: {
+      type: 'string',
+      default: '1'
+    },
+    JOBS_REDIS_PREFIX: {
+      type: 'string',
+      default: 'jobs:'
+    },
+    JOBS_DB_TABLE: {
+      type: 'string',
+      default: 'background_jobs'
+    },
+    JOBS_POLL_INTERVAL: {
+      type: 'string',
+      default: '5000' // 5 seconds
+    },
+    JOBS_MEMORY_MAX: {
+      type: 'string',
+      default: '10000'
+    },
+    JOBS_MEMORY_PERSIST: {
+      type: 'string',
+      default: 'false'
+    },
+    JOBS_MEMORY_FILE: {
+      type: 'string',
+      default: ''
+    },
+
     // Event Bus Configuration
     EVENT_BUS_ENABLED: {
       type: 'string',
@@ -552,6 +656,33 @@ declare module 'fastify' {
       SECRETS_AUDIT_ACCESS: string;
       SECRETS_REQUIRE_NAMESPACE: string;
       SECRETS_DB_TABLE: string;
+
+      // Background Jobs Configuration
+      JOBS_ADAPTER_TYPE: string;
+      JOBS_WORKERS: string;
+      JOBS_CONCURRENCY: string;
+      JOBS_MAX_CONCURRENCY: string;
+      JOBS_DEFAULT_QUEUE: string;
+      JOBS_DEFAULT_TIMEOUT: string;
+      JOBS_DEFAULT_TTL: string;
+      JOBS_DEFAULT_ATTEMPTS: string;
+      JOBS_CLEANUP_INTERVAL: string;
+      JOBS_STALLED_INTERVAL: string;
+      JOBS_MAX_STALLED: string;
+      JOBS_MONITORING_ENABLED: string;
+      JOBS_METRICS_INTERVAL: string;
+      JOBS_HEALTH_INTERVAL: string;
+      JOBS_AUDIT_ENABLED: string;
+      JOBS_ENCRYPT_DATA: string;
+      JOBS_COMPLIANCE_MODE: string;
+      JOBS_RETENTION_PERIOD: string;
+      REDIS_JOBS_DB: string;
+      JOBS_REDIS_PREFIX: string;
+      JOBS_DB_TABLE: string;
+      JOBS_POLL_INTERVAL: string;
+      JOBS_MEMORY_MAX: string;
+      JOBS_MEMORY_PERSIST: string;
+      JOBS_MEMORY_FILE: string;
     };
   }
 }
