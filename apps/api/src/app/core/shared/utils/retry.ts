@@ -16,15 +16,14 @@ export class RetryManager {
 
   constructor(config: RetryOptions) {
     this.config = {
-      attempts: 3,
-      delay: 1000,
-      backoff: 'exponential',
-      jitter: true,
-      maxDelay: 30000,
-      name: 'unknown',
-      retryCondition: this.defaultRetryCondition,
-      onRetry: () => {},
-      ...config
+      attempts: config.attempts || 3,
+      delay: config.delay || 1000,
+      backoff: config.backoff || 'exponential',
+      jitter: config.jitter !== undefined ? config.jitter : true,
+      maxDelay: config.maxDelay || 30000,
+      name: config.name || 'unknown',
+      retryCondition: config.retryCondition || this.defaultRetryCondition,
+      onRetry: config.onRetry || (() => {})
     }
 
     this.validateConfig()

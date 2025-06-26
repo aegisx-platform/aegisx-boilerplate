@@ -13,7 +13,6 @@ import {
   SecretsAdapterType,
   EnvironmentAdapterConfig,
   DatabaseAdapterConfig,
-  RedisAdapterConfig,
   ProductionSecretsManagerConfig,
   DefaultSecretsManagerConfig
 } from '../types/secrets-manager.types'
@@ -111,6 +110,7 @@ export class SecretsManagerFactory {
     knex?: Knex
   ): Promise<ISecretsManager> {
     const config: SecretsManagerConfig = {
+      adapter: 'hashicorp-vault',
       ...ProductionSecretsManagerConfig,
       adapters: {
         environment: {
@@ -367,7 +367,7 @@ export class SecretsManagerFactory {
     // Create and add each unique adapter
     for (const type of adapterTypes) {
       try {
-        const adapterConfig = config.adapters[type]
+        const adapterConfig = (config.adapters as any)[type]
         if (!adapterConfig) {
           console.warn(`No configuration found for adapter type: ${type}`)
           continue
@@ -408,7 +408,7 @@ export class SecretsManagerBuilder {
     if (!this.config.adapters) {
       this.config.adapters = {}
     }
-    this.config.adapters[type] = config || {}
+    ;(this.config.adapters as any)[type] = config || {}
     return this
   }
 
@@ -424,7 +424,7 @@ export class SecretsManagerBuilder {
     if (!this.config.adapters) {
       this.config.adapters = {}
     }
-    this.config.adapters[type] = config || {}
+    ;(this.config.adapters as any)[type] = config || {}
     return this
   }
 
@@ -493,6 +493,8 @@ export class SecretsManagerBuilder {
   public async build(): Promise<ISecretsManager> {
     // Set defaults
     const finalConfig: SecretsManagerConfig = {
+      adapter: 'environment',
+      adapters: {},
       ...DefaultSecretsManagerConfig,
       ...this.config
     }
@@ -506,8 +508,8 @@ export class SecretsManagerBuilder {
     }
     
     // Ensure primary adapter has configuration
-    if (!finalConfig.adapters[finalConfig.adapter]) {
-      finalConfig.adapters[finalConfig.adapter] = {}
+    if (!(finalConfig.adapters as any)[finalConfig.adapter]) {
+      ;(finalConfig.adapters as any)[finalConfig.adapter] = {}
     }
     
     return SecretsManagerFactory.create(finalConfig, this.options)

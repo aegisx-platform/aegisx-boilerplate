@@ -34,13 +34,13 @@ export class HttpClientFactory {
    * Create a standard HTTP client with default configuration
    */
   static create(config: Partial<HttpClientConfig> = {}): IHttpClient {
-    const mergedConfig = {
+    const mergedConfig: HttpClientConfig = {
       ...this.defaultConfig,
       ...config,
-      retry: { ...this.defaultConfig.retry, ...config.retry },
-      circuitBreaker: { ...this.defaultConfig.circuitBreaker, ...config.circuitBreaker },
-      cache: { ...this.defaultConfig.cache, ...config.cache },
-      logging: { ...this.defaultConfig.logging, ...config.logging }
+      retry: config.retry ? { ...this.defaultConfig.retry, ...config.retry } : this.defaultConfig.retry,
+      circuitBreaker: config.circuitBreaker ? { ...this.defaultConfig.circuitBreaker, ...config.circuitBreaker } : this.defaultConfig.circuitBreaker,
+      cache: config.cache ? { ...this.defaultConfig.cache, ...config.cache } : this.defaultConfig.cache,
+      logging: config.logging ? { ...this.defaultConfig.logging, ...config.logging } : this.defaultConfig.logging
     }
 
     return new HttpClientService(mergedConfig)
@@ -124,7 +124,8 @@ export class HttpClientFactory {
         monitoringPeriod: 3000
       },
       cache: {
-        enabled: false
+        enabled: false,
+        defaultTtl: 300000
       }
     })
   }

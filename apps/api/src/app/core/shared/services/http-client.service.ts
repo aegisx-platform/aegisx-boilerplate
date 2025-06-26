@@ -27,7 +27,7 @@ import {
   CacheOptions
 } from '../types/http-client.types'
 import { CircuitBreakerManager } from '../utils/circuit-breaker'
-import { RetryManager, createRetryManager } from '../utils/retry'
+import { createRetryManager } from '../utils/retry'
 
 export class HttpClientService implements IHttpClient {
   private readonly axios: AxiosInstance
@@ -108,7 +108,7 @@ export class HttpClientService implements IHttpClient {
           circuitBreakerState: 'closed'
         }
 
-        config.metadata = metadata
+        ;(config as any).metadata = metadata
 
         if (this.config.logging?.requests) {
           console.log(`[HTTP] ${metadata.method} ${metadata.url}`, {
@@ -127,7 +127,7 @@ export class HttpClientService implements IHttpClient {
     // Response interceptor
     this.axios.interceptors.response.use(
       (response) => {
-        const metadata = response.config.metadata as RequestMetadata
+        const metadata = (response.config as any).metadata as RequestMetadata
         metadata.endTime = Date.now()
         metadata.duration = metadata.endTime - metadata.startTime
 
@@ -226,12 +226,11 @@ export class HttpClientService implements IHttpClient {
     data?: any,
     options: RequestOptions = {}
   ): Promise<ApiResponse<T>> {
-    const startTime = Date.now()
     this.stats.totalRequests++
 
     // Check cache first
     if (method === 'GET' && (options.cache || this.config.cache?.enabled)) {
-      const cached = this.getCachedResponse<T>(url, options.cache)
+      const cached = this.getCachedResponse<T>(url, typeof options.cache === 'object' ? options.cache : undefined)
       if (cached) {
         this.stats.cacheHitRate = (this.stats.cacheHitRate * (this.stats.totalRequests - 1) + 1) / this.stats.totalRequests
         return cached
@@ -240,10 +239,14 @@ export class HttpClientService implements IHttpClient {
 
     // Create retry manager
     const retryConfig = {
-      ...this.config.retry,
-      ...options
+      attempts: this.config.retry?.attempts || 0,
+      delay: this.config.retry?.delay || 1000,
+      backoff: this.config.retry?.backoff || 'exponential',
+      jitter: this.config.retry?.jitter,
+      retryCondition: this.config.retry?.retryCondition,
+      onRetry: this.config.retry?.onRetry
     }
-    const retryManager = createRetryManager(retryConfig || { attempts: 0 })
+    const retryManager = createRetryManager(retryConfig)
 
     // Circuit breaker key
     const circuitBreakerKey = this.getCircuitBreakerKey(url)
@@ -256,7 +259,7 @@ export class HttpClientService implements IHttpClient {
 
       // Cache response if applicable
       if (method === 'GET' && (options.cache || this.config.cache?.enabled)) {
-        this.setCachedResponse(url, response, options.cache)
+        this.setCachedResponse(url, response, typeof options.cache === 'object' ? options.cache : undefined)
       }
 
       return response
@@ -290,7 +293,7 @@ export class HttpClientService implements IHttpClient {
     }
 
     const response: AxiosResponse<T> = await this.axios.request(axiosConfig)
-    const metadata = response.config.metadata as RequestMetadata
+    const metadata = (response.config as any).metadata as RequestMetadata
 
     const apiResponse: ApiResponse<T> = {
       data: response.data,
@@ -435,7 +438,14 @@ export class HttpClientService implements IHttpClient {
 
   withRetry(config: Partial<import('../types/http-client.types').RetryConfig>): IHttpClient {
     const newConfig = { ...this.config }
-    newConfig.retry = { ...this.config.retry, ...config }
+    newConfig.retry = { 
+      attempts: config.attempts ?? this.config.retry?.attempts ?? 3,
+      delay: config.delay ?? this.config.retry?.delay ?? 1000,
+      backoff: config.backoff ?? this.config.retry?.backoff ?? 'exponential',
+      jitter: config.jitter ?? this.config.retry?.jitter,
+      retryCondition: config.retryCondition ?? this.config.retry?.retryCondition,
+      onRetry: config.onRetry ?? this.config.retry?.onRetry
+    }
     return new HttpClientService(newConfig)
   }
 
@@ -453,7 +463,13 @@ export class HttpClientService implements IHttpClient {
 
   withCircuitBreaker(config?: Partial<import('../types/http-client.types').CircuitBreakerConfig>): IHttpClient {
     const newConfig = { ...this.config }
-    newConfig.circuitBreaker = { ...this.config.circuitBreaker, ...config }
+    newConfig.circuitBreaker = {
+      enabled: config?.enabled ?? this.config.circuitBreaker?.enabled ?? true,
+      failureThreshold: config?.failureThreshold ?? this.config.circuitBreaker?.failureThreshold ?? 5,
+      successThreshold: config?.successThreshold ?? this.config.circuitBreaker?.successThreshold ?? 3,
+      timeout: config?.timeout ?? this.config.circuitBreaker?.timeout ?? 60000,
+      monitoringPeriod: config?.monitoringPeriod ?? this.config.circuitBreaker?.monitoringPeriod ?? 10000
+    }
     return new HttpClientService(newConfig)
   }
 

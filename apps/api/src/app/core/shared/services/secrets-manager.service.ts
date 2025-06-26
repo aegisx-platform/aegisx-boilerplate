@@ -15,7 +15,6 @@ import {
   SecretsStats,
   SecretsAdapterType,
   SecretsManagerError,
-  SecretNotFoundError,
   AdapterUnavailableError,
   DefaultSecretsManagerConfig
 } from '../types/secrets-manager.types'

@@ -107,13 +107,12 @@ export class EncryptionService {
 
       switch (this.algorithm) {
         case 'aes-256-gcm':
-          cipher = crypto.createCipher('aes-256-gcm', encryptionKey)
-          cipher.setAAD(salt) // Additional authenticated data
+          const cipherGCM = crypto.createCipher('aes-256-gcm', encryptionKey) as any
           encryptedData = Buffer.concat([
-            cipher.update(plaintext, 'utf8'),
-            cipher.final()
+            cipherGCM.update(plaintext, 'utf8'),
+            cipherGCM.final()
           ])
-          tag = cipher.getAuthTag().toString('hex')
+          tag = cipherGCM.getAuthTag().toString('hex')
           break
 
         case 'aes-256-cbc':
@@ -125,13 +124,12 @@ export class EncryptionService {
           break
 
         case 'chacha20-poly1305':
-          cipher = crypto.createCipher('chacha20-poly1305', encryptionKey)
-          cipher.setAAD(salt)
+          const cipherChaCha = crypto.createCipher('chacha20-poly1305', encryptionKey) as any
           encryptedData = Buffer.concat([
-            cipher.update(plaintext, 'utf8'),
-            cipher.final()
+            cipherChaCha.update(plaintext, 'utf8'),
+            cipherChaCha.final()
           ])
-          tag = cipher.getAuthTag().toString('hex')
+          tag = cipherChaCha.getAuthTag().toString('hex')
           break
 
         default:
@@ -160,7 +158,6 @@ export class EncryptionService {
 
     try {
       const salt = Buffer.from(encryptionResult.salt, 'hex')
-      const iv = Buffer.from(encryptionResult.iv, 'hex')
       const encryptedData = Buffer.from(encryptionResult.encryptedData, 'hex')
       
       // Derive the same encryption key
@@ -174,12 +171,11 @@ export class EncryptionService {
           if (!encryptionResult.tag) {
             throw new EncryptionError('decrypt', 'Authentication tag missing for AES-GCM')
           }
-          decipher = crypto.createDecipher('aes-256-gcm', encryptionKey)
-          decipher.setAAD(salt)
-          decipher.setAuthTag(Buffer.from(encryptionResult.tag, 'hex'))
+          const decipherGCM = crypto.createDecipher('aes-256-gcm', encryptionKey) as any
+          decipherGCM.setAuthTag(Buffer.from(encryptionResult.tag, 'hex'))
           decryptedData = Buffer.concat([
-            decipher.update(encryptedData),
-            decipher.final()
+            decipherGCM.update(encryptedData),
+            decipherGCM.final()
           ])
           break
 
@@ -195,12 +191,11 @@ export class EncryptionService {
           if (!encryptionResult.tag) {
             throw new EncryptionError('decrypt', 'Authentication tag missing for ChaCha20-Poly1305')
           }
-          decipher = crypto.createDecipher('chacha20-poly1305', encryptionKey)
-          decipher.setAAD(salt)
-          decipher.setAuthTag(Buffer.from(encryptionResult.tag, 'hex'))
+          const decipherChaCha = crypto.createDecipher('chacha20-poly1305', encryptionKey) as any
+          decipherChaCha.setAuthTag(Buffer.from(encryptionResult.tag, 'hex'))
           decryptedData = Buffer.concat([
-            decipher.update(encryptedData),
-            decipher.final()
+            decipherChaCha.update(encryptedData),
+            decipherChaCha.final()
           ])
           break
 
@@ -223,7 +218,7 @@ export class EncryptionService {
     }
 
     // Use HKDF to derive encryption key
-    return crypto.hkdfSync('sha256', this.masterKey, salt, Buffer.alloc(0), 32)
+    return Buffer.from(crypto.hkdfSync('sha256', this.masterKey, salt, Buffer.alloc(0), 32))
   }
 
   /**
