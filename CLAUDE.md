@@ -92,13 +92,23 @@ Current tables: users, refresh_tokens, roles, permissions, user_roles, role_perm
 - `npx nx build api` - Production build
 - `npx nx test api` - Run tests
 
-### Logging & Monitoring
+### Logging Selector (Interactive Tool)
+- `./scripts/logging-selector.sh` - Interactive logging solution selector
+- Choose from 6 monitoring options:
+  1. Seq (SQL-based analysis)
+  2. Grafana + Loki (Simple)
+  3. Fluent Bit + Loki (Advanced + HIPAA)
+  4. Fluent Bit + Elasticsearch (Analytics)
+  5. Graylog (Centralized Log Management)
+  6. Graylog + Fluent Bit (Advanced + HIPAA) ⭐ Recommended for Healthcare
+
+### Logging & Monitoring (Manual Commands)
 - `docker-compose -f docker-compose.seq.yml up -d` - Start Seq log monitoring
 - `docker-compose -f docker-compose.loki.yml up -d` - Start Grafana + Loki stack
-- `docker-compose -f docker-compose.fluent-bit.yml up -d` - Start Fluent Bit + full logging stack
-- `docker-compose -f docker-compose.seq.yml down` - Stop Seq
-- `docker-compose -f docker-compose.loki.yml down` - Stop Grafana + Loki
-- `docker-compose -f docker-compose.fluent-bit.yml down -v` - Stop Fluent Bit and remove data
+- `docker-compose -f docker-compose.fluent-bit.yml up -d` - Start Fluent Bit + advanced stack
+- `docker-compose -f docker-compose.graylog.yml up -d` - Start Graylog centralized logging
+- `docker-compose -f docker-compose.graylog.yml --profile fluent-bit up -d` - Start Graylog + Fluent Bit
+- Stop commands: Replace `up -d` with `down` for any of the above
 
 ### Access Points
 - API Server: http://localhost:3000
@@ -110,6 +120,8 @@ Current tables: users, refresh_tokens, roles, permissions, user_roles, role_perm
 - Fluent Bit (when enabled): http://localhost:2020 (monitoring)
 - Elasticsearch (optional): http://localhost:9200
 - Kibana (optional): http://localhost:5601
+- Graylog (when enabled): http://localhost:9000 (admin/admin)
+- Graylog Elasticsearch: http://localhost:9201
 
 ## Important Files
 - `knexfile.ts` / `knexfile.prod.js` - Database configuration
@@ -117,16 +129,19 @@ Current tables: users, refresh_tokens, roles, permissions, user_roles, role_perm
 - `docker-compose.seq.yml` - Seq logging stack
 - `docker-compose.loki.yml` - Grafana + Loki logging stack
 - `docker-compose.fluent-bit.yml` - Fluent Bit advanced logging stack
+- `docker-compose.graylog.yml` - Graylog centralized logging stack
 - `.env.example` - Environment configuration template
 - `apps/api/src/core/plugins/logging/` - Structured logging implementation
 - `apps/api/src/core/shared/audit/` - Audit system implementation
 - `apps/api/src/core/plugins/security/rbac.ts` - RBAC implementation
-- `config/fluent-bit.conf` - Fluent Bit configuration
+- `config/fluent-bit*.conf` - Fluent Bit configurations (simple, advanced, Graylog)
 - `config/parsers.conf` - Log parsers configuration
 - `config/loki-config.yml` - Loki configuration
 - `config/promtail-config.yml` - Promtail configuration
+- `scripts/logging-selector.sh` - Interactive logging solution selector
 - `scripts/correlation.lua` - Correlation ID enhancement
 - `scripts/hipaa_sanitizer.lua` - HIPAA compliance sanitization
+- `scripts/graylog_formatter.lua` - Graylog GELF formatting
 - `dashboards/` - Grafana dashboard definitions
 
 ## Code Conventions

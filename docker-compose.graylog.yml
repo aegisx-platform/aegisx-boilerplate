@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  # MongoDB (Required for Graylog)
+  mongodb:
+    image: mongo:5.0
+    container_name: aegisx-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password}
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - aegisx-network
+
+  # Elasticsearch for Graylog
+  elasticsearch-graylog:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
+    container_name: aegisx-elasticsearch-graylog
+    environment:
+      - http.host=0.0.0.0
+      - transport.host=localhost
+      - network.host=0.0.0.0
+      - "ES_JAVA_OPTS=-Dlog4j2.formatMsgNoLookups=true -Xms512m -Xmx512m"
+      - discovery.type=single-node
+      - action.auto_create_index=false
+    volumes:
+      - elasticsearch-graylog-data:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    restart: unless-stopped
+    networks:
+      - aegisx-network
+    ports:
+      - "9201:9200"  # Different port to avoid conflicts
+
+  # Graylog Server
+  graylog:
+    image: graylog/graylog:5.2
+    container_name: aegisx-graylog
+    environment:
+      # CHANGE ME (must be at least 16 characters)!
+      - GRAYLOG_PASSWORD_SECRET=${GRAYLOG_PASSWORD_SECRET:-somepasswordpepper}
+      # Password: admin
+      - GRAYLOG_ROOT_PASSWORD_SHA2=${GRAYLOG_ROOT_PASSWORD_SHA2:-8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918}
+      - GRAYLOG_HTTP_EXTERNAL_URI=${GRAYLOG_HTTP_EXTERNAL_URI:-http://127.0.0.1:9000/}
+      - GRAYLOG_ELASTICSEARCH_HOSTS=http://elasticsearch-graylog:9200
+      - GRAYLOG_MONGODB_URI=mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-password}@mongodb:27017/graylog?authSource=admin
+      - GRAYLOG_TIMEZONE=${GRAYLOG_TIMEZONE:-Asia/Bangkok}
+      
+      # Additional Graylog configurations
+      - GRAYLOG_MESSAGE_JOURNAL_ENABLED=true
+      - GRAYLOG_MESSAGE_JOURNAL_DIR=/usr/share/graylog/data/journal
+      - GRAYLOG_LB_RECOGNITION_PERIOD_SECONDS=3
+      - GRAYLOG_OUTPUT_BATCH_SIZE=500
+      - GRAYLOG_PROCESSBUFFER_PROCESSORS=5
+      - GRAYLOG_OUTPUTBUFFER_PROCESSORS=3
+      - GRAYLOG_PROCESSOR_WAIT_STRATEGY=blocking
+      - GRAYLOG_RING_SIZE=65536
+      - GRAYLOG_INPUTBUFFER_RING_SIZE=65536
+      - GRAYLOG_INPUTBUFFER_PROCESSORS=2
+      - GRAYLOG_INPUTBUFFER_WAIT_STRATEGY=blocking
+    volumes:
+      - graylog-data:/usr/share/graylog/data
+      - ./config/graylog:/usr/share/graylog/data/config:ro
+    ports:
+      - "9000:9000"   # Graylog Web Interface
+      - "1514:1514"   # Syslog TCP
+      - "1514:1514/udp" # Syslog UDP
+      - "12201:12201" # GELF TCP
+      - "12201:12201/udp" # GELF UDP
+      - "5555:5555"   # Raw/Plaintext TCP
+    depends_on:
+      - mongodb
+      - elasticsearch-graylog
+    restart: unless-stopped
+    networks:
+      - aegisx-network
+
+  # Fluent Bit for Graylog (Optional - Alternative to direct logging)
+  fluent-bit-graylog:
+    image: fluent/fluent-bit:latest
+    container_name: aegisx-fluent-bit-graylog
+    ports:
+      - "2021:2020"    # HTTP server for monitoring (different port)
+      - "24225:24224"  # Forward input port (different port)
+    volumes:
+      # Configuration files
+      - ./config/fluent-bit-graylog.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./config/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      
+      # Lua scripts
+      - ./scripts:/fluent-bit/scripts:ro
+      
+      # Log files to monitor
+      - ./logs:/var/log/aegisx:ro
+      
+      # Output storage for processed logs
+      - fluent-bit-graylog-data:/var/log/fluent-bit
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - SERVICE_VERSION=${SERVICE_VERSION:-1.0.0}
+      - CLUSTER_NAME=${CLUSTER_NAME:-local}
+      - GRAYLOG_HOST=${GRAYLOG_HOST:-graylog}
+      - GRAYLOG_PORT=${GRAYLOG_PORT:-12201}
+    restart: unless-stopped
+    depends_on:
+      - graylog
+    networks:
+      - aegisx-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    profiles:
+      - fluent-bit
+
+volumes:
+  mongodb-data:
+  elasticsearch-graylog-data:
+  graylog-data:
+  fluent-bit-graylog-data:
+
+networks:
+  aegisx-network:
+    driver: bridge

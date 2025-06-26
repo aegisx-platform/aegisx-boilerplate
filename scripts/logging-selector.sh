@@ -24,6 +24,7 @@ stop_all_monitoring() {
     docker-compose -f docker-compose.seq.yml down --remove-orphans 2>/dev/null || true
     docker-compose -f docker-compose.loki.yml down --remove-orphans 2>/dev/null || true
     docker-compose -f docker-compose.fluent-bit.yml down --remove-orphans 2>/dev/null || true
+    docker-compose -f docker-compose.graylog.yml down --remove-orphans 2>/dev/null || true
     
     echo "✅ All monitoring services stopped"
     echo
@@ -35,7 +36,7 @@ show_status() {
     echo "=================="
     
     # Check running containers
-    RUNNING_MONITORS=$(docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" | grep -E "(seq|loki|grafana|fluent-bit|promtail)" 2>/dev/null || true)
+    RUNNING_MONITORS=$(docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}" | grep -E "(seq|loki|grafana|fluent-bit|promtail|graylog|mongodb|elasticsearch)" 2>/dev/null || true)
     
     if [ -z "$RUNNING_MONITORS" ]; then
         echo -e "${YELLOW}No monitoring services running${NC}"
@@ -134,6 +135,64 @@ start_fluent_bit_es() {
     echo
 }
 
+# Function to start Graylog
+start_graylog() {
+    echo "🔍 Starting Graylog (Centralized Log Management)"
+    echo "==============================================="
+    
+    # Update .env
+    sed -i.bak 's/SEQ_ENABLED=true/SEQ_ENABLED=false/' .env 2>/dev/null || echo "SEQ_ENABLED=false" >> .env
+    sed -i.bak 's/LOG_FILE_ENABLED=false/LOG_FILE_ENABLED=true/' .env 2>/dev/null || true
+    
+    # Add Graylog specific settings
+    echo "GRAYLOG_ENABLED=true" >> .env 2>/dev/null || true
+    echo "GRAYLOG_HOST=graylog" >> .env 2>/dev/null || true
+    echo "GRAYLOG_PORT=12201" >> .env 2>/dev/null || true
+    
+    # Start Graylog stack
+    docker-compose -f docker-compose.graylog.yml up -d
+    
+    echo
+    echo -e "${GREEN}✅ Graylog started successfully!${NC}"
+    echo "🌐 Graylog Web: http://localhost:9000 (admin/admin)"
+    echo "📊 Elasticsearch: http://localhost:9201"
+    echo "📥 GELF Input: localhost:12201 (TCP/UDP)"
+    echo "📥 Syslog Input: localhost:1514 (TCP/UDP)"
+    echo "📥 Raw Input: localhost:5555 (TCP)"
+    echo "📝 File logs → Fluent Bit → Graylog → MongoDB/Elasticsearch"
+    echo
+    echo -e "${YELLOW}Note: Initial startup may take 2-3 minutes${NC}"
+}
+
+# Function to start Graylog with Fluent Bit
+start_graylog_fluent_bit() {
+    echo "🚀 Starting Graylog + Fluent Bit (Advanced Processing)"
+    echo "====================================================="
+    
+    # Update .env
+    sed -i.bak 's/SEQ_ENABLED=true/SEQ_ENABLED=false/' .env 2>/dev/null || echo "SEQ_ENABLED=false" >> .env
+    sed -i.bak 's/LOG_FILE_ENABLED=false/LOG_FILE_ENABLED=true/' .env 2>/dev/null || true
+    
+    # Add Graylog and Fluent Bit settings
+    echo "GRAYLOG_ENABLED=true" >> .env 2>/dev/null || true
+    echo "FLUENT_BIT_ENABLED=true" >> .env 2>/dev/null || true
+    echo "GRAYLOG_HOST=graylog" >> .env 2>/dev/null || true
+    echo "GRAYLOG_PORT=12201" >> .env 2>/dev/null || true
+    
+    # Start Graylog with Fluent Bit profile
+    docker-compose -f docker-compose.graylog.yml --profile fluent-bit up -d
+    
+    echo
+    echo -e "${GREEN}✅ Graylog + Fluent Bit started successfully!${NC}"
+    echo "🌐 Graylog Web: http://localhost:9000 (admin/admin)"
+    echo "⚡ Fluent Bit: http://localhost:2021 (monitoring)"
+    echo "📊 Elasticsearch: http://localhost:9201"
+    echo "📥 GELF Input: localhost:12201 (TCP/UDP)"
+    echo "📝 File logs → Fluent Bit (HIPAA + Processing) → Graylog"
+    echo
+    echo -e "${YELLOW}Note: Initial startup may take 2-3 minutes${NC}"
+}
+
 # Function to restart API
 restart_api() {
     echo "🔄 Restarting API to apply new logging configuration..."
@@ -160,12 +219,14 @@ main_menu() {
         echo "2) 📈 Grafana + Loki (Simple)"
         echo "3) 🚀 Fluent Bit + Loki (Advanced + HIPAA)"
         echo "4) 📊 Fluent Bit + Elasticsearch (Analytics)"
-        echo "5) 📊 Show Current Status"
-        echo "6) 🛑 Stop All Monitoring"
-        echo "7) 🔄 Restart API"
-        echo "8) ❌ Exit"
+        echo "5) 🔍 Graylog (Centralized Log Management)"
+        echo "6) 🚀 Graylog + Fluent Bit (Advanced + HIPAA)"
+        echo "7) 📊 Show Current Status"
+        echo "8) 🛑 Stop All Monitoring"
+        echo "9) 🔄 Restart API"
+        echo "10) ❌ Exit"
         echo
-        read -p "Choose option (1-8): " choice
+        read -p "Choose option (1-10): " choice
         
         case $choice in
             1)
@@ -189,20 +250,30 @@ main_menu() {
                 restart_api
                 ;;
             5)
-                show_status
+                stop_all_monitoring
+                start_graylog
+                restart_api
                 ;;
             6)
                 stop_all_monitoring
-                ;;
-            7)
+                start_graylog_fluent_bit
                 restart_api
                 ;;
+            7)
+                show_status
+                ;;
             8)
+                stop_all_monitoring
+                ;;
+            9)
+                restart_api
+                ;;
+            10)
                 echo "👋 Goodbye!"
                 exit 0
                 ;;
             *)
-                echo -e "${RED}Invalid option. Please choose 1-8.${NC}"
+                echo -e "${RED}Invalid option. Please choose 1-10.${NC}"
                 echo
                 ;;
         esac

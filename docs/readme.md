@@ -39,14 +39,20 @@ Welcome to the comprehensive documentation for **AegisX Boilerplate** - a produc
 ## 🔧 Core Systems
 
 ### **Logging & Monitoring**
+- 🚀 [**Quick Reference**](./logging-quick-reference.md) - **Commands, URLs, and troubleshooting**
 - 📝 [Logging System Documentation](./logging-system.md) - Complete logging architecture with Seq & Grafana + Loki
 - 🚀 [Fluent Bit Integration Guide](./fluent-bit-setup.md) - Advanced log processing with HIPAA compliance
+- 🔍 [Graylog Setup Guide](./graylog-setup.md) - **Enterprise centralized log management**
+- 🎯 [Logging Selector Guide](./logging-selector-guide.md) - Interactive tool for choosing monitoring solutions
+- 📖 [Logging Selector Usage](./logging-selector-usage.md) - **Detailed usage guide and troubleshooting**
+- 🏭 [Production Deployment Guide](./production-deployment-guide.md) - **Production readiness and hardening**
 - 💡 [How to Use Logging](./HOW_TO_USE_LOGGING.md) - Developer guide with examples
 - 🪶 [Lightweight Log Monitoring](./LIGHTWEIGHT_LOG_MONITORING.md) - Alternative monitoring solutions
 - 📊 [APM Integration](#apm-integration) - Performance monitoring
 - 🔍 [Seq Configuration](../docker-compose.seq.yml) - SQL-based log analysis
 - 📈 [Grafana + Loki Setup](../docker-compose.loki.yml) - Cloud-native log monitoring
 - ⚡ [Fluent Bit Stack](../docker-compose.fluent-bit.yml) - Advanced log processing and routing
+- 🏢 [Graylog Stack](../docker-compose.graylog.yml) - Enterprise centralized logging
 
 ### **Security & Authentication**
 - 🔐 [JWT Authentication](#jwt-authentication) - Token-based auth system

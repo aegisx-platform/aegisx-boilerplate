@@ -67,6 +67,35 @@ AegisX รองรับ monitoring solutions หลายแบบที่ส
   - Fluent Bit monitoring: http://localhost:2020
 - **Resources:** High (~1GB RAM)
 
+### 5. 🔍 **Graylog (Centralized Log Management)**
+**เหมาะสำหรับ:** Enterprise centralized logging, real-time analysis
+- **Pros:**
+  - **Centralized log management** with powerful search
+  - **Real-time alerting** and notifications
+  - **Stream processing** for log organization
+  - **Role-based access control**
+  - **Easy setup** compared to ELK stack
+- **Architecture:** `API → Winston → Files → GELF → Graylog → MongoDB + Elasticsearch`
+- **Access:**
+  - Graylog Web: http://localhost:9000 (admin/admin)
+  - Elasticsearch: http://localhost:9201
+- **Resources:** Medium (~800MB RAM)
+
+### 6. 🚀 **Graylog + Fluent Bit (Advanced + HIPAA)**
+**เหมาะสำหรับ:** Enterprise healthcare with compliance requirements
+- **Pros:**
+  - **All Graylog features** above
+  - **HIPAA compliance** with automatic data sanitization
+  - **Advanced correlation tracking**
+  - **Multi-input support** (GELF, Syslog, Raw)
+  - **Enterprise alerting** and dashboards
+- **Architecture:** `API → Winston → Files → Fluent Bit (HIPAA) → Graylog → Storage`
+- **Access:**
+  - Graylog Web: http://localhost:9000 (admin/admin)
+  - Fluent Bit monitoring: http://localhost:2021
+  - Elasticsearch: http://localhost:9201
+- **Resources:** Medium-High (~900MB RAM)
+
 ## 🎛️ Selector Menu Options
 
 ### Main Menu Commands
@@ -75,10 +104,12 @@ AegisX รองรับ monitoring solutions หลายแบบที่ส
 2) 📈 Grafana + Loki (Simple)  
 3) 🚀 Fluent Bit + Loki (Advanced + HIPAA)
 4) 📊 Fluent Bit + Elasticsearch (Analytics)
-5) 📊 Show Current Status
-6) 🛑 Stop All Monitoring
-7) 🔄 Restart API
-8) ❌ Exit
+5) 🔍 Graylog (Centralized Log Management)
+6) 🚀 Graylog + Fluent Bit (Advanced + HIPAA)
+7) 📊 Show Current Status
+8) 🛑 Stop All Monitoring
+9) 🔄 Restart API
+10) ❌ Exit
 ```
 
 ### What Happens When You Select:
@@ -107,6 +138,18 @@ AegisX รองรับ monitoring solutions หลายแบบที่ส
 - Switches to full `fluent-bit.conf`
 - Starts with `--profile elasticsearch`
 
+#### Option 5: Graylog
+- Stops all other monitoring services
+- Updates `.env`: `GRAYLOG_ENABLED=true`, `LOG_FILE_ENABLED=true`
+- Starts `docker-compose.graylog.yml`
+- Sets up MongoDB + Elasticsearch + Graylog
+
+#### Option 6: Graylog + Fluent Bit
+- Stops all other monitoring services
+- Updates `.env` for Graylog + Fluent Bit integration
+- Starts with `--profile fluent-bit`
+- Full HIPAA compliance with enterprise logging
+
 ## 🔧 Manual Commands
 
 ### Direct Docker Compose Commands
@@ -125,6 +168,12 @@ docker-compose -f docker-compose.fluent-bit.yml --profile elasticsearch up -d
 
 # Fluent Bit + Seq (alternative output)
 docker-compose -f docker-compose.fluent-bit.yml --profile seq up -d
+
+# Graylog (centralized logging)
+docker-compose -f docker-compose.graylog.yml up -d
+
+# Graylog + Fluent Bit (advanced processing)
+docker-compose -f docker-compose.graylog.yml --profile fluent-bit up -d
 ```
 
 ### Stop All Monitoring
@@ -132,6 +181,7 @@ docker-compose -f docker-compose.fluent-bit.yml --profile seq up -d
 docker-compose -f docker-compose.seq.yml down
 docker-compose -f docker-compose.loki.yml down  
 docker-compose -f docker-compose.fluent-bit.yml down
+docker-compose -f docker-compose.graylog.yml down
 ```
 
 ## 📋 Environment Variables
@@ -154,12 +204,18 @@ LOG_CONSOLE_ENABLED=true
 FLUENT_BIT_ENABLED=true
 CLUSTER_NAME=local
 SERVICE_VERSION=1.0.0
+
+# For Graylog
+GRAYLOG_ENABLED=true
+GRAYLOG_HOST=graylog
+GRAYLOG_PORT=12201
+GRAYLOG_PASSWORD_SECRET=somepasswordpepper
 ```
 
 ## 🏥 Healthcare Compliance
 
 ### HIPAA-Ready Configurations
-For healthcare applications, use options with **Fluent Bit**:
+For healthcare applications, use options with **Fluent Bit** or **Graylog**:
 
 #### **Option 3: Fluent Bit + Loki**
 - ✅ Automatic PII sanitization
@@ -172,6 +228,13 @@ For healthcare applications, use options with **Fluent Bit**:
 - ✅ Advanced search capabilities
 - ✅ Business intelligence
 - ✅ Audit trail analytics
+
+#### **Option 6: Graylog + Fluent Bit** ⭐ **Recommended**
+- ✅ All HIPAA compliance features
+- ✅ Enterprise-grade centralized logging
+- ✅ Real-time alerting and notifications
+- ✅ Role-based access control
+- ✅ Stream processing for compliance workflows
 
 ### Compliance Features
 ```lua
@@ -193,6 +256,7 @@ curl http://localhost:5341      # Seq
 curl http://localhost:3100/ready # Loki
 curl http://localhost:2020      # Fluent Bit
 curl http://localhost:9200      # Elasticsearch
+curl http://localhost:9000      # Graylog
 ```
 
 ### Log Flow Verification
@@ -203,6 +267,7 @@ curl http://localhost:3000/api/v1/health
 # Check logs in destination
 curl "http://localhost:3100/loki/api/v1/query?query={service=\"aegisx-api\"}" # Loki
 curl "http://localhost:9200/aegisx-logs-*/_search" # Elasticsearch
+curl "http://localhost:9000/api/search/universal/relative?query=*&range=3600" # Graylog
 ```
 
 ## 🚨 Troubleshooting
@@ -247,8 +312,9 @@ docker volume prune -f
 |----------|---------------------|---------|
 | **Development** | Seq | Easy setup, powerful querying |
 | **Small Production** | Grafana + Loki | Good balance of features/resources |
-| **Healthcare Production** | Fluent Bit + Loki | HIPAA compliance required |
+| **Healthcare Production** | Graylog + Fluent Bit | HIPAA compliance + enterprise features |
 | **Enterprise Analytics** | Fluent Bit + Elasticsearch | Advanced analytics needs |
+| **Enterprise Logging** | Graylog | Centralized management, real-time alerts |
 
 ### By Team Expertise
 
@@ -257,4 +323,5 @@ docker volume prune -f
 | **SQL-familiar** | Seq |
 | **Prometheus/Grafana** | Loki options |
 | **ELK Stack** | Fluent Bit + Elasticsearch |
-| **Healthcare** | Fluent Bit (any variant) |
+| **Enterprise Operations** | Graylog |
+| **Healthcare** | Graylog + Fluent Bit |
