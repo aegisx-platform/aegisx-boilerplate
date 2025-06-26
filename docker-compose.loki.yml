@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Initialize Loki directories with correct permissions
+  loki-init:
+    image: grafana/loki:latest
+    container_name: aegisx-loki-init
+    user: root
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /loki/chunks /loki/rules /loki/compactor /loki/wal
+        chown -R 10001:10001 /loki
+        echo "Loki directories initialized with correct permissions"
+    volumes:
+      - loki_data:/loki
+    networks:
+      - aegisx-network
+
+  loki:
+    image: grafana/loki:latest
+    container_name: aegisx-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki_data:/loki
+      - ./config/loki-config.yml:/etc/loki/local-config.yaml:ro
+    command: -config.file=/etc/loki/local-config.yaml
+    depends_on:
+      - loki-init
+    restart: unless-stopped
+    networks:
+      - aegisx-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: aegisx-grafana
+    ports:
+      - "3001:3000"  # ไม่ชนกับ API port 3000
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./config/grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+    restart: unless-stopped
+    depends_on:
+      - loki
+    networks:
+      - aegisx-network
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: aegisx-promtail
+    volumes:
+      - ./logs:/var/log/aegisx:ro
+      - ./config/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    depends_on:
+      - loki
+    networks:
+      - aegisx-network
+
+volumes:
+  loki_data:
+  grafana_data:
+
+networks:
+  aegisx-network:
+    driver: bridge

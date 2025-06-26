@@ -39,10 +39,12 @@ Welcome to the comprehensive documentation for **AegisX Boilerplate** - a produc
 ## 🔧 Core Systems
 
 ### **Logging & Monitoring**
-- 📝 [Structured Logging System](./STRUCTURED_LOGGING_SYSTEM.md) - Comprehensive logging architecture
+- 📝 [Logging System Documentation](./logging-system.md) - Complete logging architecture with Seq & Grafana + Loki
 - 💡 [How to Use Logging](./HOW_TO_USE_LOGGING.md) - Developer guide with examples
 - 🪶 [Lightweight Log Monitoring](./LIGHTWEIGHT_LOG_MONITORING.md) - Alternative monitoring solutions
 - 📊 [APM Integration](#apm-integration) - Performance monitoring
+- 🔍 [Seq Configuration](../docker-compose.seq.yml) - SQL-based log analysis
+- 📈 [Grafana + Loki Setup](../docker-compose.loki.yml) - Cloud-native log monitoring
 
 ### **Security & Authentication**
 - 🔐 [JWT Authentication](#jwt-authentication) - Token-based auth system

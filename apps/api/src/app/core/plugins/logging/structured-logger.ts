@@ -1,6 +1,8 @@
 import winston from 'winston'
+import Transport from 'winston-transport'
 import correlator from 'correlation-id'
 import { v4 as uuidv4 } from 'uuid'
+import axios from 'axios'
 
 export interface LogContext {
   correlationId?: string
@@ -46,6 +48,78 @@ export interface StructuredLoggerOptions {
   enableConsole: boolean
   enableFile: boolean
   enableStructured: boolean
+  enableSeq?: boolean
+  seqUrl?: string
+  seqApiKey?: string
+}
+
+// Custom Seq transport using HTTP
+class CustomSeqTransport extends Transport {
+  private seqUrl: string
+  private apiKey?: string
+
+  constructor(options: { serverUrl: string; apiKey?: string }) {
+    super()
+    this.seqUrl = options.serverUrl
+    this.apiKey = options.apiKey
+  }
+
+  override log(info: any, callback: () => void) {
+    // Convert Winston log to Seq format
+    const seqEvent = {
+      '@t': new Date().toISOString(),
+      '@l': this.mapLogLevel(info.level),
+      '@m': info.message,
+      ...Object.keys(info).reduce((acc, key) => {
+        if (!['level', 'message', 'timestamp'].includes(key)) {
+          acc[key] = info[key]
+        }
+        return acc
+      }, {} as any)
+    }
+
+    // Send to Seq
+    this.sendToSeq(seqEvent)
+      .catch(error => {
+        console.error('[Seq Transport Error]', error.message)
+      })
+      .finally(() => callback())
+  }
+
+  private mapLogLevel(level: string): string {
+    const mapping: { [key: string]: string } = {
+      'error': 'Error',
+      'warn': 'Warning', 
+      'info': 'Information',
+      'debug': 'Debug',
+      'verbose': 'Verbose'
+    }
+    return mapping[level] || 'Information'
+  }
+
+  private async sendToSeq(event: any): Promise<void> {
+    const headers: any = {
+      'Content-Type': 'application/vnd.serilog.clef'
+    }
+    
+    if (this.apiKey) {
+      headers['X-Seq-ApiKey'] = this.apiKey
+    }
+
+    try {
+      await axios.post(
+        `${this.seqUrl}/api/events/raw?clef`,
+        JSON.stringify(event),
+        { 
+          headers, 
+          timeout: 2000,
+          validateStatus: () => true // Accept any HTTP status
+        }
+      )
+    } catch (error: any) {
+      // Silently ignore Seq errors when disabled
+    }
+  }
 }
 
 export class StructuredLogger {
@@ -60,31 +134,26 @@ export class StructuredLogger {
   private createWinstonLogger(): winston.Logger {
     const transports: winston.transport[] = []
 
-    // Console transport
+    // Console transport - clean format without special characters
     if (this.options.enableConsole) {
-      if (this.options.enableStructured) {
-        transports.push(new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.timestamp(),
-            winston.format.errors({ stack: true }),
-            winston.format.json()
-          )
-        }))
-      } else {
-        // Human-readable format for development
-        transports.push(new winston.transports.Console({
-          format: winston.format.combine(
-            winston.format.colorize(),
-            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-            winston.format.errors({ stack: true }),
-            winston.format.printf(({ level, message, timestamp, correlationId, ...meta }) => {
-              const correlationStr = correlationId ? `[${correlationId}]` : ''
-              const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''
-              return `${timestamp} ${level}: ${correlationStr} ${message} ${metaStr}`
-            })
-          )
-        }))
-      }
+      transports.push(new winston.transports.Console({
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.errors({ stack: true }),
+          winston.format.printf((info) => {
+            // Create clean JSON output without ANSI codes or special characters
+            const cleanInfo = { ...info }
+            delete cleanInfo.timestamp // Remove to avoid duplication
+            
+            // Clean message from any ANSI codes or special characters
+            if (cleanInfo.message && typeof cleanInfo.message === 'string') {
+              cleanInfo.message = cleanInfo.message.replace(/\x1b\[[0-9;]*m/g, '') // Remove ANSI codes
+            }
+            
+            return JSON.stringify(cleanInfo, null, 0)
+          })
+        )
+      }))
     }
 
     // File transport
@@ -107,6 +176,19 @@ export class StructuredLogger {
           winston.format.json()
         )
       }))
+    }
+
+    // Seq transport for log monitoring
+    if (this.options.enableSeq && this.options.seqUrl) {
+      try {
+        transports.push(new CustomSeqTransport({
+          serverUrl: this.options.seqUrl,
+          apiKey: this.options.seqApiKey || undefined
+        }))
+        // console.log(`📊 Seq transport enabled: ${this.options.seqUrl}`)
+      } catch (error) {
+        console.error('Failed to initialize Seq transport:', error)
+      }
     }
 
     return winston.createLogger({

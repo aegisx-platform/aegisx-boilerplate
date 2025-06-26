@@ -21,7 +21,7 @@ export class APMIntegration {
 
   async initialize(): Promise<void> {
     if (!this.config.enabled) {
-      console.log('APM Integration disabled')
+      process.stdout.write('APM Integration disabled\n')
       return
     }
 
@@ -36,12 +36,12 @@ export class APMIntegration {
       })
 
       this.sdk.start()
-      console.log(`APM Integration initialized successfully - Tracing enabled`)
+      process.stdout.write('APM Integration initialized successfully - Tracing enabled\n')
       
       // Note: Prometheus metrics can be added later when needed
-      console.log(`For Prometheus metrics, install additional packages and configure metric readers`)
+      process.stdout.write('For Prometheus metrics, install additional packages and configure metric readers\n')
     } catch (error) {
-      console.error('Failed to initialize APM Integration:', error)
+      process.stderr.write(`Failed to initialize APM Integration: ${error}\n`)
       // Don't throw error, just disable APM
       this.config.enabled = false
     }
@@ -50,7 +50,7 @@ export class APMIntegration {
   async shutdown(): Promise<void> {
     if (this.sdk) {
       await this.sdk.shutdown()
-      console.log('APM Integration shutdown completed')
+      process.stdout.write('APM Integration shutdown completed\n')
     }
   }
 

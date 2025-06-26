@@ -356,6 +356,19 @@ const schema = {
     APM_METRICS_PORT: {
       type: 'string',
       default: '9090'
+    },
+    // Seq Log Monitoring Configuration
+    SEQ_ENABLED: {
+      type: 'string',
+      default: 'false'
+    },
+    SEQ_URL: {
+      type: 'string',
+      default: 'http://localhost:5342'
+    },
+    SEQ_API_KEY: {
+      type: 'string',
+      default: ''
     }
   }
 };
@@ -440,6 +453,9 @@ declare module 'fastify' {
       APM_SERVICE_NAME: string;
       APM_SERVICE_VERSION: string;
       APM_METRICS_PORT: string;
+      SEQ_ENABLED: string;
+      SEQ_URL: string;
+      SEQ_API_KEY: string;
     };
   }
 }

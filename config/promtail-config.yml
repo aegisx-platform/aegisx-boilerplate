@@ -1,0 +1,86 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  # AegisX API Logs
+  - job_name: aegisx-api
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: aegisx-api
+          service: aegisx-api
+          __path__: /var/log/aegisx/*.log
+    pipeline_stages:
+      # Parse JSON logs
+      - json:
+          expressions:
+            level: level
+            correlationId: correlationId
+            userId: userId
+            operation: operation
+            method: method
+            url: url
+            statusCode: statusCode
+            responseTime: responseTime
+            environment: environment
+            service: service
+            ip: ip
+            userAgent: userAgent
+            errorName: errorName
+            errorMessage: errorMessage
+            auditAction: auditAction
+            complianceLevel: complianceLevel
+      
+      # Add labels for better filtering
+      - labels:
+          level:
+          service:
+          environment:
+          method:
+          statusCode:
+          auditAction:
+          complianceLevel:
+      
+      # Add correlation ID as label (limited to avoid high cardinality)
+      - regex:
+          expression: '"correlationId":"(?P<correlationId>[^"]*)"'
+      - labels:
+          correlationId:
+
+  # Container Logs (optional)
+  - job_name: containers
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: containerlogs
+          __path__: /var/lib/docker/containers/*/*log
+    pipeline_stages:
+      - json:
+          expressions:
+            output: log
+            stream: stream
+            attrs:
+      - json:
+          source: attrs
+          expressions:
+            tag:
+      - regex:
+          source: tag
+          expression: (?P<container_name>(?:[^|]*))\|
+      - timestamp:
+          format: RFC3339Nano
+          source: time
+      - labels:
+          stream:
+          container_name:
+      - output:
+          source: output

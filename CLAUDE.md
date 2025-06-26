@@ -13,6 +13,8 @@ AegisX Boilerplate is a production-ready Fastify API boilerplate designed for He
 - **Message Queue**: RabbitMQ for enterprise messaging
 - **Authentication**: JWT + Refresh tokens
 - **Authorization**: RBAC (Role-Based Access Control)
+- **Logging**: Winston structured logging with multiple adapters
+- **Monitoring**: Seq and Grafana + Loki support
 - **Documentation**: Swagger/OpenAPI 3.0
 
 ## Project Structure
@@ -37,6 +39,8 @@ AegisX Boilerplate is a production-ready Fastify API boilerplate designed for He
 - JWT Authentication with refresh tokens
 - RBAC system with permission model: `resource:action:scope`
 - Advanced audit system with multiple adapters (Direct DB, Redis Pub/Sub, RabbitMQ)
+- Structured logging system with correlation ID tracking
+- Log monitoring with Seq and Grafana + Loki support
 - Database schema with migrations and seeds
 - Security middleware (Helmet, Rate Limiting, CORS)
 - API documentation with Swagger
@@ -52,6 +56,15 @@ Healthcare features in `/features/` directory:
 - Reporting
 
 ## Key Systems
+
+### Structured Logging System
+- **Framework**: Winston with custom transports and formatters
+- **Features**: Correlation ID tracking, structured JSON output, HIPAA compliance
+- **Monitoring Options**: 
+  - **Seq**: SQL-based log analysis and querying
+  - **Grafana + Loki**: Cloud-native log aggregation and visualization
+- **Configuration**: Environment-based logging adapter selection
+- **Formats**: Clean console output for development, structured JSON for production
 
 ### Audit System
 - **Adapters**: Direct Database, Redis Pub/Sub, RabbitMQ
@@ -79,17 +92,33 @@ Current tables: users, refresh_tokens, roles, permissions, user_roles, role_perm
 - `npx nx build api` - Production build
 - `npx nx test api` - Run tests
 
+### Logging & Monitoring
+- `docker-compose -f docker-compose.seq.yml up -d` - Start Seq log monitoring
+- `docker-compose -f docker-compose.loki.yml up -d` - Start Grafana + Loki stack
+- `docker-compose -f docker-compose.seq.yml down` - Stop Seq
+- `docker-compose -f docker-compose.loki.yml down` - Stop Grafana + Loki
+- `docker-compose -f docker-compose.loki.yml down -v` - Stop and remove log data
+
 ### Access Points
 - API Server: http://localhost:3000
 - API Docs: http://localhost:3000/docs
 - pgAdmin: http://localhost:8080
+- Seq (when enabled): http://localhost:5341
+- Grafana (when enabled): http://localhost:3001 (admin/admin123)
+- Loki API (when enabled): http://localhost:3100
 
 ## Important Files
 - `knexfile.ts` / `knexfile.prod.js` - Database configuration
 - `docker-compose.yml` - Service orchestration
+- `docker-compose.seq.yml` - Seq logging stack
+- `docker-compose.loki.yml` - Grafana + Loki logging stack
 - `.env.example` - Environment configuration template
+- `apps/api/src/core/plugins/logging/` - Structured logging implementation
 - `apps/api/src/core/shared/audit/` - Audit system implementation
 - `apps/api/src/core/plugins/security/rbac.ts` - RBAC implementation
+- `config/loki-config.yml` - Loki configuration
+- `config/promtail-config.yml` - Promtail configuration
+- `dashboards/` - Grafana dashboard definitions
 
 ## Code Conventions
 - **Architecture**: Follow domain-driven design patterns
@@ -99,6 +128,46 @@ Current tables: users, refresh_tokens, roles, permissions, user_roles, role_perm
 - **Error Handling**: Use Fastify's error handling patterns
 - **Security**: Always validate input, sanitize audit data
 
+## Environment Configuration
+
+### Logging Environment Variables
+```bash
+# Console & File Logging
+LOG_CONSOLE_ENABLED=true
+LOG_FILE_ENABLED=true
+LOG_LEVEL=info
+
+# Seq Configuration (Optional)
+SEQ_ENABLED=false
+SEQ_URL=http://localhost:5341
+SEQ_API_KEY=
+
+# Service Identification
+SERVICE_NAME=aegisx-api
+ENVIRONMENT=development
+```
+
+### Logging System Selection
+**Choose ONE monitoring solution:**
+
+1. **Seq (SQL-based, good for detailed analysis)**:
+   ```bash
+   # Enable Seq
+   SEQ_ENABLED=true
+   
+   # Start Seq
+   docker-compose -f docker-compose.seq.yml up -d
+   ```
+
+2. **Grafana + Loki (Cloud-native, better for scaling)**:
+   ```bash
+   # Disable Seq
+   SEQ_ENABLED=false
+   
+   # Start Grafana + Loki
+   docker-compose -f docker-compose.loki.yml up -d
+   ```
+
 ## Healthcare Context
 This is designed for healthcare applications requiring:
 - HIPAA compliance considerations
@@ -107,6 +176,9 @@ This is designed for healthcare applications requiring:
 - Scalable architecture for enterprise healthcare systems
 
 ## Recent Development Focus
+- Structured logging system with correlation ID tracking and dual monitoring support
+- Character corruption fix in terminal output (ANSI codes removal)
+- Seq and Grafana + Loki integration for flexible log monitoring
 - Event Bus system with multi-adapter support (Memory, Redis, RabbitMQ)
 - Event Bus enable/disable functionality using NoOp pattern
 - Audit system optimization (Redis Pub/Sub pattern)
@@ -116,5 +188,6 @@ This is designed for healthcare applications requiring:
 ## Next Priority Areas
 1. Implement healthcare features in `/features/` directory
 2. Add comprehensive testing coverage
-3. Production deployment configuration
-4. Healthcare-specific compliance features
+3. Advanced log alerting and notification system
+4. Production deployment configuration
+5. Healthcare-specific compliance features

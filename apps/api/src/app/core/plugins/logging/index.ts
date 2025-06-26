@@ -23,7 +23,10 @@ async function structuredLoggingPlugin(fastify: FastifyInstance): Promise<void> 
     environment: config.NODE_ENV || 'development',
     enableConsole: config.LOG_CONSOLE_ENABLED !== 'false',
     enableFile: config.LOG_FILE_ENABLED === 'true',
-    enableStructured: config.STRUCTURED_LOGGING_ENABLED !== 'false'
+    enableStructured: config.STRUCTURED_LOGGING_ENABLED !== 'false',
+    enableSeq: config.SEQ_ENABLED === 'true',
+    seqUrl: config.SEQ_URL,
+    seqApiKey: config.SEQ_API_KEY
   })
 
   // Decorate fastify instance
