@@ -40,11 +40,13 @@ Welcome to the comprehensive documentation for **AegisX Boilerplate** - a produc
 
 ### **Logging & Monitoring**
 - 📝 [Logging System Documentation](./logging-system.md) - Complete logging architecture with Seq & Grafana + Loki
+- 🚀 [Fluent Bit Integration Guide](./fluent-bit-setup.md) - Advanced log processing with HIPAA compliance
 - 💡 [How to Use Logging](./HOW_TO_USE_LOGGING.md) - Developer guide with examples
 - 🪶 [Lightweight Log Monitoring](./LIGHTWEIGHT_LOG_MONITORING.md) - Alternative monitoring solutions
 - 📊 [APM Integration](#apm-integration) - Performance monitoring
 - 🔍 [Seq Configuration](../docker-compose.seq.yml) - SQL-based log analysis
 - 📈 [Grafana + Loki Setup](../docker-compose.loki.yml) - Cloud-native log monitoring
+- ⚡ [Fluent Bit Stack](../docker-compose.fluent-bit.yml) - Advanced log processing and routing
 
 ### **Security & Authentication**
 - 🔐 [JWT Authentication](#jwt-authentication) - Token-based auth system

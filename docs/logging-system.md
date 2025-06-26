@@ -33,6 +33,8 @@ API Request → Correlation ID → Winston Logger → Multiple Transports
 | **Healthcare compliance focus** | Either (both support HIPAA) | Both provide audit trails |
 | **Team familiar with SQL** | Seq | Native SQL querying |
 | **Team familiar with Prometheus** | Grafana + Loki | LogQL similar to PromQL |
+| **Advanced processing needs** | Fluent Bit + any output | Best log processing capabilities |
+| **HIPAA compliance critical** | Fluent Bit + Loki/Seq | Automatic data sanitization |
 
 ### 🚀 30-Second Setup
 
@@ -66,6 +68,23 @@ npx nx serve api
 # 4. Open Grafana
 open http://localhost:3001
 # Login: admin/admin123
+```
+
+**For Fluent Bit + Advanced Processing:**
+```bash
+# 1. Enable advanced processing
+echo "FLUENT_BIT_ENABLED=true" >> .env
+echo "LOG_FILE_ENABLED=true" >> .env
+
+# 2. Start Fluent Bit stack
+docker-compose -f docker-compose.fluent-bit.yml up -d
+
+# 3. Restart API
+npx nx serve api
+
+# 4. Access monitoring
+open http://localhost:2020    # Fluent Bit monitoring
+open http://localhost:3001    # Grafana dashboards
 ```
 
 ## Configuration

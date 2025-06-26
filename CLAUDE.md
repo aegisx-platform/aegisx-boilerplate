@@ -95,9 +95,10 @@ Current tables: users, refresh_tokens, roles, permissions, user_roles, role_perm
 ### Logging & Monitoring
 - `docker-compose -f docker-compose.seq.yml up -d` - Start Seq log monitoring
 - `docker-compose -f docker-compose.loki.yml up -d` - Start Grafana + Loki stack
+- `docker-compose -f docker-compose.fluent-bit.yml up -d` - Start Fluent Bit + full logging stack
 - `docker-compose -f docker-compose.seq.yml down` - Stop Seq
 - `docker-compose -f docker-compose.loki.yml down` - Stop Grafana + Loki
-- `docker-compose -f docker-compose.loki.yml down -v` - Stop and remove log data
+- `docker-compose -f docker-compose.fluent-bit.yml down -v` - Stop Fluent Bit and remove data
 
 ### Access Points
 - API Server: http://localhost:3000
@@ -106,18 +107,26 @@ Current tables: users, refresh_tokens, roles, permissions, user_roles, role_perm
 - Seq (when enabled): http://localhost:5341
 - Grafana (when enabled): http://localhost:3001 (admin/admin123)
 - Loki API (when enabled): http://localhost:3100
+- Fluent Bit (when enabled): http://localhost:2020 (monitoring)
+- Elasticsearch (optional): http://localhost:9200
+- Kibana (optional): http://localhost:5601
 
 ## Important Files
 - `knexfile.ts` / `knexfile.prod.js` - Database configuration
 - `docker-compose.yml` - Service orchestration
 - `docker-compose.seq.yml` - Seq logging stack
 - `docker-compose.loki.yml` - Grafana + Loki logging stack
+- `docker-compose.fluent-bit.yml` - Fluent Bit advanced logging stack
 - `.env.example` - Environment configuration template
 - `apps/api/src/core/plugins/logging/` - Structured logging implementation
 - `apps/api/src/core/shared/audit/` - Audit system implementation
 - `apps/api/src/core/plugins/security/rbac.ts` - RBAC implementation
+- `config/fluent-bit.conf` - Fluent Bit configuration
+- `config/parsers.conf` - Log parsers configuration
 - `config/loki-config.yml` - Loki configuration
 - `config/promtail-config.yml` - Promtail configuration
+- `scripts/correlation.lua` - Correlation ID enhancement
+- `scripts/hipaa_sanitizer.lua` - HIPAA compliance sanitization
 - `dashboards/` - Grafana dashboard definitions
 
 ## Code Conventions

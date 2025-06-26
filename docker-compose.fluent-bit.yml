@@ -1,0 +1,152 @@
+version: '3.8'
+
+services:
+  # Fluent Bit log processor and forwarder
+  fluent-bit:
+    image: fluent/fluent-bit:latest
+    container_name: aegisx-fluent-bit
+    ports:
+      - "2020:2020"    # HTTP server for monitoring
+      - "24224:24224"  # Forward input port
+    volumes:
+      # Configuration files
+      - ./config/fluent-bit-test.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./config/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      
+      # Lua scripts
+      - ./scripts:/fluent-bit/scripts:ro
+      
+      # Log files to monitor
+      - ./logs:/var/log/aegisx:ro
+      
+      # Output storage for processed logs
+      - fluent-bit-data:/var/log/fluent-bit
+      
+      # Docker socket for container log collection (optional)
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - SERVICE_VERSION=${SERVICE_VERSION:-1.0.0}
+      - CLUSTER_NAME=${CLUSTER_NAME:-local}
+      - ES_USER=${ES_USER:-}
+      - ES_PASSWORD=${ES_PASSWORD:-}
+      - SEQ_API_KEY=${SEQ_API_KEY:-}
+    restart: unless-stopped
+    depends_on:
+      - loki
+    networks:
+      - aegisx-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Loki (if not already running)
+  loki:
+    image: grafana/loki:latest
+    container_name: aegisx-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki-data:/loki
+      - ./config/loki-config.yml:/etc/loki/local-config.yaml:ro
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - aegisx-network
+
+  # Grafana (if not already running)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: aegisx-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - ./config/grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+    restart: unless-stopped
+    depends_on:
+      - loki
+    networks:
+      - aegisx-network
+
+  # Elasticsearch (Optional - for advanced analytics)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: aegisx-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    restart: unless-stopped
+    networks:
+      - aegisx-network
+    profiles:
+      - elasticsearch
+      - analytics
+
+  # Kibana (Optional - for Elasticsearch visualization)
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    container_name: aegisx-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - XPACK_SECURITY_ENABLED=false
+    ports:
+      - "5601:5601"
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    networks:
+      - aegisx-network
+    profiles:
+      - elasticsearch
+      - analytics
+
+  # Seq (Optional - alternative to Loki)
+  seq:
+    image: datalust/seq:latest
+    container_name: aegisx-seq
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_ADMINPASSWORDHASH=${SEQ_ADMIN_PASSWORD_HASH:-}
+    ports:
+      - "5341:80"
+    volumes:
+      - seq-data:/data
+    restart: unless-stopped
+    networks:
+      - aegisx-network
+    profiles:
+      - seq
+      - alternative
+
+volumes:
+  fluent-bit-data:
+  loki-data:
+  grafana-data:
+  elasticsearch-data:
+  seq-data:
+
+networks:
+  aegisx-network:
+    driver: bridge
