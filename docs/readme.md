@@ -54,6 +54,10 @@ Welcome to the comprehensive documentation for **AegisX Boilerplate** - a produc
 - ⚡ [Fluent Bit Stack](../docker-compose.fluent-bit.yml) - Advanced log processing and routing
 - 🏢 [Graylog Stack](../docker-compose.graylog.yml) - Enterprise centralized logging
 
+### **Core Infrastructure**
+- 🌐 [HTTP Client Service](./http-client-service.md) - **Enterprise-grade HTTP client with retry, circuit breaker, and caching**
+- 🔐 [Secrets Manager Service](./secrets-manager-service.md) - **Secure storage and management of API keys, tokens, and sensitive data**
+
 ### **Security & Authentication**
 - 🔐 [JWT Authentication](#jwt-authentication) - Token-based auth system
 - 👥 [RBAC System](#rbac-system) - Role-based access control (`resource:action:scope`)

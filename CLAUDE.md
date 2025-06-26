@@ -144,6 +144,15 @@ Current tables: users, refresh_tokens, roles, permissions, user_roles, role_perm
 - `scripts/graylog_formatter.lua` - Graylog GELF formatting
 - `dashboards/` - Grafana dashboard definitions
 
+## Core Infrastructure Components
+
+### HTTP Client Service
+- **Location**: `apps/api/src/app/core/shared/services/http-client.service.ts`
+- **Features**: Enterprise-grade HTTP client with retry, circuit breaker, caching, and monitoring
+- **Factory**: Pre-configured clients for payment, healthcare, microservices, and external APIs
+- **Plugin**: Fastify integration with health checks and metrics endpoints
+- **Documentation**: `docs/http-client-service.md`
+
 ## Code Conventions
 - **Architecture**: Follow domain-driven design patterns
 - **Naming**: Use kebab-case for routes, camelCase for TypeScript

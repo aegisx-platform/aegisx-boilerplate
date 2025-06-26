@@ -17,6 +17,8 @@ import structuredLogging from './logging';
 import apmIntegration from './logging/apm-integration';
 import eventBus from './event-bus';
 import audit from './audit';
+import httpClient from './http-client';
+import secretsManager from './secrets-manager';
 
 const corePlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugins in specific order
@@ -26,6 +28,8 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
   await fastify.register(apmIntegration);
   await fastify.register(redis);
   await fastify.register(knex);
+  await fastify.register(httpClient);
+  await fastify.register(secretsManager);
   await fastify.register(jwt);
   await fastify.register(rateLimit);
   await fastify.register(helmet);

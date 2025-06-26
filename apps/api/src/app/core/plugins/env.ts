@@ -237,6 +237,93 @@ const schema = {
       type: 'string',
       default: 'audit_events'
     },
+    // HTTP Client Configuration
+    HTTP_CLIENT_TIMEOUT: {
+      type: 'string',
+      default: '30000' // 30 seconds in ms
+    },
+    HTTP_CLIENT_RETRY_ATTEMPTS: {
+      type: 'string',
+      default: '3'
+    },
+    HTTP_CLIENT_RETRY_DELAY: {
+      type: 'string',
+      default: '1000' // 1 second in ms
+    },
+    HTTP_CLIENT_CIRCUIT_BREAKER_ENABLED: {
+      type: 'string',
+      default: 'true'
+    },
+    HTTP_CLIENT_CIRCUIT_BREAKER_FAILURE_THRESHOLD: {
+      type: 'string',
+      default: '5'
+    },
+    HTTP_CLIENT_CIRCUIT_BREAKER_SUCCESS_THRESHOLD: {
+      type: 'string',
+      default: '3'
+    },
+    HTTP_CLIENT_CIRCUIT_BREAKER_TIMEOUT: {
+      type: 'string',
+      default: '60000' // 60 seconds in ms
+    },
+    HTTP_CLIENT_CACHE_ENABLED: {
+      type: 'string',
+      default: 'false'
+    },
+    HTTP_CLIENT_CACHE_TTL: {
+      type: 'string',
+      default: '300000' // 5 minutes in ms
+    },
+    HTTP_CLIENT_LOGGING_REQUESTS: {
+      type: 'string',
+      default: 'false'
+    },
+    HTTP_CLIENT_LOGGING_RESPONSES: {
+      type: 'string',
+      default: 'false'
+    },
+    HTTP_CLIENT_LOGGING_ERRORS: {
+      type: 'string',
+      default: 'true'
+    },
+    // Secrets Manager Configuration
+    SECRETS_ADAPTER: {
+      type: 'string',
+      enum: ['environment', 'database', 'redis', 'hashicorp-vault', 'aws-secrets-manager', 'azure-key-vault'],
+      default: 'environment'
+    },
+    SECRETS_ENCRYPTION_KEY: {
+      type: 'string',
+      default: ''
+    },
+    SECRETS_ENV_PREFIX: {
+      type: 'string',
+      default: 'SECRET_'
+    },
+    SECRETS_CACHE_ENABLED: {
+      type: 'string',
+      default: 'true'
+    },
+    SECRETS_CACHE_TTL: {
+      type: 'string',
+      default: '300000' // 5 minutes in ms
+    },
+    SECRETS_CACHE_MAX_SIZE: {
+      type: 'string',
+      default: '1000'
+    },
+    SECRETS_AUDIT_ACCESS: {
+      type: 'string',
+      default: 'false'
+    },
+    SECRETS_REQUIRE_NAMESPACE: {
+      type: 'string',
+      default: 'false'
+    },
+    SECRETS_DB_TABLE: {
+      type: 'string',
+      default: 'secrets'
+    },
     // Event Bus Configuration
     EVENT_BUS_ENABLED: {
       type: 'string',
@@ -456,6 +543,15 @@ declare module 'fastify' {
       SEQ_ENABLED: string;
       SEQ_URL: string;
       SEQ_API_KEY: string;
+      SECRETS_ADAPTER: string;
+      SECRETS_ENCRYPTION_KEY: string;
+      SECRETS_ENV_PREFIX: string;
+      SECRETS_CACHE_ENABLED: string;
+      SECRETS_CACHE_TTL: string;
+      SECRETS_CACHE_MAX_SIZE: string;
+      SECRETS_AUDIT_ACCESS: string;
+      SECRETS_REQUIRE_NAMESPACE: string;
+      SECRETS_DB_TABLE: string;
     };
   }
 }
