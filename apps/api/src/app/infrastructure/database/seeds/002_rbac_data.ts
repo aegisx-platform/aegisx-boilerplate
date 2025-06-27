@@ -1,11 +1,8 @@
 import type { Knex } from 'knex';
 
 export async function seed(knex: Knex): Promise<void> {
-  // Clear existing data
-  await knex('role_permissions').del();
-  await knex('user_roles').del();
-  await knex('permissions').del();
-  await knex('roles').del();
+  // Data already cleared in 001_users.ts seed
+  // We only need to insert new data here
 
   // 1. Insert default roles (general purpose)
   const roles = [

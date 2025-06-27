@@ -2,7 +2,28 @@ import type { Knex } from 'knex';
 import * as bcrypt from 'bcrypt';
 
 export async function seed(knex: Knex): Promise<void> {
-  // Deletes ALL existing entries
+  // Delete in correct order to avoid foreign key constraints
+  // 1. Delete notification related data first
+  await knex('healthcare_notifications').del();
+  await knex('notification_batch_items').del();
+  await knex('notification_batches').del();
+  await knex('notification_errors').del();
+  await knex('notification_preferences').del();
+  await knex('notifications').del();
+  
+  // 2. Delete RBAC related data
+  await knex('role_permissions').del();
+  await knex('user_roles').del();
+  await knex('permissions').del();
+  await knex('roles').del();
+  
+  // 3. Delete audit logs that reference users
+  await knex('audit_logs').del();
+  
+  // 4. Delete refresh tokens
+  await knex('refresh_tokens').del();
+  
+  // 5. Finally delete users
   await knex('users').del();
 
   // Generate password hashes for default password 'admin123' for admin, 'password123' for others
