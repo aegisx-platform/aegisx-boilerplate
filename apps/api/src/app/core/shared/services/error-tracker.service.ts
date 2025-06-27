@@ -5,7 +5,12 @@
  * with healthcare compliance and monitoring capabilities
  */
 
-import { EventEmitter } from 'events'
+import { EventBus } from '../events/interfaces/event-bus.interface'
+import {
+  ErrorTrackedEvent,
+  ErrorThresholdExceededEvent,
+  ErrorReportGeneratedEvent
+} from '../events/types/service-events.types'
 import crypto from 'crypto'
 import {
   IErrorTracker,
@@ -30,7 +35,7 @@ import {
   Breadcrumb
 } from '../types/error-tracker.types'
 
-export class ErrorTrackerService extends EventEmitter implements IErrorTracker {
+export class ErrorTrackerService implements IErrorTracker {
   private errors: Map<string, TrackedError> = new Map()
   private errorGroups: Map<string, ErrorGroup> = new Map()
   private breadcrumbs: Breadcrumb[] = []
@@ -39,8 +44,10 @@ export class ErrorTrackerService extends EventEmitter implements IErrorTracker {
   private flushInterval?: NodeJS.Timeout
   private errorQueue: Array<{ error: TrackableError; context: ErrorContext }> = []
 
-  constructor(config: Partial<ErrorTrackerConfig> = {}) {
-    super()
+  constructor(
+    config: Partial<ErrorTrackerConfig> = {},
+    private eventBus?: EventBus
+  ) {
     
     this.config = {
       ...DefaultErrorTrackerConfig,
@@ -389,7 +396,7 @@ export class ErrorTrackerService extends EventEmitter implements IErrorTracker {
       }
     }
 
-    this.emit('report-generated', { report })
+    this.emitEvent('report-generated', { report })
     
     return report
   }
@@ -421,7 +428,7 @@ export class ErrorTrackerService extends EventEmitter implements IErrorTracker {
       }, this.config.performance.flushInterval)
     }
 
-    this.emit('tracker-started')
+    // Tracker started - no event bus mapping needed
   }
 
   /**
@@ -444,7 +451,7 @@ export class ErrorTrackerService extends EventEmitter implements IErrorTracker {
       await this.processErrorQueue()
     }
 
-    this.emit('tracker-stopped')
+    // Tracker stopped - no event bus mapping needed
   }
 
   // Private methods
@@ -503,7 +510,7 @@ export class ErrorTrackerService extends EventEmitter implements IErrorTracker {
       existingError.impact = this.calculateImpact(existingError)
       
       this.errors.set(existingError.id, existingError)
-      this.emit('error-updated', { errorId: existingError.id })
+      // Error updated - no event bus mapping needed
       
       return existingError.id
     }
@@ -543,7 +550,7 @@ export class ErrorTrackerService extends EventEmitter implements IErrorTracker {
     })
 
     // Emit events
-    this.emit('error-tracked', { errorId: trackedError.id, error: trackedError })
+    this.emitEvent('error-tracked', { errorId: trackedError.id, error: trackedError })
     
     // Check thresholds
     this.checkThresholds(trackedError)
@@ -656,7 +663,7 @@ export class ErrorTrackerService extends EventEmitter implements IErrorTracker {
     group.count = group.errors.reduce((sum, e) => sum + e.count, 0)
     group.lastSeen = error.lastSeen
 
-    this.emit('error-grouped', { groupId, errorId: error.id })
+    // Error grouped - no event bus mapping needed
   }
 
   private findOrCreateErrorGroup(error: TrackedError): string {
@@ -704,7 +711,7 @@ export class ErrorTrackerService extends EventEmitter implements IErrorTracker {
 
     // Check error rate threshold
     if (errorRate >= this.config.alerting.thresholds.errorRate) {
-      this.emit('threshold-exceeded', {
+      this.emitEvent('threshold-exceeded', {
         type: 'error-rate',
         threshold: this.config.alerting.thresholds.errorRate,
         actual: errorRate,
@@ -716,7 +723,7 @@ export class ErrorTrackerService extends EventEmitter implements IErrorTracker {
     if (error.error.severity === 'critical') {
       const recentCriticalErrors = recentErrors.filter(e => e.error.severity === 'critical')
       if (recentCriticalErrors.length >= this.config.alerting.thresholds.criticalErrors) {
-        this.emit('threshold-exceeded', {
+        this.emitEvent('threshold-exceeded', {
           type: 'critical-errors',
           threshold: this.config.alerting.thresholds.criticalErrors,
           actual: recentCriticalErrors.length,
@@ -727,7 +734,7 @@ export class ErrorTrackerService extends EventEmitter implements IErrorTracker {
 
     // Check new error type
     if (this.config.alerting.thresholds.newErrorTypes && error.count === 1) {
-      this.emit('threshold-exceeded', {
+      this.emitEvent('threshold-exceeded', {
         type: 'new-error-type',
         threshold: 1,
         actual: 1,
@@ -1014,5 +1021,77 @@ export class ErrorTrackerService extends EventEmitter implements IErrorTracker {
         }
       ]
     }
+  }
+
+  /**
+   * Emit events using Event Bus instead of EventEmitter
+   */
+  private emitEvent(eventType: string, data: any): void {
+    if (!this.eventBus) {
+      return
+    }
+
+    // Fire and forget event publishing
+    setImmediate(async () => {
+      try {
+        const timestamp = new Date()
+
+        switch (eventType) {
+          case 'error-tracked':
+            await this.eventBus?.publish('error-tracker.error-tracked', {
+              errorId: data.errorId,
+              errorName: data.error.name,
+              errorLevel: data.error.level,
+              errorCategory: data.error.category,
+              errorSeverity: data.error.severity,
+              timestamp,
+              context: {
+                userId: data.error.context?.userId,
+                requestId: data.error.context?.requestId,
+                patientId: data.error.context?.patientId,
+                facilityId: data.error.context?.facilityId
+              }
+            } as ErrorTrackedEvent)
+            break
+
+          case 'threshold-exceeded':
+            await this.eventBus?.publish('error-tracker.threshold-exceeded', {
+              thresholdType: data.type || 'error-rate',
+              threshold: data.threshold,
+              actual: data.actual,
+              errors: data.errors || [],
+              timestamp
+            } as ErrorThresholdExceededEvent)
+            break
+
+          case 'report-generated':
+            await this.eventBus?.publish('error-tracker.report-generated', {
+              reportId: data.report.id,
+              reportType: data.report.type,
+              title: data.report.title,
+              timeframe: data.report.timeframe,
+              summary: data.report.summary,
+              timestamp
+            } as ErrorReportGeneratedEvent)
+            break
+        }
+      } catch (error) {
+        console.warn(`Failed to publish error tracker event ${eventType}:`, error)
+      }
+    })
+  }
+
+  /**
+   * Event listening not supported - use Event Bus subscriptions instead
+   */
+  on(event: string, listener: any): void {
+    console.warn('Error Tracker event listening not supported. Use Event Bus subscriptions instead.')
+  }
+
+  /**
+   * Event unsubscribing not supported - use Event Bus unsubscribe instead
+   */
+  off(event: string, listener: any): void {
+    console.warn('Error Tracker event unsubscribing not supported. Use Event Bus unsubscribe instead.')
   }
 }

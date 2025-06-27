@@ -5,7 +5,12 @@
  * cascade failures and providing fault tolerance in distributed systems
  */
 
-import { EventEmitter } from 'events'
+import { EventBus } from '../events/interfaces/event-bus.interface'
+import {
+  CircuitBreakerStateChangedEvent,
+  CircuitBreakerOperationEvent,
+  CircuitBreakerThresholdEvent
+} from '../events/types/service-events.types'
 import {
   ICircuitBreaker,
   CircuitBreakerState,
@@ -21,7 +26,7 @@ import {
   DefaultCircuitBreakerConfig
 } from '../types/circuit-breaker.types'
 
-export class CircuitBreakerService extends EventEmitter implements ICircuitBreaker {
+export class CircuitBreakerService implements ICircuitBreaker {
   private state: CircuitBreakerState = 'CLOSED'
   private config: CircuitBreakerConfig
   private stats: CircuitBreakerStats
@@ -38,10 +43,9 @@ export class CircuitBreakerService extends EventEmitter implements ICircuitBreak
 
   constructor(
     private name: string,
-    config: Partial<CircuitBreakerConfig> = {}
+    config: Partial<CircuitBreakerConfig> = {},
+    private eventBus?: EventBus
   ) {
-    super()
-    
     this.config = {
       ...DefaultCircuitBreakerConfig,
       ...config
@@ -833,16 +837,75 @@ export class CircuitBreakerService extends EventEmitter implements ICircuitBreak
     type: CircuitBreakerEvent,
     data: Partial<CircuitBreakerEventData>
   ): void {
-    const eventData: CircuitBreakerEventData = {
-      type,
-      breakerName: this.name,
-      timestamp: new Date(),
-      state: this.state,
-      stats: this.getStats(),
-      ...data
+    if (!this.eventBus) {
+      return
     }
-    
-    this.emit(type, eventData)
+
+    const timestamp = new Date()
+    const stats = this.getStats()
+
+    // Fire and forget event publishing to avoid blocking circuit breaker operations
+    setImmediate(async () => {
+      try {
+        switch (type) {
+          case 'state-changed':
+            await this.eventBus?.publish('circuit-breaker.state-changed', {
+              breakerName: this.name,
+              oldState: (data as any).oldState || this.state,
+              newState: this.state,
+              timestamp,
+              reason: (data as any).reason,
+              stats
+            } as CircuitBreakerStateChangedEvent)
+            break
+
+          case 'call-succeeded':
+          case 'call-failed':
+          case 'circuit-opened':
+          case 'circuit-closed':
+          case 'emergency-bypass':
+            await this.eventBus?.publish('circuit-breaker.operation', {
+              breakerName: this.name,
+              operation: type === 'call-succeeded' ? 'execute' : 
+                        type === 'call-failed' ? 'execute' :
+                        type === 'circuit-opened' ? 'force-open' :
+                        type === 'circuit-closed' ? 'force-close' : 'reset',
+              success: type === 'call-succeeded' || type === 'circuit-closed',
+              duration: data.duration,
+              error: data.error?.message,
+              timestamp
+            } as CircuitBreakerOperationEvent)
+            break
+
+          case 'threshold-exceeded':
+            await this.eventBus?.publish('circuit-breaker.threshold-exceeded', {
+              breakerName: this.name,
+              thresholdType: 'failure',
+              threshold: this.config.failureThreshold,
+              actual: this.consecutiveFailures,
+              timestamp
+            } as CircuitBreakerThresholdEvent)
+            break
+        }
+      } catch (error) {
+        // Silently fail event publishing to avoid affecting circuit breaker operation
+        console.warn(`Failed to publish circuit breaker event ${type}:`, error)
+      }
+    })
+  }
+
+  /**
+   * Event listening not supported - use Event Bus subscriptions instead
+   */
+  on(event: CircuitBreakerEvent, listener: any): void {
+    console.warn('Circuit Breaker event listening not supported. Use Event Bus subscriptions instead.')
+  }
+
+  /**
+   * Event unsubscribing not supported - use Event Bus unsubscribe instead
+   */
+  off(event: CircuitBreakerEvent, listener: any): void {
+    console.warn('Circuit Breaker event unsubscribing not supported. Use Event Bus unsubscribe instead.')
   }
 }
 

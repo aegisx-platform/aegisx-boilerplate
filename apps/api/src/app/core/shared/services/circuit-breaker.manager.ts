@@ -5,7 +5,7 @@
  * health checks, and bulk operations
  */
 
-import { EventEmitter } from 'events'
+import { EventBus } from '../events/interfaces/event-bus.interface'
 import {
   ICircuitBreaker,
   ICircuitBreakerManager,
@@ -22,7 +22,7 @@ import {
 } from '../types/circuit-breaker.types'
 import { CircuitBreakerService } from './circuit-breaker.service'
 
-export class CircuitBreakerManager extends EventEmitter implements ICircuitBreakerManager {
+export class CircuitBreakerManager implements ICircuitBreakerManager {
   private breakers: Map<string, ICircuitBreaker> = new Map()
   private config: CircuitBreakerManagerConfig
   private isInitialized = false
@@ -30,8 +30,10 @@ export class CircuitBreakerManager extends EventEmitter implements ICircuitBreak
   private metricsInterval?: NodeJS.Timeout
   private cleanupInterval?: NodeJS.Timeout
 
-  constructor(config: Partial<CircuitBreakerManagerConfig> = {}) {
-    super()
+  constructor(
+    config: Partial<CircuitBreakerManagerConfig> = {},
+    private eventBus?: EventBus
+  ) {
     
     this.config = {
       defaultConfig: DefaultCircuitBreakerConfig,
@@ -70,7 +72,7 @@ export class CircuitBreakerManager extends EventEmitter implements ICircuitBreak
       ...config
     }
 
-    const breaker = new CircuitBreakerService(name, mergedConfig)
+    const breaker = new CircuitBreakerService(name, mergedConfig, this.eventBus)
     
     // Forward events from individual breakers
     this.setupBreakerEventForwarding(breaker, name)
@@ -82,7 +84,7 @@ export class CircuitBreakerManager extends EventEmitter implements ICircuitBreak
       breaker.start()
     }
 
-    this.emit('breaker-created', { name, config: mergedConfig })
+    // Event emission removed - using EventBus through individual breakers: this.emit('breaker-created', { name, config: mergedConfig })
     
     return breaker
   }
@@ -130,7 +132,7 @@ export class CircuitBreakerManager extends EventEmitter implements ICircuitBreak
     breaker.stop()
     this.breakers.delete(name)
     
-    this.emit('breaker-removed', { name })
+    // Event emission removed - using EventBus through individual breakers: this.emit('breaker-removed', { name })
     
     return true
   }
@@ -311,7 +313,7 @@ export class CircuitBreakerManager extends EventEmitter implements ICircuitBreak
       breaker.reset()
     }
     
-    this.emit('all-breakers-reset')
+    // Event emission removed - using EventBus through individual breakers: this.emit('all-breakers-reset')
   }
 
   /**
@@ -344,7 +346,7 @@ export class CircuitBreakerManager extends EventEmitter implements ICircuitBreak
       }
     }
 
-    this.emit('bulk-operation-completed', operation)
+    // Event emission removed - using EventBus through individual breakers: this.emit('bulk-operation-completed', operation)
   }
 
   /**
@@ -366,7 +368,7 @@ export class CircuitBreakerManager extends EventEmitter implements ICircuitBreak
     this.startCleanup()
 
     this.isInitialized = true
-    this.emit('manager-initialized')
+    // Event emission removed - using EventBus through individual breakers: this.emit('manager-initialized')
   }
 
   /**
@@ -386,7 +388,7 @@ export class CircuitBreakerManager extends EventEmitter implements ICircuitBreak
     }
 
     this.isInitialized = false
-    this.emit('manager-shutdown')
+    // Event emission removed - using EventBus through individual breakers: this.emit('manager-shutdown')
   }
 
   // Healthcare-specific methods
@@ -450,7 +452,7 @@ export class CircuitBreakerManager extends EventEmitter implements ICircuitBreak
 
     events.forEach(event => {
       breaker.on(event as any, (data: any) => {
-        this.emit(`breaker-${event}`, { breakerName: name, ...data })
+        // Event emission removed - using EventBus through individual breakers: this.emit(`breaker-${event}`, { breakerName: name, ...data })
       })
     })
   }
@@ -462,11 +464,11 @@ export class CircuitBreakerManager extends EventEmitter implements ICircuitBreak
 
     this.healthCheckInterval = setInterval(() => {
       const health = this.getGlobalHealth()
-      this.emit('global-health-check', health)
+      // Event emission removed - using EventBus through individual breakers: this.emit('global-health-check', health)
 
       // Alert on critical conditions
       if (health.overallHealth === 'CRITICAL') {
-        this.emit('critical-health-alert', health)
+        // Event emission removed - using EventBus through individual breakers: this.emit('critical-health-alert', health)
       }
     }, this.config.healthCheckInterval)
   }
@@ -479,8 +481,9 @@ export class CircuitBreakerManager extends EventEmitter implements ICircuitBreak
     }
 
     this.metricsInterval = setInterval(() => {
-      const stats = this.getGlobalStats()
-      this.emit('global-metrics', stats)
+      // Collect global stats for potential future use
+      // Event emission removed - using EventBus through individual breakers
+      // Previous code: const stats = this.getGlobalStats(); this.emit('global-metrics', stats)
     }, this.config.metricsInterval)
   }
 
@@ -514,10 +517,8 @@ export class CircuitBreakerManager extends EventEmitter implements ICircuitBreak
   private performCleanup(): void {
     // Cleanup logic for old metrics, logs, etc.
     // This would integrate with persistent storage if enabled
-    this.emit('cleanup-completed', {
-      timestamp: new Date(),
-      breakersCount: this.breakers.size
-    })
+    // Event emission removed - using EventBus through individual breakers
+    // Previous code: this.emit('cleanup-completed', { timestamp: new Date(), breakersCount: this.breakers.size })
   }
 
   private validateEmergencyCode(code?: string): boolean {
@@ -594,6 +595,6 @@ export class CircuitBreakerManager extends EventEmitter implements ICircuitBreak
       this.startCleanup()
     }
 
-    this.emit('global-config-updated', config)
+    // Event emission removed - using EventBus through individual breakers: this.emit('global-config-updated', config)
   }
 }

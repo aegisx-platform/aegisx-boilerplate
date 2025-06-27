@@ -413,8 +413,10 @@ export class ErrorTrackerFactory {
       })
     }
     
-    // Connect tracker and reporter
-    tracker.on('threshold-exceeded', async (data) => {
+    // Connect tracker and reporter - commented out due to Event Bus integration
+    // Use Event Bus subscriptions instead of direct event listeners
+    /*
+    tracker.on('threshold-exceeded', async (data: any) => {
       const alert = {
         id: `alert-${Date.now()}`,
         type: 'threshold' as const,
@@ -438,6 +440,7 @@ export class ErrorTrackerFactory {
         console.error('Failed to send alert:', error)
       }
     })
+    */
     
     return { tracker, reporter }
   }

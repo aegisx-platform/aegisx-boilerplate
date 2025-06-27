@@ -5,6 +5,7 @@
  * for different environments and use cases
  */
 
+import { EventBus } from '../events/interfaces/event-bus.interface'
 import {
   ICircuitBreaker,
   ICircuitBreakerManager,
@@ -20,8 +21,11 @@ export class CircuitBreakerFactory {
   /**
    * Create circuit breaker manager with default configuration
    */
-  static createManager(config: Partial<CircuitBreakerManagerConfig> = {}): ICircuitBreakerManager {
-    return new CircuitBreakerManager(config)
+  static createManager(
+    config: Partial<CircuitBreakerManagerConfig> = {},
+    eventBus?: EventBus
+  ): ICircuitBreakerManager {
+    return new CircuitBreakerManager(config, eventBus)
   }
 
   /**
