@@ -22,6 +22,9 @@ import secretsManager from './secrets-manager';
 import connectionPool from './connection-pool';
 import configValidator from './config-validator';
 import retryService from './retry-service';
+import templateEngine from './template-engine';
+import customMetrics from './custom-metrics';
+import notification from './notification';
 
 const corePlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugins in specific order
@@ -34,6 +37,9 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
   await fastify.register(connectionPool);
   await fastify.register(configValidator);
   await fastify.register(retryService);
+  await fastify.register(templateEngine);
+  await fastify.register(customMetrics);
+  await fastify.register(notification);
   await fastify.register(httpClient);
   await fastify.register(secretsManager);
   await fastify.register(jwt);
