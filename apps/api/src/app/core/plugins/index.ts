@@ -19,6 +19,9 @@ import eventBus from './event-bus';
 import audit from './audit';
 import httpClient from './http-client';
 import secretsManager from './secrets-manager';
+import connectionPool from './connection-pool';
+import configValidator from './config-validator';
+import retryService from './retry-service';
 
 const corePlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugins in specific order
@@ -28,6 +31,9 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
   await fastify.register(apmIntegration);
   await fastify.register(redis);
   await fastify.register(knex);
+  await fastify.register(connectionPool);
+  await fastify.register(configValidator);
+  await fastify.register(retryService);
   await fastify.register(httpClient);
   await fastify.register(secretsManager);
   await fastify.register(jwt);
