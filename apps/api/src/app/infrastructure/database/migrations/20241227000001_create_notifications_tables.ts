@@ -1,4 +1,4 @@
-import * as Knex from 'knex';
+import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   // Notifications table - เก็บข้อมูลการแจ้งเตือนหลัก
@@ -6,8 +6,8 @@ export async function up(knex: Knex): Promise<void> {
     table.string('id', 50).primary();
     table.string('type', 50).notNullable().index(); // appointment-reminder, lab-results, etc.
     table.string('channel', 20).notNullable().index(); // email, sms, push, slack, webhook, in-app
-    table.string('status', 20).notNullable().default('queued').index(); // queued, processing, sent, delivered, failed, cancelled
-    table.string('priority', 20).notNullable().default('normal').index(); // critical, urgent, high, normal, low
+    table.string('status', 20).notNullable().defaultTo('queued').index(); // queued, processing, sent, delivered, failed, cancelled
+    table.string('priority', 20).notNullable().defaultTo('normal').index(); // critical, urgent, high, normal, low
     
     // Recipient information
     table.string('recipient_id', 50).nullable();
@@ -89,7 +89,7 @@ export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('notification_batches', (table) => {
     table.string('id', 50).primary();
     table.string('name', 255).nullable();
-    table.string('status', 20).notNullable().default('pending'); // pending, processing, completed, failed
+    table.string('status', 20).notNullable().defaultTo('pending'); // pending, processing, completed, failed
     table.integer('total_count').defaultTo(0);
     table.integer('success_count').defaultTo(0);
     table.integer('failure_count').defaultTo(0);
