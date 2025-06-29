@@ -27,8 +27,7 @@ export interface FileMetadata {
   tags?: string[]
   customMetadata?: Record<string, any>
   
-  // Healthcare specific
-  healthcare?: HealthcareMetadata
+  // Healthcare metadata removed
   
   // Security
   encrypted: boolean
@@ -41,26 +40,7 @@ export interface FileMetadata {
   providerMetadata?: Record<string, any>
 }
 
-// Healthcare metadata
-export interface HealthcareMetadata {
-  patientId?: string
-  recordType: string
-  classification: DataClassification
-  hipaaCompliant: boolean
-  retentionPeriod?: number
-  accessLog: HealthcareAccessLog[]
-  consentRequired: boolean
-  anonymized: boolean
-}
-
-// Healthcare access log
-export interface HealthcareAccessLog {
-  userId: string
-  timestamp: Date
-  operation: FileOperation
-  purpose: string
-  authorized: boolean
-}
+// Healthcare metadata removed - implement at application level if needed
 
 // Upload request interface
 export interface UploadRequest {
@@ -82,7 +62,7 @@ export interface UploadOptions {
   dataClassification?: DataClassification
   tags?: string[]
   customMetadata?: Record<string, any>
-  healthcare?: Partial<HealthcareMetadata>
+  // Healthcare data removed
 }
 
 // Download request interface
@@ -145,7 +125,7 @@ export interface FileInfo {
     preview?: string
   }
   permissions: FilePermissions
-  healthcare?: HealthcareMetadata
+  // Healthcare metadata removed
 }
 
 // File permissions
@@ -240,8 +220,7 @@ export interface StorageConfig {
   compression: CompressionConfig
   caching: CachingConfig
   
-  // Healthcare compliance
-  healthcare: HealthcareConfig
+  // Healthcare compliance removed
   
   // File processing
   processing: FileProcessingConfig
@@ -322,22 +301,7 @@ export interface CachingConfig {
   }
 }
 
-// Healthcare configuration
-export interface HealthcareConfig {
-  enabled: boolean
-  hipaaCompliance: boolean
-  auditTrail: boolean
-  encryptionRequired: boolean
-  accessLogging: boolean
-  retentionPolicies: {
-    [key in DataClassification]: number
-  }
-  consentManagement: boolean
-  anonymization: {
-    enabled: boolean
-    algorithms: string[]
-  }
-}
+// Healthcare configuration removed - implement at application level if needed
 
 // File processing configuration
 export interface FileProcessingConfig {
@@ -493,11 +457,7 @@ export interface StorageStats {
     missRate: number
     evictions: number
   }
-  healthcare?: {
-    hipaaCompliantFiles: number
-    encryptedFiles: number
-    auditLogEntries: number
-  }
+  // Healthcare compliance stats removed
   timeRange: {
     startTime: Date
     endTime: Date
@@ -578,7 +538,6 @@ export type StorageErrorCode =
   | 'DECRYPTION_ERROR'
   | 'CHECKSUM_MISMATCH'
   | 'VIRUS_DETECTED'
-  | 'HIPAA_VIOLATION'
   | 'PROVIDER_UNAVAILABLE'
   | 'CONFIGURATION_ERROR'
   | 'OPERATION_TIMEOUT'
@@ -684,24 +643,7 @@ export const DefaultStorageConfig: StorageConfig = {
     }
   },
   
-  healthcare: {
-    enabled: true,
-    hipaaCompliance: true,
-    auditTrail: true,
-    encryptionRequired: true,
-    accessLogging: true,
-    retentionPolicies: {
-      public: 365 * 24 * 60 * 60 * 1000, // 1 year
-      internal: 7 * 365 * 24 * 60 * 60 * 1000, // 7 years
-      confidential: 10 * 365 * 24 * 60 * 60 * 1000, // 10 years
-      restricted: 20 * 365 * 24 * 60 * 60 * 1000 // 20 years
-    },
-    consentManagement: true,
-    anonymization: {
-      enabled: true,
-      algorithms: ['hash', 'tokenize', 'redact']
-    }
-  },
+  // Healthcare configuration removed
   
   processing: {
     thumbnails: {

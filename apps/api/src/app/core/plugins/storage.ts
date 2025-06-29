@@ -417,90 +417,7 @@ const storagePlugin: FastifyPluginAsync<StoragePluginOptions> = async (
       }
     })
 
-    // HIPAA compliance check endpoint
-    fastify.get('/admin/storage/hipaa-compliance/:fileId', {
-      schema: {
-        description: 'Check HIPAA compliance for a file (Admin only)',
-        tags: ['Storage', 'Admin', 'Healthcare'],
-        security: [{ bearerAuth: [] }],
-        headers: {
-          type: 'object',
-          properties: {
-            authorization: {
-              type: 'string',
-              description: 'Bearer token'
-            }
-          },
-          required: ['authorization']
-        },
-        params: {
-          type: 'object',
-          properties: {
-            fileId: { type: 'string' }
-          },
-          required: ['fileId']
-        },
-        querystring: {
-          type: 'object',
-          properties: {
-            storage: { type: 'string' }
-          }
-        },
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              fileId: { type: 'string' },
-              hipaaCompliant: { type: 'boolean' },
-              storage: { type: 'string' },
-              timestamp: { type: 'string' }
-            }
-          },
-          401: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              message: { type: 'string' }
-            }
-          },
-          403: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              message: { type: 'string' }
-            }
-          }
-        }
-      },
-      preHandler: [fastify.authenticate, fastify.rbacRequire(['admin'])]
-    }, async (request, reply) => {
-      const { fileId } = request.params as { fileId: string }
-      const { storage: storageName } = request.query as { storage?: string }
-
-      try {
-        const targetStorage = storageName && namedStorageServices[storageName] 
-          ? namedStorageServices[storageName] 
-          : defaultStorage
-
-        const compliant = await targetStorage.validateHIPAACompliance(fileId)
-        
-        reply.send({
-          fileId,
-          hipaaCompliant: compliant,
-          storage: storageName || 'default',
-          timestamp: new Date().toISOString()
-        })
-
-      } catch (error) {
-        reply.code(500).send({
-          fileId,
-          hipaaCompliant: false,
-          error: (error as Error).message,
-          storage: storageName || 'default',
-          timestamp: new Date().toISOString()
-        })
-      }
-    })
+    // HIPAA compliance endpoint removed
   }
 
   // File upload/download endpoints
@@ -522,13 +439,13 @@ const storagePlugin: FastifyPluginAsync<StoragePluginOptions> = async (
           },
           required: ['authorization']
         },
-        // Note: Body schema validation is disabled for multipart/form-data
-        // as @fastify/multipart handles validation internally
-        body: {
-          type: 'object',
-          additionalProperties: true,
-          description: 'Multipart form data containing file and optional metadata fields'
-        },
+        // Body schema disabled for multipart/form-data - @fastify/multipart handles validation
+        // Available form fields:
+        // - file (required): Binary file data
+        // - path (optional): Storage path for the file  
+        // - tags (optional): Comma-separated tags
+        // - metadata (optional): JSON string with custom metadata
+        // - dataClassification (optional): public|internal|confidential|restricted
         response: {
           200: {
             type: 'object',
@@ -605,7 +522,6 @@ const storagePlugin: FastifyPluginAsync<StoragePluginOptions> = async (
         // Parse additional form fields with error handling
         let tags: string[] = []
         let customMetadata: any = {}
-        let healthcareData: any = undefined
         
         try {
           tags = body.tags?.value ? body.tags.value.split(',').map((tag: string) => tag.trim()) : []
@@ -619,11 +535,7 @@ const storagePlugin: FastifyPluginAsync<StoragePluginOptions> = async (
           return reply.code(400).send({ error: 'Invalid metadata JSON format' })
         }
         
-        try {
-          healthcareData = body.healthcare?.value ? JSON.parse(body.healthcare.value) : undefined
-        } catch (error) {
-          return reply.code(400).send({ error: 'Invalid healthcare JSON format' })
-        }
+        // Healthcare data handling removed
         
         const dataClassification = body.dataClassification?.value || 'internal'
 
@@ -639,8 +551,8 @@ const storagePlugin: FastifyPluginAsync<StoragePluginOptions> = async (
             path: body.path?.value,
             tags,
             customMetadata,
-            dataClassification: dataClassification as any,
-            healthcare: healthcareData
+            dataClassification: dataClassification as any
+            // Healthcare data removed
           }
         }
 

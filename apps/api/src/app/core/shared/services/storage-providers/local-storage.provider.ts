@@ -2,7 +2,7 @@
  * Local File System Storage Provider
  * 
  * Implements file storage operations using the local file system
- * with enterprise features including encryption, health monitoring, and HIPAA compliance
+ * with enterprise features including encryption and health monitoring
  */
 
 import fs from 'fs/promises'
@@ -181,16 +181,7 @@ export class LocalStorageProvider implements IStorageProvider {
         createdBy: request.metadata?.createdBy,
         tags: request.options?.tags || [],
         customMetadata: request.options?.customMetadata || {},
-        healthcare: request.options?.healthcare ? {
-          patientId: request.options.healthcare.patientId,
-          recordType: request.options.healthcare.recordType || 'general',
-          classification: request.options.healthcare.classification || 'internal',
-          hipaaCompliant: request.options.healthcare.hipaaCompliant || false,
-          retentionPeriod: request.options.healthcare.retentionPeriod,
-          accessLog: request.options.healthcare.accessLog || [],
-          consentRequired: request.options.healthcare.consentRequired || false,
-          anonymized: request.options.healthcare.anonymized || false
-        } : undefined,
+        // Healthcare metadata removed,
         encrypted,
         encryptionKeyId: encrypted ? fileId : undefined,
         dataClassification: request.options?.dataClassification || 'internal',
@@ -301,10 +292,7 @@ export class LocalStorageProvider implements IStorageProvider {
       this.stats.downloads++
       this.stats.downloadTimes.push(Date.now() - startTime)
 
-      // Update access log for healthcare
-      if (metadata.healthcare && request.options?.auditAccess) {
-        await this.logHealthcareAccess(request.fileId, 'download', request.options.purpose)
-      }
+      // Healthcare access logging removed
 
       return {
         success: true,
@@ -583,7 +571,7 @@ export class LocalStorageProvider implements IStorageProvider {
               allowedUsers: [],
               allowedRoles: []
             },
-            healthcare: metadata.healthcare
+            // Healthcare metadata removed
           }
           
           fileInfos.push(fileInfo)
@@ -940,10 +928,7 @@ export class LocalStorageProvider implements IStorageProvider {
     // Encrypt confidential data
     if (request.options?.dataClassification === 'confidential') return true
     
-    // Encrypt healthcare data if HIPAA compliance is enabled
-    if (this.globalConfig.healthcare.enabled && request.options?.healthcare) {
-      return this.globalConfig.healthcare.encryptionRequired
-    }
+    // Healthcare encryption logic removed
     
     return false
   }
@@ -1042,25 +1027,7 @@ export class LocalStorageProvider implements IStorageProvider {
     }
   }
 
-  private async logHealthcareAccess(fileId: string, operation: string, purpose?: string): Promise<void> {
-    // This would integrate with the audit system
-    // For now, just update the metadata access log
-    try {
-      const metadata = await this.getMetadata(fileId)
-      if (metadata.healthcare) {
-        metadata.healthcare.accessLog.push({
-          userId: 'system', // This would come from the authenticated user
-          timestamp: new Date(),
-          operation: operation as any,
-          purpose: purpose || 'File access',
-          authorized: true
-        })
-        await this.updateMetadata(fileId, metadata)
-      }
-    } catch {
-      // Log error but don't fail the operation
-    }
-  }
+  // Healthcare access logging method removed
 
   private matchesFilters(metadata: FileMetadata, filters?: any): boolean {
     if (!filters) return true

@@ -207,24 +207,7 @@ export class StorageFactory {
           encryptMetadata: false,
           encryptFilenames: false
         },
-        healthcare: {
-          enabled: false,
-          hipaaCompliance: false,
-          auditTrail: false,
-          encryptionRequired: false,
-          accessLogging: false,
-          retentionPolicies: {
-            public: 30 * 24 * 60 * 60 * 1000,
-            internal: 90 * 24 * 60 * 60 * 1000,
-            confidential: 365 * 24 * 60 * 60 * 1000,
-            restricted: 2 * 365 * 24 * 60 * 60 * 1000
-          },
-          consentManagement: false,
-          anonymization: {
-            enabled: false,
-            algorithms: []
-          }
-        },
+        // Healthcare configuration removed,
         integration: {
           circuitBreaker: { enabled: false, failureThreshold: 5, timeout: 60000 },
           retry: { enabled: false, attempts: 3, delay: 1000 },
@@ -261,24 +244,7 @@ export class StorageFactory {
           encryptMetadata: true,
           encryptFilenames: false
         },
-        healthcare: {
-          enabled: true,
-          hipaaCompliance: true,
-          auditTrail: true,
-          encryptionRequired: true,
-          accessLogging: true,
-          retentionPolicies: {
-            public: 365 * 24 * 60 * 60 * 1000,
-            internal: 7 * 365 * 24 * 60 * 60 * 1000,
-            confidential: 10 * 365 * 24 * 60 * 60 * 1000,
-            restricted: 20 * 365 * 24 * 60 * 60 * 1000
-          },
-          consentManagement: true,
-          anonymization: {
-            enabled: true,
-            algorithms: ['hash', 'tokenize', 'redact']
-          }
-        },
+        // Healthcare configuration removed,
         integration: {
           circuitBreaker: { enabled: true, failureThreshold: 5, timeout: 60000 },
           retry: { enabled: true, attempts: 3, delay: 1000 },
@@ -302,24 +268,7 @@ export class StorageFactory {
           encryptMetadata: true,
           encryptFilenames: true
         },
-        healthcare: {
-          enabled: true,
-          hipaaCompliance: true,
-          auditTrail: true,
-          encryptionRequired: true,
-          accessLogging: true,
-          retentionPolicies: {
-            public: 365 * 24 * 60 * 60 * 1000, // 1 year
-            internal: 7 * 365 * 24 * 60 * 60 * 1000, // 7 years
-            confidential: 10 * 365 * 24 * 60 * 60 * 1000, // 10 years
-            restricted: 50 * 365 * 24 * 60 * 60 * 1000 // 50 years
-          },
-          consentManagement: true,
-          anonymization: {
-            enabled: true,
-            algorithms: ['hash', 'tokenize', 'redact', 'generalize']
-          }
-        },
+        // Healthcare configuration removed,
         processing: {
           thumbnails: { enabled: false, sizes: [], quality: 0, formats: [] },
           virusScanning: { enabled: true, provider: 'clamav' },
@@ -409,12 +358,7 @@ export class StorageFactory {
         fileCache: { ...defaultConfig.caching.fileCache, ...userConfig.caching?.fileCache },
         presignedUrlCache: { ...defaultConfig.caching.presignedUrlCache, ...userConfig.caching?.presignedUrlCache }
       },
-      healthcare: {
-        ...defaultConfig.healthcare,
-        ...userConfig.healthcare,
-        retentionPolicies: { ...defaultConfig.healthcare.retentionPolicies, ...userConfig.healthcare?.retentionPolicies },
-        anonymization: { ...defaultConfig.healthcare.anonymization, ...userConfig.healthcare?.anonymization }
-      },
+      // Healthcare configuration removed,
       processing: {
         ...defaultConfig.processing,
         ...userConfig.processing,
@@ -472,12 +416,7 @@ export class StorageFactory {
         throw new Error(`Unsupported storage provider: ${config.provider}`)
     }
 
-    // Validate healthcare configuration
-    if (config.healthcare.enabled) {
-      if (config.healthcare.encryptionRequired && !config.encryption.enabled) {
-        throw new Error('Healthcare compliance requires encryption to be enabled')
-      }
-    }
+    // Healthcare validation removed
   }
 
   private isServiceConfigurationCompatible(service: StorageService, newConfig: Partial<StorageConfig>): boolean {
@@ -550,25 +489,7 @@ export class StorageFactory {
       encryptFilenames: process.env.STORAGE_ENCRYPT_FILENAMES === 'true'
     }
 
-    // Healthcare configuration from environment
-    config.healthcare = {
-      enabled: process.env.STORAGE_HEALTHCARE_ENABLED === 'true',
-      hipaaCompliance: process.env.STORAGE_HIPAA_COMPLIANCE === 'true',
-      auditTrail: process.env.STORAGE_AUDIT_TRAIL === 'true',
-      encryptionRequired: process.env.STORAGE_HEALTHCARE_ENCRYPTION_REQUIRED === 'true',
-      accessLogging: process.env.STORAGE_ACCESS_LOGGING === 'true',
-      retentionPolicies: {
-        public: parseInt(process.env.STORAGE_RETENTION_PUBLIC || '31536000000'), // 1 year
-        internal: parseInt(process.env.STORAGE_RETENTION_INTERNAL || '220752000000'), // 7 years
-        confidential: parseInt(process.env.STORAGE_RETENTION_CONFIDENTIAL || '315360000000'), // 10 years
-        restricted: parseInt(process.env.STORAGE_RETENTION_RESTRICTED || '630720000000') // 20 years
-      },
-      consentManagement: process.env.STORAGE_CONSENT_MANAGEMENT === 'true',
-      anonymization: {
-        enabled: process.env.STORAGE_ANONYMIZATION_ENABLED === 'true',
-        algorithms: (process.env.STORAGE_ANONYMIZATION_ALGORITHMS || 'hash,tokenize,redact').split(',')
-      }
-    }
+    // Healthcare configuration removed from environment parsing
 
     return config
   }

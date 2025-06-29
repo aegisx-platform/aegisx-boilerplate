@@ -32,8 +32,8 @@ import {
   CleanupResult,
   StorageError,
   StorageEventData,
-  DefaultStorageConfig,
-  DataClassification
+  DefaultStorageConfig
+  // DataClassification removed
 } from '../types/storage.types'
 
 export interface IStorageService {
@@ -61,10 +61,8 @@ export interface IStorageService {
   // URL generation
   generatePresignedUrl(request: PresignedUrlRequest): Promise<PresignedUrlResult>
   
-  // Healthcare & compliance
-  validateHIPAACompliance(fileId: string): Promise<boolean>
-  classifyData(file: Buffer, metadata?: Partial<FileMetadata>): Promise<DataClassification>
-  auditFileAccess(fileId: string, operation: string, purpose?: string): Promise<void>
+  // Data management
+  // Healthcare compliance methods removed
   
   // Health and monitoring
   getHealth(): Promise<StorageHealth>
@@ -185,13 +183,7 @@ export class StorageService implements IStorageService {
       // Enhanced validation with healthcare compliance
       await this.validateUploadRequest(request)
 
-      // Auto-classify data if not specified
-      if (!request.options?.dataClassification && this.config.healthcare.enabled) {
-        request.options = {
-          ...request.options,
-          dataClassification: await this.classifyData(request.file, request.metadata)
-        }
-      }
+      // Data classification handled by application if needed
 
       // Check cache for duplicate files
       const cacheKey = `upload:${this.calculateChecksum(request.file)}`
@@ -215,10 +207,7 @@ export class StorageService implements IStorageService {
         })
       }
 
-      // Audit for healthcare compliance
-      if (this.config.healthcare.enabled && request.options?.healthcare) {
-        await this.auditFileAccess(result.fileId, 'upload', 'File upload')
-      }
+      // File uploaded successfully
 
       // Record metrics
       await this.recordMetric('storage.upload.success', 1, {
@@ -269,10 +258,7 @@ export class StorageService implements IStorageService {
         }
       }
 
-      // Audit for healthcare compliance
-      if (this.config.healthcare.enabled && result.metadata.healthcare) {
-        await this.auditFileAccess(request.fileId, 'download', request.options?.purpose)
-      }
+      // File downloaded successfully
 
       // Record metrics
       await this.recordMetric('storage.download.success', 1, {
@@ -316,10 +302,7 @@ export class StorageService implements IStorageService {
         await this.cache.delete(`metadata:${fileId}`)
       }
 
-      // Audit for healthcare compliance
-      if (success && this.config.healthcare.enabled && metadata?.healthcare) {
-        await this.auditFileAccess(fileId, 'delete', 'File deletion')
-      }
+      // File deleted successfully
 
       // Record metrics
       if (success) {
@@ -391,8 +374,7 @@ export class StorageService implements IStorageService {
           canShare: true,
           allowedUsers: [],
           allowedRoles: []
-        },
-        healthcare: metadata.healthcare
+        }
       }
 
       // Cache the result
@@ -555,98 +537,11 @@ export class StorageService implements IStorageService {
     }, 'generatePresignedUrl')
   }
 
-  async validateHIPAACompliance(fileId: string): Promise<boolean> {
-    try {
-      const metadata = await this.provider.getMetadata(fileId)
-      
-      if (!this.config.healthcare.enabled) {
-        return true
-      }
+  // HIPAA compliance methods removed from storage service
 
-      // Check encryption requirement
-      if (this.config.healthcare.encryptionRequired && !metadata.encrypted) {
-        return false
-      }
+  // Data classification moved to application level if needed
 
-      // Check data classification
-      if (metadata.dataClassification === 'restricted' && !metadata.encrypted) {
-        return false
-      }
-
-      // Check healthcare metadata
-      if (metadata.healthcare) {
-        if (!metadata.healthcare.hipaaCompliant) {
-          return false
-        }
-
-        // Check consent requirements
-        if (metadata.healthcare.consentRequired && !metadata.healthcare.accessLog.length) {
-          return false
-        }
-      }
-
-      return true
-
-    } catch (error) {
-      throw new StorageError(
-        `HIPAA compliance validation failed: ${(error as Error).message}`,
-        'HIPAA_VIOLATION',
-        this.config.provider,
-        fileId,
-        undefined,
-        error as Error
-      )
-    }
-  }
-
-  async classifyData(file: Buffer, metadata?: Partial<FileMetadata>): Promise<DataClassification> {
-    // This is a simplified implementation
-    // In production, you would use more sophisticated classification algorithms
-    
-    // Check for healthcare indicators
-    if (metadata?.healthcare || this.containsHealthcareData(file)) {
-      return 'restricted'
-    }
-
-    // Check for sensitive patterns
-    if (this.containsSensitiveData(file)) {
-      return 'confidential'
-    }
-
-    // Check file size and type
-    if (file.length > 10 * 1024 * 1024) { // 10MB
-      return 'internal'
-    }
-
-    return 'public'
-  }
-
-  async auditFileAccess(fileId: string, operation: string, purpose?: string): Promise<void> {
-    if (!this.config.healthcare.auditTrail) {
-      return
-    }
-
-    try {
-      // This would integrate with the existing audit system
-      await this.emitEvent('audit', {
-        fileId,
-        operation: operation as any,
-        provider: this.config.provider,
-        timestamp: new Date(),
-        success: true
-      })
-
-      // Record metric
-      await this.recordMetric('storage.audit.logged', 1, {
-        operation,
-        provider: this.config.provider
-      })
-
-    } catch (error) {
-      // Don't fail the operation if audit logging fails
-      console.error('Failed to audit file access:', error)
-    }
-  }
+  // Healthcare audit trails removed - use general audit system if needed
 
   async getHealth(): Promise<StorageHealth> {
     try {
@@ -774,12 +669,7 @@ export class StorageService implements IStorageService {
         }
       }
 
-      // Validate healthcare configuration
-      if (this.config.healthcare.enabled) {
-        if (this.config.healthcare.encryptionRequired && !this.config.encryption.enabled) {
-          throw new Error('Healthcare compliance requires encryption to be enabled')
-        }
-      }
+      // Basic validation completed
 
       return true
 
@@ -904,16 +794,7 @@ export class StorageService implements IStorageService {
       )
     }
 
-    // Healthcare validation
-    if (this.config.healthcare.enabled && request.options?.healthcare) {
-      if (request.options.healthcare.classification === 'restricted' && !this.config.encryption.enabled) {
-        throw new StorageError(
-          'Restricted healthcare data requires encryption',
-          'HIPAA_VIOLATION',
-          this.config.provider
-        )
-      }
-    }
+    // Additional validation can be added here if needed
   }
 
   private calculateChecksum(data: Buffer): string {
@@ -921,29 +802,9 @@ export class StorageService implements IStorageService {
     return crypto.createHash('sha256').update(data).digest('hex')
   }
 
-  private containsHealthcareData(file: Buffer): boolean {
-    // Simple pattern matching for healthcare data
-    const content = file.toString('utf8', 0, Math.min(1024, file.length))
-    const healthcarePatterns = [
-      /patient|medical|health|diagnosis|treatment|prescription/i,
-      /\b\d{3}-\d{2}-\d{4}\b/, // SSN pattern
-      /\b[A-Z]{1,2}\d{2,3}\.\d{1,3}\b/ // ICD code pattern
-    ]
-    
-    return healthcarePatterns.some(pattern => pattern.test(content))
-  }
+  // Healthcare data detection removed
 
-  private containsSensitiveData(file: Buffer): boolean {
-    // Simple pattern matching for sensitive data
-    const content = file.toString('utf8', 0, Math.min(1024, file.length))
-    const sensitivePatterns = [
-      /password|secret|key|token|private/i,
-      /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/, // Credit card pattern
-      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/ // Email pattern
-    ]
-    
-    return sensitivePatterns.some(pattern => pattern.test(content))
-  }
+  // Sensitive data detection removed
 
   private async emitEvent(type: string, data: Partial<StorageEventData>): Promise<void> {
     if (!this.eventBus || !this.config.integration.eventBus.enabled) {
