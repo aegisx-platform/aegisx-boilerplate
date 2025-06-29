@@ -92,7 +92,7 @@ domain-name/
 - Security middleware (Helmet, Rate Limiting, CORS)
 - API documentation with Swagger
 - Docker setup with health checks
-- **Enterprise Infrastructure Services** (Complete - 14 Services):
+- **Enterprise Infrastructure Services** (Complete - 15 Services):
   - **HTTP Client Service** - Retry, timeout, circuit breaker integration
   - **Secrets Manager Service** - Secure API keys and tokens handling
   - **Background Jobs System** - Async task processing
@@ -107,6 +107,7 @@ domain-name/
   - **Template Engine Service** - Email and document templates
   - **Custom Metrics Service** - Business and performance monitoring
   - **Notification Service** - Multi-channel notifications (email, SMS, push)
+  - **Storage Service** - Multi-provider file storage with HIPAA compliance
 
 ### 🚧 Structured But Not Implemented
 Healthcare features in `/features/` directory:
@@ -224,7 +225,7 @@ Healthcare features in `/features/` directory:
 ## Core Infrastructure Components
 
 ### Enterprise Infrastructure Services
-Complete suite of 14 production-ready services with healthcare compliance features:
+Complete suite of 15 production-ready services with healthcare compliance features:
 
 #### Core Communication & Processing
 - **HTTP Client Service**: `apps/api/src/app/core/shared/services/http-client.service.ts`
@@ -255,6 +256,10 @@ Complete suite of 14 production-ready services with healthcare compliance featur
   - Multi-level caching strategy with Redis integration
 - **Connection Pool Manager**: `apps/api/src/app/core/shared/services/connection-pool-manager.service.ts`
   - DB/Redis connection optimization with real-time monitoring
+- **Storage Service**: `apps/api/src/app/core/shared/services/storage.service.ts`
+  - Multi-provider file storage (Local, MinIO) with HIPAA compliance and encryption
+  - **Documentation**: `docs/storage-service.md`
+  - **Providers**: Local File System, MinIO (S3-compatible)
 
 #### Business Features
 - **Template Engine Service**: `apps/api/src/app/core/shared/services/template-engine.service.ts`
@@ -325,13 +330,14 @@ fastify.log.info('User registration completed', {
 
 #### Service Integration
 ```typescript
-// ✅ DO: Use existing infrastructure services (14 available)
+// ✅ DO: Use existing infrastructure services (15 available)
 await fastify.notification.send('email', recipient, template, data);
 await fastify.metrics.recordEvent('user_registration', metadata);
 await fastify.retry.execute(operationFunction);
 await fastify.circuitBreaker.execute('external-api', apiCall);
 await fastify.cache.get('user:123');
 await fastify.backgroundJobs.enqueue('send-email', emailData);
+await fastify.storage.upload({ file: buffer, filename: 'document.pdf', mimeType: 'application/pdf' });
 
 // ❌ DON'T: Reinvent infrastructure wheels
 ```
@@ -370,6 +376,39 @@ SEQ_API_KEY=
 # Service Identification
 SERVICE_NAME=aegisx-api
 ENVIRONMENT=development
+```
+
+### Storage Service Environment Variables
+```bash
+# Storage Provider Configuration
+STORAGE_PROVIDER=local|minio
+STORAGE_ENABLED=true
+
+# Local Storage Configuration
+STORAGE_LOCAL_BASE_PATH=./storage
+STORAGE_LOCAL_PERMISSIONS=0755
+STORAGE_LOCAL_MAX_FILE_SIZE=104857600  # 100MB
+STORAGE_LOCAL_MAX_FILES=10000
+
+# MinIO Configuration
+MINIO_ENDPOINT=localhost
+MINIO_PORT=9000
+MINIO_USE_SSL=false
+MINIO_ACCESS_KEY=your-access-key
+MINIO_SECRET_KEY=your-secret-key
+MINIO_BUCKET=aegisx-storage
+MINIO_REGION=us-east-1
+
+# Security & Encryption
+STORAGE_ENCRYPTION_ENABLED=true
+STORAGE_ENCRYPTION_ALGORITHM=AES-256-GCM
+STORAGE_ENCRYPT_METADATA=true
+
+# Healthcare Compliance
+STORAGE_HEALTHCARE_ENABLED=true
+STORAGE_HIPAA_COMPLIANCE=true
+STORAGE_AUDIT_TRAIL=true
+STORAGE_HEALTHCARE_ENCRYPTION_REQUIRED=true
 ```
 
 ### Notification Service Environment Variables
@@ -454,7 +493,7 @@ This is designed for healthcare applications requiring:
 9. **Healthcare Features**: Build on existing foundation when boilerplate is complete
 
 ## Key Integration Points
-**When developing new features, ALWAYS integrate with these 14 available services:**
+**When developing new features, ALWAYS integrate with these 15 available services:**
 
 ### Core Services (Must Use)
 - 🔄 **Event Bus**: Cross-domain communication (`fastify.eventBus`)
@@ -479,8 +518,9 @@ This is designed for healthcare applications requiring:
 - 🔐 **Secrets Manager**: Secure credentials (`fastify.secrets`)
 - ✅ **Config Validator**: Runtime validation (`fastify.configValidator`)
 
-### Template & Content
+### File Storage & Templates
 - 📄 **Template Engine**: Email/document templates (`fastify.templates`)
+- 📁 **Storage Service**: File storage with HIPAA compliance (`fastify.storage`)
 
 ---
 

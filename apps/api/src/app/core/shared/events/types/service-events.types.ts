@@ -169,6 +169,68 @@ export interface SecretRotationEvent {
   timestamp: Date
 }
 
+// Storage Service Events
+export interface StorageOperationEvent {
+  operation: 'upload' | 'download' | 'delete' | 'copy' | 'move' | 'list' | 'search'
+  fileId?: string
+  filename?: string
+  path?: string
+  provider: 'local' | 'minio'
+  userId?: string
+  success: boolean
+  duration?: number
+  size?: number
+  metadata?: {
+    mimeType?: string
+    dataClassification?: string
+    encrypted?: boolean
+    compressed?: boolean
+    tags?: string[]
+  }
+  timestamp: Date
+}
+
+export interface StorageHealthChangedEvent {
+  provider: 'local' | 'minio'
+  oldStatus: string
+  newStatus: string
+  healthScore: number
+  issues: string[]
+  recommendations: string[]
+  diskUsage?: {
+    used: number
+    total: number
+    percentage: number
+  }
+  timestamp: Date
+}
+
+export interface StorageComplianceEvent {
+  eventType: 'hipaa-violation' | 'encryption-required' | 'audit-required'
+  fileId: string
+  filename?: string
+  provider: 'local' | 'minio'
+  userId: string
+  violationType: string
+  dataClassification: string
+  requiredAction: string
+  timestamp: Date
+}
+
+export interface StorageCleanupEvent {
+  provider: 'local' | 'minio'
+  filesRemoved: number
+  bytesFreed: number
+  categories: {
+    tempFiles: number
+    oldFiles: number
+    unusedFiles: number
+    corruptedFiles: number
+  }
+  errors: number
+  timestamp: Date
+}
+
 // Healthcare Compliance Events
 export interface HealthcareAuditEvent {
   auditType: 'data-access' | 'system-error' | 'compliance-violation'
@@ -248,6 +310,12 @@ export interface ServiceEventMap {
   // Secrets Manager Events
   'secrets-manager.secret-accessed': SecretAccessedEvent
   'secrets-manager.secret-rotated': SecretRotationEvent
+  
+  // Storage Service Events
+  'storage.operation': StorageOperationEvent
+  'storage.health-changed': StorageHealthChangedEvent
+  'storage.compliance-violation': StorageComplianceEvent
+  'storage.cleanup-completed': StorageCleanupEvent
   
   // Healthcare Events
   'healthcare.audit': HealthcareAuditEvent

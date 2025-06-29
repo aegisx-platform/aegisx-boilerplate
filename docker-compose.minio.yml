@@ -1,0 +1,137 @@
+# MinIO Object Storage Docker Compose Configuration
+# 
+# MinIO provides S3-compatible object storage for file storage service
+# This configuration includes MinIO server and web console with health checks
+
+version: '3.8'
+
+services:
+  # MinIO Object Storage Server
+  minio:
+    image: quay.io/minio/minio:RELEASE.2024-01-01T16-36-33Z
+    container_name: aegisx-minio
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    ports:
+      - "9000:9000"    # MinIO S3 API
+      - "9001:9001"    # MinIO Web Console
+    environment:
+      # MinIO Credentials (Change these in production!)
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-password123}
+      
+      # MinIO Configuration
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      MINIO_DOMAIN: ${MINIO_DOMAIN:-localhost}
+      
+      # Healthcare & Security Settings
+      MINIO_NOTIFY_WEBHOOK_ENABLE_AEGISX: "on"
+      MINIO_NOTIFY_WEBHOOK_ENDPOINT_AEGISX: "http://api:3000/webhooks/minio"
+      
+      # Browser Settings
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+    volumes:
+      - minio_data:/data
+      - ./config/minio:/etc/minio:ro
+    networks:
+      - aegisx-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio-api.rule=Host(`minio-api.localhost`)"
+      - "traefik.http.routers.minio-api.service=minio-api"
+      - "traefik.http.services.minio-api.loadbalancer.server.port=9000"
+      - "traefik.http.routers.minio-console.rule=Host(`minio.localhost`)"
+      - "traefik.http.routers.minio-console.service=minio-console"
+      - "traefik.http.services.minio-console.loadbalancer.server.port=9001"
+
+  # MinIO Client (MC) for setup and administration
+  minio-setup:
+    image: quay.io/minio/mc:RELEASE.2024-01-01T16-33-49Z
+    container_name: aegisx-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-admin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-password123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-aegisx-storage}
+    volumes:
+      - ./scripts/minio-setup.sh:/scripts/setup.sh:ro
+    networks:
+      - aegisx-network
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for MinIO to be ready...';
+      sleep 10;
+      
+      echo 'Configuring MinIO client...';
+      /usr/bin/mc alias set minio http://minio:9000 $${MINIO_ACCESS_KEY} $${MINIO_SECRET_KEY};
+      
+      echo 'Creating bucket if not exists...';
+      /usr/bin/mc mb minio/$${MINIO_BUCKET} --ignore-existing;
+      
+      echo 'Setting bucket policy to allow uploads...';
+      /usr/bin/mc anonymous set upload minio/$${MINIO_BUCKET}/public;
+      /usr/bin/mc anonymous set download minio/$${MINIO_BUCKET}/public;
+      
+      echo 'Creating healthcare compliance bucket...';
+      /usr/bin/mc mb minio/$${MINIO_BUCKET}-healthcare --ignore-existing;
+      
+      echo 'Setting up versioning...';
+      /usr/bin/mc version enable minio/$${MINIO_BUCKET};
+      /usr/bin/mc version enable minio/$${MINIO_BUCKET}-healthcare;
+      
+      echo 'Setting up encryption...';
+      /usr/bin/mc encrypt set sse-s3 minio/$${MINIO_BUCKET}-healthcare;
+      
+      echo 'Creating lifecycle policy...';
+      cat > /tmp/lifecycle.json << EOF
+      {
+        \"Rules\": [
+          {
+            \"ID\": \"temp-files-cleanup\",
+            \"Status\": \"Enabled\",
+            \"Filter\": {
+              \"Prefix\": \"temp/\"
+            },
+            \"Expiration\": {
+              \"Days\": 7
+            }
+          },
+          {
+            \"ID\": \"old-versions-cleanup\",
+            \"Status\": \"Enabled\",
+            \"NoncurrentVersionExpiration\": {
+              \"NoncurrentDays\": 30
+            }
+          }
+        ]
+      }
+      EOF
+      /usr/bin/mc ilm import minio/$${MINIO_BUCKET} < /tmp/lifecycle.json;
+      
+      echo 'MinIO setup completed successfully!';
+      "
+
+volumes:
+  minio_data:
+    driver: local
+    name: aegisx_minio_data
+
+networks:
+  aegisx-network:
+    external: true
+    name: aegisx_network
+
+# Healthcare Compliance Notes:
+# 1. Enable encryption for sensitive data buckets
+# 2. Set up audit logging with webhook notifications
+# 3. Configure retention policies per data classification
+# 4. Use versioning for data integrity
+# 5. Implement proper access controls and IAM policies

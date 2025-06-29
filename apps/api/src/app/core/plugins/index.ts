@@ -25,6 +25,7 @@ import retryService from './retry-service';
 import templateEngine from './template-engine';
 import customMetrics from './custom-metrics';
 import notification from './notification';
+import storage from './storage';
 
 const corePlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugins in specific order
@@ -51,6 +52,7 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
   await fastify.register(eventBus);
   await fastify.register(audit);
   await fastify.register(healthCheck);
+  await fastify.register(storage);
 
   fastify.log.info('✅ Core plugins loaded successfully');
 };

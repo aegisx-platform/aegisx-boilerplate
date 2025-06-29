@@ -26,6 +26,19 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       AUDIT_RABBITMQ_EXCHANGE: audit.logs
       AUDIT_RABBITMQ_QUEUE: audit.logs.queue
+      # Storage Configuration
+      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+      STORAGE_ENABLED: ${STORAGE_ENABLED:-true}
+      STORAGE_LOCAL_BASE_PATH: ${STORAGE_LOCAL_BASE_PATH:-/app/storage/files}
+      STORAGE_LOCAL_MAX_FILE_SIZE: ${STORAGE_LOCAL_MAX_FILE_SIZE:-104857600}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-aegisx}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-aegisx123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-aegisx-files}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+    volumes:
+      - ./storage/local:/app/storage/files
     networks:
       - aegisx-network
     depends_on:
