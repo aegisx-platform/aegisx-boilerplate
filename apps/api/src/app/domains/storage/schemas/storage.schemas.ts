@@ -1,6 +1,6 @@
 /**
  * Storage API Schemas
- * 
+ *
  * TypeBox schemas for storage API endpoints validation and documentation
  */
 
@@ -251,25 +251,18 @@ export type PresignedUrlResponse = Static<typeof PresignedUrlResponseSchema>
 // Multipart data conflicts with JSON schema validation
 
 /**
- * Multipart Upload Body Schema for Swagger UI
- * 
- * NOTE: This schema is for documentation purposes only.
- * Using this with Fastify validation will cause "body/file must be string" errors
- * because @fastify/multipart processes data differently than JSON schema expects.
- * 
+ * Multipart Upload Body Schema for Fastify with @fastify/multipart
+ *
+ * Uses the official @fastify/multipart approach with isFile: true
+ * Requires ajvFilePlugin to be registered in Fastify initialization
+ *
  * Usage:
  * ```typescript
- * // ❌ DON'T: This will cause validation errors
+ * // ✅ Correct usage with ajvFilePlugin
  * fastify.post('/upload', {
- *   schema: { body: MultipartUploadBodySchema }
- * }, handler)
- * 
- * // ✅ DO: Use for documentation only
- * fastify.post('/upload', {
- *   attachValidation: false,
- *   schema: { 
- *     body: MultipartUploadBodySchema, // Swagger shows forms
- *     // ... other schema properties
+ *   schema: {
+ *     body: MultipartUploadBodySchema,
+ *     consumes: ['multipart/form-data']
  *   }
  * }, handler)
  * ```
@@ -278,8 +271,7 @@ export const MultipartUploadBodySchema = {
   type: 'object',
   properties: {
     file: {
-      type: 'string',
-      format: 'binary',
+      isFile: true,
       description: 'File to upload'
     },
     path: {
@@ -315,6 +307,5 @@ export const MultipartUploadBodySchema = {
       description: 'Whether to overwrite existing file'
     }
   },
-  required: ['file'],
-  additionalProperties: true
+  required: ['file']
 } as const

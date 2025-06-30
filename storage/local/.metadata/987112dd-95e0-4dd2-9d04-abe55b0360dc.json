@@ -1,0 +1,22 @@
+{
+  "filename": "987112dd-95e0-4dd2-9d04-abe55b0360dc.jpg",
+  "originalName": "1483522 (1).jpg",
+  "mimeType": "image/jpeg",
+  "size": 77455,
+  "checksum": "d98eaa68c40502cbddaa5b79f71596c79250dc1e3921fc49699a35f705180636",
+  "checksumAlgorithm": "sha256",
+  "createdAt": "2025-06-30T09:30:28.424Z",
+  "updatedAt": "2025-06-30T09:30:28.424Z",
+  "createdBy": "2e4f1e48-bdcf-4446-a04d-b4a2e4c0baf3",
+  "tags": [],
+  "customMetadata": {},
+  "encrypted": false,
+  "dataClassification": "internal",
+  "provider": "local",
+  "providerPath": "98/71/987112dd-95e0-4dd2-9d04-abe55b0360dc.jpg",
+  "providerMetadata": {
+    "compressed": false,
+    "originalSize": 77455,
+    "storedSize": 77455
+  }
+}

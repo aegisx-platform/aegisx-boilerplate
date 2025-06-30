@@ -195,6 +195,7 @@ Healthcare features in `/features/` directory:
 - `tools/cli/README.md` - **🛠️ CLI scaffolding tool documentation** (must read!)
 - `docs/notification-service.md` - Notification service usage guide
 - `docs/notification-database-schema.md` - Database schema documentation
+- `docs/storage-database.md` - **📁 Storage database integration guide** (comprehensive storage persistence)
 
 ### Configuration Files
 - `knexfile.ts` / `knexfile.prod.js` - Database configuration
@@ -210,6 +211,8 @@ Healthcare features in `/features/` directory:
 - `apps/api/src/app/core/shared/audit/` - Audit system implementation
 - `apps/api/src/app/core/plugins/security/rbac.ts` - RBAC implementation
 - `apps/api/src/app/core/shared/services/` - Enterprise infrastructure services
+- `apps/api/src/app/core/shared/services/storage.service.ts` - **Enterprise storage service with database integration**
+- `apps/api/src/app/domains/storage/` - **Storage domain with database persistence layer**
 
 ### Monitoring & Logging
 - `config/fluent-bit*.conf` - Fluent Bit configurations (simple, advanced, Graylog)
@@ -463,13 +466,14 @@ This is designed for healthcare applications requiring:
 
 ## Recent Development Focus
 - **✅ CLI Scaffolding Tool**: Complete healthcare-focused code generator with templates
+- **✅ Storage Database Integration**: Complete database persistence layer for storage service with 5-table schema
 - **Enterprise Infrastructure Foundation**: Complete suite of 14 production-ready services
 - **Event-Driven Architecture**: Multi-adapter Event Bus (Memory, Redis, RabbitMQ) with middleware support
 - **Comprehensive Audit System**: Multi-adapter audit logging (Direct DB, Redis Pub/Sub, RabbitMQ)
 - **Notification Service**: Multi-channel notifications with HIPAA compliance and template system
 - **Infrastructure Services**: Connection Pool, Config Validator, Health Check, Retry, Metrics, Template Engine
 - **Healthcare Compliance**: HIPAA-compliant audit trails, encryption, and data sanitization
-- **Database Schema**: 8-table notification system with comprehensive relationships
+- **Database Schema**: 13-table system (8 notification + 5 storage) with comprehensive relationships
 - **Monitoring & Logging**: Structured logging with Seq/Grafana + Loki support
 - **Developer Experience**: CLI tool for rapid domain/feature/service generation
 - **Integration Patterns**: Established patterns for extending existing features vs. creating new ones

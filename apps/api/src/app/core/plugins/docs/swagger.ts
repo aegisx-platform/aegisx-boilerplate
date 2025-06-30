@@ -74,6 +74,10 @@ export default fp(async function (fastify: FastifyInstance) {
           name: 'audit-adapter',
           description: 'Audit system adapter management and statistics',
         },
+        {
+          name: 'Storage',
+          description: 'File storage and management endpoints with database integration',
+        },
       ],
       components: {
         securitySchemes: {

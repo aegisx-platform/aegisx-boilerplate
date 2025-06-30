@@ -27,9 +27,9 @@ export class StorageController {
   ) {}
 
   /**
-   * Validate and parse multipart form data for upload (from body)
+   * Validate and parse multipart form data for upload
    */
-  private validateUploadFormDataFromBody(fileData: any, body: any): ApiUploadRequest {
+  private validateUploadFormData(fileData: any, fields: Record<string, string>): ApiUploadRequest {
     // Validate required fields
     if (!fileData.filename) {
       throw new Error('Filename is required')
@@ -39,7 +39,7 @@ export class StorageController {
     }
 
     // Validate data classification
-    const dataClassification = body.dataClassification?.value
+    const dataClassification = fields.dataClassification
     if (dataClassification && !['public', 'internal', 'confidential', 'restricted'].includes(dataClassification)) {
       throw new Error('Invalid data classification. Must be one of: public, internal, confidential, restricted')
     }
@@ -48,9 +48,9 @@ export class StorageController {
     let tags: string[] | undefined
     let customMetadata: Record<string, any> | undefined
 
-    if (body.tags?.value) {
+    if (fields.tags) {
       try {
-        tags = JSON.parse(body.tags.value)
+        tags = JSON.parse(fields.tags)
         if (!Array.isArray(tags) || !tags.every(tag => typeof tag === 'string')) {
           throw new Error('Tags must be an array of strings')
         }
@@ -59,9 +59,9 @@ export class StorageController {
       }
     }
 
-    if (body.customMetadata?.value) {
+    if (fields.customMetadata) {
       try {
-        customMetadata = JSON.parse(body.customMetadata.value)
+        customMetadata = JSON.parse(fields.customMetadata)
         if (typeof customMetadata !== 'object' || customMetadata === null || Array.isArray(customMetadata)) {
           throw new Error('Custom metadata must be a valid JSON object')
         }
@@ -78,14 +78,15 @@ export class StorageController {
     return {
       filename: fileData.filename,
       mimeType: fileData.mimetype,
-      dataClassification: dataClassification || 'internal',
+      dataClassification: (dataClassification || 'internal') as 'public' | 'internal' | 'confidential' | 'restricted',
       tags,
       customMetadata,
-      path: body.path?.value || body.path,
-      encrypt: body.encrypt?.value === 'true' || body.encrypt === true,
-      overwrite: body.overwrite?.value === 'true' || body.overwrite === true
+      path: fields.path,
+      encrypt: fields.encrypt === 'true',
+      overwrite: fields.overwrite === 'true'
     }
   }
+
 
 
   /**
@@ -94,10 +95,28 @@ export class StorageController {
    */
   async upload(request: FastifyRequest, reply: FastifyReply): Promise<ApiUploadResponse | ApiErrorResponse> {
     try {
-      // Get multipart data from request body (attached by @fastify/multipart)
-      const body = request.body as any
+      // Parse multipart data
+      const parts = (request as any).parts()
+      let fileData: any
+      let fileBuffer: Buffer | null = null
+      const fields: Record<string, string> = {}
       
-      if (!body || !body.file) {
+      // Process all parts
+      for await (const part of parts) {
+        if (part.type === 'file') {
+          fileData = {
+            filename: part.filename,
+            mimetype: part.mimetype,
+            encoding: part.encoding
+          }
+          fileBuffer = await part.toBuffer()
+        } else {
+          // Store field values
+          fields[part.fieldname] = part.value as string
+        }
+      }
+      
+      if (!fileData || !fileBuffer) {
         return reply.code(400).send({
           error: {
             code: 'NO_FILE_PROVIDED',
@@ -105,16 +124,12 @@ export class StorageController {
           }
         })
       }
-
-      // Extract file data
-      const fileData = body.file
-      const fileBuffer = await fileData.toBuffer()
       
-      // Validate and parse form data using body fields
+      // Validate and parse form data
       let uploadMetadata: ApiUploadRequest
       
       try {
-        uploadMetadata = this.validateUploadFormDataFromBody(fileData, body)
+        uploadMetadata = this.validateUploadFormData(fileData, fields)
       } catch (validationError) {
         return reply.code(400).send({
           error: {
@@ -127,17 +142,21 @@ export class StorageController {
       // Get current user from request
       const currentUser = (request as any).user
       
-      // Check quota before upload
+      // Check quota before upload (skip for admin users)
       if (currentUser?.id && this.databaseService) {
-        const quotaCheck = await this.databaseService.checkQuota(currentUser.id, fileBuffer.length)
-        if (!quotaCheck.allowed) {
-          return reply.code(413).send({
-            error: {
-              code: 'QUOTA_EXCEEDED',
-              message: quotaCheck.reason || 'Storage quota exceeded',
-              details: quotaCheck.quotaInfo
-            }
-          })
+        const isAdmin = currentUser.roles?.includes('admin')
+        
+        if (!isAdmin) {
+          const quotaCheck = await this.databaseService.checkQuota(currentUser.id, fileBuffer.length)
+          if (!quotaCheck.allowed) {
+            return reply.code(413).send({
+              error: {
+                code: 'QUOTA_EXCEEDED',
+                message: quotaCheck.reason || 'Storage quota exceeded',
+                details: quotaCheck.quotaInfo
+              }
+            })
+          }
         }
       }
 

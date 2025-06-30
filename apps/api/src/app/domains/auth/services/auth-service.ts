@@ -33,7 +33,7 @@ import { RBACCache } from '../../../core/shared/cache/rbac-cache';
 export class AuthService {
   // Security constants - Shorter tokens for better security
   private readonly BCRYPT_ROUNDS = 12;
-  private readonly ACCESS_TOKEN_EXPIRY = '15m';  // Reduced from 1h to 15m
+  private readonly ACCESS_TOKEN_EXPIRY = '24h';  // Reduced from 1h to 15m
   private readonly REFRESH_TOKEN_EXPIRY = '7d';
   // private readonly RBAC_CACHE_TTL = 900; // 15 minutes (same as access token) - Future use
   // TODO: Implement rate limiting with MAX_LOGIN_ATTEMPTS = 5
@@ -86,9 +86,9 @@ export class AuthService {
           registeredAt: new Date()
         })
       } catch (eventError) {
-        this.fastify.log.warn('Failed to publish user registration event', { 
-          userId: user.id, 
-          error: eventError 
+        this.fastify.log.warn('Failed to publish user registration event', {
+          userId: user.id,
+          error: eventError
         })
       }
 
@@ -183,9 +183,9 @@ export class AuthService {
           permissions: rbacData.permissions
         })
       } catch (eventError) {
-        this.fastify.log.warn('Failed to publish login event', { 
-          userId: user.id, 
-          error: eventError 
+        this.fastify.log.warn('Failed to publish login event', {
+          userId: user.id,
+          error: eventError
         })
       }
 
@@ -282,9 +282,9 @@ export class AuthService {
           refreshedAt: new Date()
         })
       } catch (eventError) {
-        this.fastify.log.warn('Failed to publish token refresh event', { 
-          userId: user.id, 
-          error: eventError 
+        this.fastify.log.warn('Failed to publish token refresh event', {
+          userId: user.id,
+          error: eventError
         })
       }
 
@@ -332,9 +332,9 @@ export class AuthService {
           logoutType
         })
       } catch (eventError) {
-        this.fastify.log.warn('Failed to publish logout event', { 
-          userId: user_id, 
-          error: eventError 
+        this.fastify.log.warn('Failed to publish logout event', {
+          userId: user_id,
+          error: eventError
         })
       }
     } catch (error) {
@@ -392,9 +392,9 @@ export class AuthService {
           allTokensRevoked: true
         })
       } catch (eventError) {
-        this.fastify.log.warn('Failed to publish password change event', { 
-          userId: user_id, 
-          error: eventError 
+        this.fastify.log.warn('Failed to publish password change event', {
+          userId: user_id,
+          error: eventError
         })
       }
     } catch (error) {
@@ -460,9 +460,9 @@ export class AuthService {
           updatedBy: user_id // User updating their own profile
         })
       } catch (eventError) {
-        this.fastify.log.warn('Failed to publish profile update event', { 
-          userId: user_id, 
-          error: eventError 
+        this.fastify.log.warn('Failed to publish profile update event', {
+          userId: user_id,
+          error: eventError
         })
       }
 
@@ -498,9 +498,9 @@ export class AuthService {
           verifiedAt: new Date()
         })
       } catch (eventError) {
-        this.fastify.log.warn('Failed to publish email verification event', { 
-          userId: user_id, 
-          error: eventError 
+        this.fastify.log.warn('Failed to publish email verification event', {
+          userId: user_id,
+          error: eventError
         })
       }
     } catch (error) {

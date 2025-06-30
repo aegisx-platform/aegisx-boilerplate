@@ -1,0 +1,22 @@
+{
+  "filename": "ee51fe41-a0ca-4c92-a000-e1b9fba16e28.txt",
+  "originalName": "test.txt",
+  "mimeType": "text/plain",
+  "size": 18,
+  "checksum": "c0b1d92bea9c43172abf099d299c3b06e336180336dab208df84c7609d6df9f4",
+  "checksumAlgorithm": "sha256",
+  "createdAt": "2025-06-30T14:02:42.518Z",
+  "updatedAt": "2025-06-30T14:02:42.518Z",
+  "createdBy": "2e4f1e48-bdcf-4446-a04d-b4a2e4c0baf3",
+  "tags": [],
+  "customMetadata": {},
+  "encrypted": false,
+  "dataClassification": "internal",
+  "provider": "local",
+  "providerPath": "test-folder/ee51fe41-a0ca-4c92-a000-e1b9fba16e28.txt",
+  "providerMetadata": {
+    "compressed": false,
+    "originalSize": 18,
+    "storedSize": 18
+  }
+}

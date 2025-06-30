@@ -1,0 +1,22 @@
+{
+  "filename": "bec24f65-a8ac-4c7b-a603-3a141e130537.pdf",
+  "originalName": "HCG10670_0000010670_HCD001_20250418.pdf",
+  "mimeType": "application/pdf",
+  "size": 693176,
+  "checksum": "b560f324a3a62ca1cb60f2b617d2ae5e7985e86f31146a79f903b9b31c26aa73",
+  "checksumAlgorithm": "sha256",
+  "createdAt": "2025-06-30T09:36:19.773Z",
+  "updatedAt": "2025-06-30T09:36:19.773Z",
+  "createdBy": "2e4f1e48-bdcf-4446-a04d-b4a2e4c0baf3",
+  "tags": [],
+  "customMetadata": {},
+  "encrypted": false,
+  "dataClassification": "internal",
+  "provider": "local",
+  "providerPath": "be/c2/bec24f65-a8ac-4c7b-a603-3a141e130537.pdf",
+  "providerMetadata": {
+    "compressed": false,
+    "originalSize": 693176,
+    "storedSize": 693176
+  }
+}

@@ -36,7 +36,7 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
       fieldSize: 1024 * 1024, // 1MB for form fields
       fields: 10 // Max number of non-file fields
     },
-    attachFieldsToBody: true, // Attach fields to request.body for easy access
+    attachFieldsToBody: false, // Don't attach fields to body - use request.parts() instead
     throwFileSizeLimit: true
   })
 
@@ -74,7 +74,7 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
 
     schema: {
       consumes: ['multipart/form-data'],
-      description: 'Upload a file to storage with metadata\n\n**Form Fields (multipart/form-data):**\n- **file** (required): File to upload (binary)\n- **path** (optional): Storage folder path (string)\n- **dataClassification** (optional): Data level - public|internal|confidential|restricted (string, default: internal)\n- **tags** (optional): JSON array string, e.g., ["tag1","tag2"] (string, default: [])\n- **customMetadata** (optional): JSON object string, e.g., {"key":"value"} (string, default: {})\n- **encrypt** (optional): Encrypt file - "true"|"false" (string, default: false)\n- **overwrite** (optional): Overwrite existing - "true"|"false" (string, default: false)\n\n**Note:** Use form-data, not JSON. All non-file fields are strings.',
+      description: 'Upload a file to storage with metadata\n\n**Form Fields:**\n- **file** (required): File to upload\n- **path** (optional): Storage folder path\n- **dataClassification** (optional): Data level - public|internal|confidential|restricted (default: internal)\n- **tags** (optional): JSON array string (e.g., ["tag1", "tag2"])\n- **customMetadata** (optional): JSON object string (e.g., {"key": "value"})\n- **encrypt** (optional): "true"/"false" (default: false)\n- **overwrite** (optional): "true"/"false" (default: false)',
       tags: ['Storage'],
       security: [{ bearerAuth: [] }],
       headers: {
@@ -87,6 +87,7 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
         },
         required: ['authorization']
       },
+      // Don't define body schema for multipart - let @fastify/multipart handle it
       response: {
         201: UploadResponseSchema,
         400: ErrorResponseSchema,

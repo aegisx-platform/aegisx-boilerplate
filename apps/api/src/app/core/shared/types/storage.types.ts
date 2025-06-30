@@ -68,6 +68,7 @@ export interface UploadOptions {
 // Download request interface
 export interface DownloadRequest {
   fileId: string
+  userId?: string
   options?: DownloadOptions
 }
 

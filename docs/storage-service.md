@@ -22,36 +22,58 @@ The AegisX Storage Service is a comprehensive, enterprise-grade file storage sol
 - **Retention Policies**: Configurable retention based on data classification
 - **Consent Management**: Track and enforce patient consent requirements
 
+### Database Integration Features
+- **Metadata Persistence**: All file metadata stored in PostgreSQL database
+- **Operation Logging**: Complete audit trail of storage operations in database
+- **File Sharing System**: Database-backed file sharing with expiration and permissions
+- **Storage Quotas**: Configurable storage limits per user/entity with real-time tracking
+- **File Versioning**: Track file versions and changes in database
+- **Advanced Search**: Query files by metadata, tags, classification with database indexing
+- **Statistics & Analytics**: Storage usage reports and insights from database
+
 ## Architecture
 
-### Multi-Layer Architecture
+### Multi-Layer Architecture with Database Integration
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                  Fastify Plugin Layer                      │
-│  (HTTP endpoints, health checks, admin interface)          │
+│                  API Routes Layer                          │
+│           (HTTP endpoints, schema validation)              │
 └─────────────────────────────────────────────────────────────┘
                                 │
 ┌─────────────────────────────────────────────────────────────┐
-│                 Storage Service Layer                      │
-│     (Unified interface, enterprise features)               │
+│                Storage Controller Layer                    │
+│         (Request handling, authentication)                 │
 └─────────────────────────────────────────────────────────────┘
                                 │
         ┌───────────────────────┴───────────────────────┐
         │                                               │
 ┌───────▼────────┐                           ┌──────────▼─────────┐
-│ Local Provider │                           │   MinIO Provider   │
-│ (File System)  │                           │ (Object Storage)   │
+│ Storage Service│                           │ Database Service   │
+│ (File Storage) │                           │ (Metadata/Audit)   │
 └────────────────┘                           └────────────────────┘
+        │                                               │
+┌───────▼────────┐                           ┌──────────▼─────────┐
+│   Providers    │                           │   Repository       │
+│ (Local/MinIO)  │                           │   (Data Access)    │
+└────────────────┘                           └────────────────────┘
+                                                       │
+                                            ┌──────────▼─────────┐
+                                            │    PostgreSQL      │
+                                            │    (Database)      │
+                                            └────────────────────┘
 ```
 
 ### Key Components
 
-1. **Storage Service**: Main service interface with enterprise features
-2. **Storage Providers**: Pluggable backends (Local, MinIO)
-3. **Storage Factory**: Service instantiation and configuration
-4. **Event System**: Real-time event publishing and subscription
-5. **Enterprise Integration**: Circuit breaker, retry, cache, metrics
+1. **API Routes**: RESTful endpoints with schema validation
+2. **Storage Controller**: HTTP request handling and business logic coordination
+3. **Storage Service**: Main service interface with enterprise features for file operations
+4. **Database Service**: Metadata management, audit logging, and analytics
+5. **Repository Layer**: Data access abstraction for database operations
+6. **Storage Providers**: Pluggable backends (Local, MinIO)
+7. **Event System**: Real-time event publishing and subscription
+8. **Enterprise Integration**: Circuit breaker, retry, cache, metrics
 
 ## Installation & Configuration
 
@@ -87,6 +109,11 @@ STORAGE_HEALTHCARE_ENABLED=true
 STORAGE_HIPAA_COMPLIANCE=true
 STORAGE_AUDIT_TRAIL=true
 STORAGE_HEALTHCARE_ENCRYPTION_REQUIRED=true
+
+# Database Configuration
+DATABASE_URL=postgresql://user:password@localhost:5432/aegisx_db
+STORAGE_DATABASE_ENABLED=true
+STORAGE_QUOTA_ENFORCEMENT=true
 ```
 
 ### Fastify Plugin Registration
@@ -214,20 +241,41 @@ const moved = await fastify.storage.moveFile(sourceId, 'processed/')
 const searchResults = await fastify.storage.searchFiles('patient report', {
   filters: { dataClassification: ['confidential', 'restricted'] }
 })
+
+// Database-specific operations
+// Get file metadata from database
+const metadata = await fastify.storage.getFileMetadata('file-123')
+
+// Update file metadata
+await fastify.storage.updateFileMetadata('file-123', {
+  tags: ['medical', 'updated'],
+  customMetadata: { department: 'radiology' }
+})
+
+// Check storage quota
+const quotaCheck = await fastify.storage.checkQuota('user-456', 50 * 1024 * 1024) // 50MB
+if (!quotaCheck.allowed) {
+  throw new Error('Storage quota exceeded')
+}
+
+// Get storage statistics for user
+const userStats = await fastify.storage.getUserStatistics('user-456')
 ```
 
 ## API Endpoints
 
-### File Operations
+### File Operations (v1)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/storage/upload` | Upload a file |
-| GET | `/api/storage/download/:fileId` | Download a file |
-| GET | `/api/storage/download/:fileId/info` | Get file information |
-| GET | `/api/storage/files` | List files with filtering |
-| DELETE | `/api/storage/download/:fileId` | Delete a file |
-| POST | `/api/storage/presigned-url` | Generate presigned URL |
+| POST | `/api/v1/storage/upload` | Upload a file with metadata |
+| GET | `/api/v1/storage/download/:fileId` | Download a file |
+| GET | `/api/v1/storage/files/:fileId` | Get file information and metadata |
+| GET | `/api/v1/storage/files` | List files with advanced filtering |
+| DELETE | `/api/v1/storage/files/:fileId` | Delete a file |
+| POST | `/api/v1/storage/presigned-url` | Generate presigned URL |
+| POST | `/api/v1/storage/share` | Share a file with another user |
+| GET | `/api/v1/storage/stats` | Get storage usage statistics |
 
 ### Health & Monitoring
 
@@ -243,6 +291,106 @@ const searchResults = await fastify.storage.searchFiles('patient report', {
 | GET | `/admin/storage/config` | Get configuration |
 | POST | `/admin/storage/cleanup` | Trigger cleanup |
 | GET | `/admin/storage/hipaa-compliance/:fileId` | Check HIPAA compliance |
+
+## Database Schema
+
+The storage system uses a comprehensive database schema with 5 main tables for metadata management:
+
+### storage_files
+Primary table for file metadata and information:
+- `id`: UUID primary key
+- `file_id`: Unique file identifier (indexed)
+- `filename`: Current filename
+- `original_name`: Original uploaded filename
+- `mime_type`: File MIME type
+- `size`: File size in bytes
+- `checksum`: File integrity checksum
+- `provider`: Storage provider (local, minio)
+- `provider_path`: Provider-specific file path
+- `data_classification`: Security classification level
+- `encrypted`: Whether file is encrypted
+- `tags`: JSON array of tags
+- `custom_metadata`: JSON object of custom metadata
+- `created_by`, `updated_by`: User tracking
+- `created_at`, `updated_at`: Timestamps
+- `last_accessed_at`: Last access timestamp
+- `access_count`: Number of times accessed
+- `status`: File status (active, archived, deleted, corrupted)
+
+### storage_operations
+Audit trail of all storage operations:
+- `id`: UUID primary key
+- `file_id`: Related file ID (indexed)
+- `operation`: Type of operation (upload, download, delete, etc.)
+- `status`: Operation status (success, failed, pending)
+- `provider`: Storage provider used
+- `bytes_transferred`: Amount of data transferred
+- `duration`: Operation duration in milliseconds
+- `user_id`: User who performed operation
+- `client_ip`: Client IP address
+- `user_agent`: User agent string
+- `session_id`: Session identifier
+- `correlation_id`: Request correlation ID
+- `error_code`, `error_message`: Error details if failed
+- `purpose`: Purpose/reason for operation
+- `metadata`: Additional operation metadata (JSON)
+- `created_at`: Operation timestamp
+
+### storage_file_shares
+File sharing permissions and access control:
+- `id`: UUID primary key
+- `file_id`: Shared file ID (indexed)
+- `shared_by`: User who shared the file
+- `shared_with`: User receiving shared access
+- `permissions`: JSON object with access permissions
+- `expires_at`: Share expiration date
+- `requires_password`: Whether password is required
+- `max_downloads`: Maximum download limit
+- `download_count`: Current download count
+- `is_active`: Whether share is currently active
+- `created_at`, `updated_at`: Timestamps
+- `last_accessed_at`: Last access timestamp
+
+### storage_file_versions
+File version history and tracking:
+- `id`: UUID primary key
+- `file_id`: Parent file ID (indexed)
+- `version_number`: Sequential version number
+- `checksum`: Version-specific checksum
+- `size`: Version file size
+- `provider_path`: Storage path for this version
+- `metadata`: Version-specific metadata (JSON)
+- `created_by`: User who created version
+- `created_at`: Version creation timestamp
+- `is_current`: Whether this is the current version
+
+### storage_quotas
+User and entity storage quotas:
+- `id`: UUID primary key
+- `user_id`: User ID for quota
+- `entity_type`: Type of entity (user, department, organization)
+- `entity_id`: Entity identifier
+- `max_storage_bytes`: Maximum storage limit in bytes
+- `max_files`: Maximum number of files
+- `max_file_size_bytes`: Maximum individual file size
+- `used_storage_bytes`: Current storage usage
+- `used_files`: Current file count
+- `is_active`: Whether quota is active
+- `created_at`, `updated_at`: Timestamps
+- `last_calculated_at`: Last quota calculation timestamp
+
+### Database Setup Commands
+
+```bash
+# Run migration to create tables
+npm run db:migrate
+
+# Seed sample data (optional)
+npm run db:seed
+
+# Reset database (development only)
+npm run db:reset
+```
 
 ## Configuration Templates
 
@@ -622,6 +770,16 @@ For issues and questions:
 ---
 
 ## Changelog
+
+### v2.0.0 (2024-12-30)
+- **Database Integration**: Complete PostgreSQL integration for metadata management
+- **Advanced API**: RESTful API with TypeBox schema validation
+- **File Sharing System**: Database-backed file sharing with permissions and expiration
+- **Storage Quotas**: User and entity-based storage quota management
+- **Operation Auditing**: Complete audit trail of all storage operations
+- **Advanced Search**: Query files by metadata, tags, and classification
+- **Storage Analytics**: Comprehensive usage statistics and reporting
+- **File Versioning**: Track and manage file versions in database
 
 ### v1.0.0 (2024-01-01)
 - Initial release with local and MinIO providers
