@@ -13,6 +13,9 @@ import { CacheManagerService } from './cache-manager.service'
 import { CustomMetricsService } from './custom-metrics.service'
 import { LocalStorageProvider } from './storage-providers/local-storage.provider'
 import { MinIOStorageProvider } from './storage-providers/minio-storage.provider'
+import { StorageDatabaseService } from '../../../domains/storage/services/storage-database-service'
+import { StorageFileRepository } from '../../../domains/storage/repositories/storage-file-repository'
+import { Knex } from 'knex'
 import {
   IStorageProvider,
   StorageConfig,
@@ -89,15 +92,24 @@ export class StorageService implements IStorageService {
     operationTimes: [] as number[]
   }
 
+  private databaseService?: StorageDatabaseService
+
   constructor(
     private config: StorageConfig = DefaultStorageConfig,
     private eventBus?: EventBus,
     private circuitBreaker?: CircuitBreakerService,
     private retry?: RetryService,
     private cache?: CacheManagerService,
-    private metricsService?: CustomMetricsService
+    private metricsService?: CustomMetricsService,
+    private knex?: Knex
   ) {
     this.provider = this.createProvider()
+    
+    // Initialize database service if Knex is available
+    if (this.knex) {
+      const repository = new StorageFileRepository(this.knex)
+      this.databaseService = new StorageDatabaseService(repository)
+    }
   }
 
   async connect(): Promise<void> {
@@ -200,6 +212,41 @@ export class StorageService implements IStorageService {
         return await this.provider.upload(request)
       }, 'storage.upload')
 
+      // Save to database if successful
+      if (result.success && this.databaseService) {
+        try {
+          // Step 1: Save file metadata first
+          await this.databaseService.saveFileMetadata(result.metadata, request, result.fileId)
+          
+          // Step 2: Log successful upload operation (only if metadata saved successfully)
+          try {
+            await this.databaseService.logOperation({
+              operation: 'upload',
+              status: 'success',
+              provider: this.config.provider,
+              fileId: result.fileId,
+              userId: request.metadata?.createdBy,
+              bytesTransferred: request.file.length,
+              purpose: 'File upload'
+            })
+          } catch (logError) {
+            console.warn('Failed to log upload operation:', logError)
+          }
+          
+          // Step 3: Update quota if user provided
+          if (request.metadata?.createdBy) {
+            try {
+              await this.databaseService.updateQuota(request.metadata.createdBy, request.file.length, 1)
+            } catch (quotaError) {
+              console.warn('Failed to update quota:', quotaError)
+            }
+          }
+        } catch (dbError) {
+          console.warn('Failed to save file metadata to database:', dbError)
+          // Don't fail the upload if database operation fails
+        }
+      }
+
       // Cache result if successful
       if (result.success && this.cache && this.config.caching.enabled) {
         await this.cache.set(cacheKey, result, {
@@ -240,6 +287,16 @@ export class StorageService implements IStorageService {
         const cached = await this.cache.get<DownloadResult>(cacheKey)
         if (cached) {
           await this.recordMetric('storage.download.cache_hit', 1)
+          
+          // Mark file as accessed in database
+          if (this.databaseService) {
+            try {
+              await this.databaseService.markFileAsAccessed(request.fileId)
+            } catch (dbError) {
+              console.warn('Failed to update file access info in database:', dbError)
+            }
+          }
+          
           return { ...cached, cached: true }
         }
       }
@@ -248,6 +305,27 @@ export class StorageService implements IStorageService {
       const result = await this.executeWithResilience(async () => {
         return await this.provider.download(request)
       }, 'storage.download')
+
+      // Update database if successful
+      if (result.success && this.databaseService) {
+        try {
+          // Mark file as accessed
+          await this.databaseService.markFileAsAccessed(request.fileId)
+          
+          // Log successful download operation
+          await this.databaseService.logOperation({
+            operation: 'download',
+            status: 'success',
+            provider: this.config.provider,
+            fileId: request.fileId,
+            userId: request.userId,
+            bytesTransferred: result.size,
+            purpose: 'File download'
+          })
+        } catch (dbError) {
+          console.warn('Failed to update file access info in database:', dbError)
+        }
+      }
 
       // Cache small files
       if (result.success && this.cache && this.config.caching.fileCache.enabled) {
@@ -283,10 +361,16 @@ export class StorageService implements IStorageService {
 
   async delete(fileId: string): Promise<boolean> {
     return this.executeOperation(async () => {
-      // Get metadata for audit purposes
+      // Get metadata for audit purposes and quota calculation
       let metadata: FileMetadata | undefined
+      let databaseMetadata: any = undefined
       try {
         metadata = await this.provider.getMetadata(fileId)
+        
+        // Get database metadata for quota updates
+        if (this.databaseService) {
+          databaseMetadata = await this.databaseService.getFileMetadata(fileId)
+        }
       } catch {
         // File might not exist
       }
@@ -295,6 +379,32 @@ export class StorageService implements IStorageService {
       const success = await this.executeWithResilience(async () => {
         return await this.provider.delete(fileId)
       }, 'storage.delete')
+
+      // Update database if successful
+      if (success && this.databaseService) {
+        try {
+          // Mark file as deleted in database (soft delete)
+          await this.databaseService.deleteFileMetadata(fileId, true)
+          
+          // Log successful delete operation
+          await this.databaseService.logOperation({
+            operation: 'delete',
+            status: 'success',
+            provider: this.config.provider,
+            fileId: fileId,
+            bytesTransferred: metadata?.size || databaseMetadata?.size,
+            purpose: 'File deletion'
+          })
+          
+          // Update quota if file metadata available
+          if (databaseMetadata && databaseMetadata.createdBy) {
+            const sizeToRemove = -(databaseMetadata.size || 0)
+            await this.databaseService.updateQuota(databaseMetadata.createdBy, sizeToRemove, -1)
+          }
+        } catch (dbError) {
+          console.warn('Failed to update file deletion in database:', dbError)
+        }
+      }
 
       // Clear related cache entries
       if (this.cache && this.config.caching.enabled) {
@@ -313,7 +423,7 @@ export class StorageService implements IStorageService {
         // Emit event
         await this.emitEvent('delete', {
           fileId,
-          filename: metadata?.originalName,
+          filename: metadata?.originalName || databaseMetadata?.originalName,
           provider: this.config.provider,
           success: true
         })
@@ -395,6 +505,25 @@ export class StorageService implements IStorageService {
         return await this.provider.updateMetadata(fileId, updates)
       }, 'storage.updateMetadata')
 
+      // Update database if successful
+      if (success && this.databaseService) {
+        try {
+          await this.databaseService.updateFileMetadata(fileId, updates)
+          
+          // Log successful metadata update operation
+          await this.databaseService.logOperation({
+            operation: 'update_metadata',
+            status: 'success',
+            provider: this.config.provider,
+            fileId: fileId,
+            purpose: 'File metadata update',
+            metadata: updates
+          })
+        } catch (dbError) {
+          console.warn('Failed to update file metadata in database:', dbError)
+        }
+      }
+
       // Clear cache
       if (success && this.cache) {
         await this.cache.delete(`fileinfo:${fileId}`)
@@ -408,9 +537,47 @@ export class StorageService implements IStorageService {
 
   async copyFile(sourceId: string, destinationPath: string): Promise<StorageResult> {
     return this.executeOperation(async () => {
-      return await this.executeWithResilience(async () => {
+      const result = await this.executeWithResilience(async () => {
         return await this.provider.copyFile(sourceId, destinationPath)
       }, 'storage.copy')
+
+      // Save copied file to database if successful
+      if (result.success && this.databaseService) {
+        try {
+          // Get original file metadata for copying
+          const originalFile = await this.databaseService.getFileMetadata(sourceId)
+          if (originalFile) {
+            // Create new database entry for copied file
+            const uploadRequest: UploadRequest = {
+              file: Buffer.alloc(0), // Placeholder since it's a copy
+              filename: result.metadata.filename,
+              mimeType: result.metadata.mimeType,
+              metadata: {
+                customMetadata: {
+                  ...originalFile.customMetadata,
+                  copiedFrom: sourceId
+                },
+                createdBy: originalFile.createdBy
+              }
+            }
+            await this.databaseService.saveFileMetadata(result.metadata, uploadRequest, result.fileId)
+          }
+
+          // Log successful copy operation
+          await this.databaseService.logOperation({
+            operation: 'copy',
+            status: 'success',
+            provider: this.config.provider,
+            fileId: result.fileId,
+            purpose: `File copied from ${sourceId}`,
+            metadata: { sourceId, destinationPath }
+          })
+        } catch (dbError) {
+          console.warn('Failed to save copied file metadata to database:', dbError)
+        }
+      }
+
+      return result
     }, 'copy')
   }
 
@@ -419,6 +586,29 @@ export class StorageService implements IStorageService {
       const result = await this.executeWithResilience(async () => {
         return await this.provider.moveFile(sourceId, destinationPath)
       }, 'storage.move')
+
+      // Update database if successful
+      if (result.success && this.databaseService) {
+        try {
+          // Update file metadata with new path information
+          await this.databaseService.updateFileMetadata(sourceId, {
+            filename: result.metadata.filename,
+            providerPath: result.metadata.providerPath
+          })
+
+          // Log successful move operation
+          await this.databaseService.logOperation({
+            operation: 'move',
+            status: 'success',
+            provider: this.config.provider,
+            fileId: sourceId,
+            purpose: `File moved to ${destinationPath}`,
+            metadata: { sourceId, destinationPath }
+          })
+        } catch (dbError) {
+          console.warn('Failed to update moved file metadata in database:', dbError)
+        }
+      }
 
       // Clear cache for old file
       if (this.cache) {

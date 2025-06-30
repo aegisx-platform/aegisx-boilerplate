@@ -34,6 +34,7 @@ export interface StorageFactoryDependencies {
   retry?: RetryService
   cache?: CacheManagerService
   metrics?: CustomMetricsService
+  knex?: any // Knex instance for database integration
 }
 
 export class StorageFactory {
@@ -70,7 +71,8 @@ export class StorageFactory {
         dependencies.circuitBreaker,
         dependencies.retry,
         dependencies.cache,
-        dependencies.metrics
+        dependencies.metrics,
+        dependencies.knex
       )
 
       return service
