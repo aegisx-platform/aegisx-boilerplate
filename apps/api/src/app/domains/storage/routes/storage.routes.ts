@@ -36,7 +36,7 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
       fieldSize: 1024 * 1024, // 1MB for form fields
       fields: 10 // Max number of non-file fields
     },
-    attachFieldsToBody: false, // Don't attach fields to body - use request.parts() instead
+    attachFieldsToBody: true, // Attach fields to body for schema validation
     throwFileSizeLimit: true
   })
 
@@ -71,6 +71,7 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
   // Upload file
   fastify.post('/upload', {
     preHandler: (fastify as any).authenticate, // Require authentication
+    bodyLimit: 100 * 1024 * 1024, // 100MB
 
     schema: {
       consumes: ['multipart/form-data'],
@@ -87,7 +88,6 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
         },
         required: ['authorization']
       },
-      // Don't define body schema for multipart - let @fastify/multipart handle it
       response: {
         201: UploadResponseSchema,
         400: ErrorResponseSchema,

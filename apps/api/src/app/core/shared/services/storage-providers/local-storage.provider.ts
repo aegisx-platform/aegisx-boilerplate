@@ -969,6 +969,7 @@ export class LocalStorageProvider implements IStorageProvider {
     const errors: any[] = []
     const warnings: any[] = []
     
+    
     // Check file size
     if (request.file.length === 0) {
       errors.push({ code: 'EMPTY_FILE', message: 'File is empty' })
