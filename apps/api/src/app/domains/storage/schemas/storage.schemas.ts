@@ -245,20 +245,20 @@ export type StorageStatsResponse = Static<typeof StorageStatsResponseSchema>
 export type ErrorResponse = Static<typeof ErrorResponseSchema>
 export type PresignedUrlRequest = Static<typeof PresignedUrlRequestSchema>
 export type PresignedUrlResponse = Static<typeof PresignedUrlResponseSchema>
+export type MultipartUploadBody = Static<typeof MultipartUploadBodySchema>
 
 // === MULTIPART UPLOAD BODY SCHEMA ===
-// ⚠️ For Swagger documentation only - do NOT use for validation with @fastify/multipart
-// Multipart data conflicts with JSON schema validation
+// For Swagger documentation with @aegisx/fastify-multipart
+// This schema is used for OpenAPI documentation only
 
 /**
- * Multipart Upload Body Schema for Fastify with @fastify/multipart
+ * Multipart Upload Body Schema for Swagger UI with @aegisx/fastify-multipart
  *
- * Uses the official @fastify/multipart approach with isFile: true
- * Requires ajvFilePlugin to be registered in Fastify initialization
+ * This schema enables proper form display in Swagger UI
+ * The @aegisx/fastify-multipart plugin handles the actual parsing
  *
  * Usage:
  * ```typescript
- * // ✅ Correct usage with ajvFilePlugin
  * fastify.post('/upload', {
  *   schema: {
  *     body: MultipartUploadBodySchema,
@@ -267,45 +267,40 @@ export type PresignedUrlResponse = Static<typeof PresignedUrlResponseSchema>
  * }, handler)
  * ```
  */
-export const MultipartUploadBodySchema = {
-  type: 'object',
-  properties: {
-    file: {
-      isFile: true,
-      description: 'File to upload'
-    },
-    path: {
-      type: 'string',
-      description: 'Optional path/folder for file storage'
-    },
-    dataClassification: {
-      type: 'string',
-      enum: ['public', 'internal', 'confidential', 'restricted'],
-      default: 'internal',
-      description: 'Data classification level'
-    },
-    tags: {
-      type: 'string',
-      description: 'JSON array of tags (e.g., ["tag1", "tag2"])',
-      default: '[]'
-    },
-    customMetadata: {
-      type: 'string',
-      description: 'JSON object with custom metadata (e.g., {"key": "value"})',
-      default: '{}'
-    },
-    encrypt: {
-      type: 'string',
-      enum: ['true', 'false'],
-      default: 'false',
-      description: 'Whether to encrypt the file'
-    },
-    overwrite: {
-      type: 'string',
-      enum: ['true', 'false'],
-      default: 'false',
-      description: 'Whether to overwrite existing file'
-    }
-  },
-  required: ['file']
-} as const
+export const MultipartUploadBodySchema = Type.Object({
+  file: Type.String({ 
+    format: 'binary',
+    description: 'File to upload (required)'
+  }),
+  path: Type.Optional(Type.String({ 
+    description: 'Storage folder path (e.g., "documents/2024")'
+  })),
+  dataClassification: Type.Optional(Type.String({ 
+    enum: ['public', 'internal', 'confidential', 'restricted'],
+    default: 'internal',
+    description: 'Data classification level for compliance'
+  })),
+  tags: Type.Optional(Type.String({ 
+    description: 'JSON array of tags for categorization (e.g., ["invoice", "2024", "customer-123"])',
+    pattern: '^\\[.*\\]$', // JSON array pattern
+    default: '[]'
+  })),
+  customMetadata: Type.Optional(Type.String({ 
+    description: 'JSON object with custom metadata (e.g., {"department": "sales", "project": "Q4-2024"})',
+    pattern: '^\\{.*\\}$', // JSON object pattern
+    default: '{}'
+  })),
+  encrypt: Type.Optional(Type.String({ 
+    enum: ['true', 'false'],
+    default: 'false',
+    description: 'Encrypt file at rest'
+  })),
+  overwrite: Type.Optional(Type.String({ 
+    enum: ['true', 'false'],
+    default: 'false',
+    description: 'Overwrite if file exists'
+  }))
+}, {
+  $id: 'MultipartUploadBody',
+  additionalProperties: false
+})

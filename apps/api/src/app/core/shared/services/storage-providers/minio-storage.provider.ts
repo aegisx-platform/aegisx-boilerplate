@@ -181,12 +181,12 @@ export class MinIOStorageProvider implements IStorageProvider {
         createdAt: new Date(),
         updatedAt: new Date(),
         createdBy: request.metadata?.createdBy,
-        tags: request.options?.tags || [],
-        customMetadata: request.options?.customMetadata || {},
+        tags: request.metadata?.tags || [],
+        customMetadata: request.metadata?.customMetadata || {},
         // Healthcare metadata removed,
         encrypted,
         encryptionKeyId: encrypted ? fileId : undefined,
-        dataClassification: request.options?.dataClassification || 'internal',
+        dataClassification: request.metadata?.dataClassification || 'internal',
         provider: 'minio',
         providerPath: objectName,
         providerMetadata: {
@@ -1056,13 +1056,16 @@ export class MinIOStorageProvider implements IStorageProvider {
   }
 
   private shouldEncrypt(request: UploadRequest): boolean {
+    // Explicit encryption request (override global config)
+    if (request.options?.encrypt === true) return true
+    
     if (!this.globalConfig.encryption.enabled) return false
     
     // Always encrypt restricted data
-    if (request.options?.dataClassification === 'restricted') return true
+    if (request.metadata?.dataClassification === 'restricted') return true
     
     // Encrypt confidential data
-    if (request.options?.dataClassification === 'confidential') return true
+    if (request.metadata?.dataClassification === 'confidential') return true
     
     // Healthcare encryption logic removed
     
@@ -1079,9 +1082,11 @@ export class MinIOStorageProvider implements IStorageProvider {
 
   private async encryptFile(data: Buffer, fileId: string): Promise<Buffer> {
     const key = crypto.scryptSync(fileId, 'salt', 32)
-    const cipher = crypto.createCipher('aes-256-cbc', key)
+    const iv = crypto.randomBytes(16) // Generate random IV
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv)
     
     const encrypted = Buffer.concat([
+      iv, // Prepend IV to encrypted data
       cipher.update(data),
       cipher.final()
     ])
@@ -1091,10 +1096,12 @@ export class MinIOStorageProvider implements IStorageProvider {
 
   private async decryptFile(encryptedData: Buffer, fileId: string): Promise<Buffer> {
     const key = crypto.scryptSync(fileId, 'salt', 32)
-    const decipher = crypto.createDecipher('aes-256-cbc', key)
+    const iv = encryptedData.subarray(0, 16) // Extract IV from beginning
+    const ciphertext = encryptedData.subarray(16) // Rest is the actual encrypted data
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv)
     
     const decrypted = Buffer.concat([
-      decipher.update(encryptedData),
+      decipher.update(ciphertext),
       decipher.final()
     ])
     

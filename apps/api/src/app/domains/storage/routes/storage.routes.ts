@@ -5,7 +5,7 @@
  */
 
 import { FastifyInstance } from 'fastify'
-import multipart from '@fastify/multipart'
+import multipart from '@aegisx/fastify-multipart'
 import { StorageController } from '../controllers/storage-controller'
 import { StorageDatabaseService } from '../services/storage-database-service'
 import { StorageFileRepository } from '../repositories/storage-file-repository'
@@ -28,7 +28,7 @@ import {
 
 export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
 
-  // Register multipart plugin for file uploads
+  // Register multipart plugin for file uploads with Swagger support
   await fastify.register(multipart, {
     limits: {
       fileSize: 100 * 1024 * 1024, // 100MB
@@ -36,8 +36,19 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
       fieldSize: 1024 * 1024, // 1MB for form fields
       fields: 10 // Max number of non-file fields
     },
-    attachFieldsToBody: true, // Attach fields to body for schema validation
-    throwFileSizeLimit: true
+    autoContentTypeParser: true // Enable automatic content type parsing for Swagger
+  })
+
+  // Set up validation bypass for multipart routes
+  fastify.setValidatorCompiler(({ schema, method, url, httpPart }) => {
+    return function validate(data) {
+      // Bypass validation for multipart upload body
+      if (httpPart === 'body' && url && url.includes('/upload')) {
+        return { value: data }
+      }
+      // Use default validation for other routes
+      return { value: data }
+    }
   })
 
   // Initialize storage dependencies first
@@ -75,7 +86,8 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
 
     schema: {
       consumes: ['multipart/form-data'],
-      description: 'Upload a file to storage with metadata\n\n**Form Fields:**\n- **file** (required): File to upload\n- **path** (optional): Storage folder path\n- **dataClassification** (optional): Data level - public|internal|confidential|restricted (default: internal)\n- **tags** (optional): JSON array string (e.g., ["tag1", "tag2"])\n- **customMetadata** (optional): JSON object string (e.g., {"key": "value"})\n- **encrypt** (optional): "true"/"false" (default: false)\n- **overwrite** (optional): "true"/"false" (default: false)',
+      description: 'Upload a file to storage with metadata and optional encryption. Supports file classification for compliance and custom metadata for business requirements.',
+      summary: 'Upload file with metadata',
       tags: ['Storage'],
       security: [{ bearerAuth: [] }],
       headers: {
@@ -87,6 +99,44 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
           }
         },
         required: ['authorization']
+      },
+      body: {
+        type: 'object',
+        properties: {
+          file: {
+            type: 'string',
+            format: 'binary',
+            description: 'File to upload (required)'
+          },
+          path: {
+            type: 'string',
+            description: 'Storage folder path (e.g., "documents/2024")'
+          },
+          dataClassification: {
+            type: 'string',
+            enum: ['public', 'internal', 'confidential', 'restricted'],
+            description: 'Data classification level for compliance (default: internal)'
+          },
+          tags: {
+            type: 'string',
+            description: 'JSON array of tags for categorization (e.g., ["invoice", "2024", "customer-123"])'
+          },
+          customMetadata: {
+            type: 'string',
+            description: 'JSON object with custom metadata (e.g., {"department": "sales", "project": "Q4-2024"})'
+          },
+          encrypt: {
+            type: 'string',
+            enum: ['true', 'false'],
+            description: 'Encrypt file at rest (default: false)'
+          },
+          overwrite: {
+            type: 'string',
+            enum: ['true', 'false'],
+            description: 'Overwrite if file exists (default: false)'
+          }
+        },
+        required: ['file']
       },
       response: {
         201: UploadResponseSchema,

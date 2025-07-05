@@ -1,45 +1,45 @@
 /**
  * Storage Controller
- * 
- * Handles HTTP requests for storage operations including upload, download, 
+ *
+ * Handles HTTP requests for storage operations including upload, download,
  * file management, and metadata operations
  */
 
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { StorageService } from '../../../core/shared/services/storage.service'
 import { StorageDatabaseService } from '../services/storage-database-service'
-import { 
-  ApiUploadRequest, 
-  ApiUploadResponse, 
-  ApiFileInfoResponse, 
+import {
+  ApiUploadRequest,
+  ApiUploadResponse,
+  ApiFileInfoResponse,
   ApiErrorResponse,
   FileSearchOptions
 } from '../types/storage.types'
-import { 
-  UploadRequest as StorageUploadRequest, 
-  DownloadRequest as StorageDownloadRequest 
+import {
+  UploadRequest as StorageUploadRequest,
+  DownloadRequest as StorageDownloadRequest
 } from '../../../core/shared/types/storage.types'
 
 export class StorageController {
   constructor(
     private storageService: StorageService,
     private databaseService: StorageDatabaseService
-  ) {}
+  ) { }
 
   /**
-   * Validate and parse multipart form data for upload (from body with isFile)
+   * Validate and parse multipart form data for upload (using @aegisx/fastify-multipart)
    */
-  private validateUploadFormDataFromBody(fileData: any, body: any): ApiUploadRequest {
+  private validateUploadFormData(file: any, fields: any): ApiUploadRequest {
     // Validate required fields
-    if (!fileData.filename) {
+    if (!file.filename) {
       throw new Error('Filename is required')
     }
-    if (!fileData.mimetype) {
+    if (!file.mimetype) {
       throw new Error('MIME type is required')
     }
 
-    // With attachFieldsToBody, non-file fields have .value property
-    const dataClassification = body.dataClassification?.value || body.dataClassification
+    // With @aegisx/fastify-multipart, fields are plain strings
+    const dataClassification = fields.dataClassification
     if (dataClassification && !['public', 'internal', 'confidential', 'restricted'].includes(dataClassification)) {
       throw new Error('Invalid data classification. Must be one of: public, internal, confidential, restricted')
     }
@@ -48,10 +48,9 @@ export class StorageController {
     let tags: string[] | undefined
     let customMetadata: Record<string, any> | undefined
 
-    const tagsValue = body.tags?.value || body.tags
-    if (tagsValue) {
+    if (fields.tags) {
       try {
-        tags = JSON.parse(tagsValue)
+        tags = JSON.parse(fields.tags)
         if (!Array.isArray(tags) || !tags.every(tag => typeof tag === 'string')) {
           throw new Error('Tags must be an array of strings')
         }
@@ -60,10 +59,9 @@ export class StorageController {
       }
     }
 
-    const metadataValue = body.customMetadata?.value || body.customMetadata
-    if (metadataValue) {
+    if (fields.customMetadata) {
       try {
-        customMetadata = JSON.parse(metadataValue)
+        customMetadata = JSON.parse(fields.customMetadata)
         if (typeof customMetadata !== 'object' || customMetadata === null || Array.isArray(customMetadata)) {
           throw new Error('Custom metadata must be a valid JSON object')
         }
@@ -73,19 +71,19 @@ export class StorageController {
     }
 
     // Validate filename length
-    if (fileData.filename.length > 255) {
+    if (file.filename.length > 255) {
       throw new Error('Filename cannot exceed 255 characters')
     }
 
     return {
-      filename: fileData.filename,
-      mimeType: fileData.mimetype,
+      filename: file.filename,
+      mimeType: file.mimetype,
       dataClassification: (dataClassification || 'internal') as 'public' | 'internal' | 'confidential' | 'restricted',
       tags,
       customMetadata,
-      path: body.path?.value || body.path,
-      encrypt: (body.encrypt?.value || body.encrypt) === 'true',
-      overwrite: (body.overwrite?.value || body.overwrite) === 'true'
+      path: fields.path,
+      encrypt: fields.encrypt === 'true',
+      overwrite: fields.overwrite === 'true'
     }
   }
 
@@ -98,10 +96,10 @@ export class StorageController {
    */
   async upload(request: FastifyRequest, reply: FastifyReply): Promise<ApiUploadResponse | ApiErrorResponse> {
     try {
-      // Get multipart data from request body (attached by @fastify/multipart)
-      const body = request.body as any
-      
-      if (!body || !body.file) {
+      // Parse multipart data using @aegisx/fastify-multipart
+      const { files, fields } = await (request as any).parseMultipart()
+
+      if (!files || files.length === 0) {
         return reply.code(400).send({
           error: {
             code: 'NO_FILE_PROVIDED',
@@ -110,16 +108,15 @@ export class StorageController {
         })
       }
 
-      // Extract file data
-      const fileData = body.file
-      const fileBuffer = await fileData.toBuffer() // Get buffer using toBuffer method
-      
-      
+      // Get the first file (we only allow one file per request)
+      const file = files[0]
+      const fileBuffer = await file.toBuffer()
+
       // Validate and parse form data
       let uploadMetadata: ApiUploadRequest
-      
+
       try {
-        uploadMetadata = this.validateUploadFormDataFromBody(fileData, body)
+        uploadMetadata = this.validateUploadFormData(file, fields)
       } catch (validationError) {
         return reply.code(400).send({
           error: {
@@ -131,11 +128,11 @@ export class StorageController {
 
       // Get current user from request
       const currentUser = (request as any).user
-      
+
       // Check quota before upload (skip for admin users)
       if (currentUser?.id && this.databaseService) {
         const isAdmin = currentUser.roles?.includes('admin')
-        
+
         if (!isAdmin) {
           const quotaCheck = await this.databaseService.checkQuota(currentUser.id, fileBuffer.length)
           if (!quotaCheck.allowed) {
@@ -209,7 +206,6 @@ export class StorageController {
 
     } catch (error) {
       request.log.error('Upload failed:', error)
-      console.error('Upload error details:', error) // Debug logging
       return reply.code(500).send({
         error: {
           code: 'INTERNAL_SERVER_ERROR',
@@ -268,7 +264,7 @@ export class StorageController {
       reply.header('Content-Type', result.mimeType || 'application/octet-stream')
       reply.header('Content-Length', result.size)
       reply.header('Content-Disposition', `attachment; filename="${result.filename}"`)
-      
+
       // Stream file data
       return reply.send(result.data)
 
@@ -494,7 +490,7 @@ export class StorageController {
   async getStats(request: FastifyRequest, reply: FastifyReply) {
     try {
       const currentUser = (request as any).user
-      
+
       // Get statistics from database service
       const stats = await this.databaseService.getStorageStatistics(currentUser?.id)
 
