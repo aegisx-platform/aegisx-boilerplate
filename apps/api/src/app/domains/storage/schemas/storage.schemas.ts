@@ -250,6 +250,81 @@ export const PresignedUrlResponseSchema = Type.Object({
   expiresAt: Type.String({ format: 'date-time' })
 })
 
+// Shared Files Schemas
+
+// Share Permissions Schema
+export const SharePermissionsSchema = Type.Object({
+  canRead: Type.Boolean({ default: true }),
+  canWrite: Type.Boolean({ default: false }),
+  canDelete: Type.Boolean({ default: false }),
+  canShare: Type.Boolean({ default: false })
+})
+
+// Shared File Info Schema
+export const SharedFileInfoSchema = Type.Object({
+  shareId: Type.String({ description: 'Unique share identifier' }),
+  fileId: Type.String({ description: 'File identifier' }),
+  permissions: SharePermissionsSchema,
+  expiresAt: Type.Optional(Type.String({ format: 'date-time', description: 'Share expiration date' })),
+  sharedAt: Type.String({ format: 'date-time', description: 'When the file was shared' }),
+  sharedBy: Type.Optional(Type.Object({
+    username: Type.String(),
+    email: Type.String()
+  })),
+  sharedWith: Type.Optional(Type.Object({
+    username: Type.String(),
+    email: Type.String()
+  })),
+  lastAccessedAt: Type.Optional(Type.String({ format: 'date-time', description: 'Last access time' }))
+})
+
+// Shared File Response Schema
+export const SharedFileResponseSchema = Type.Object({
+  id: Type.String(),
+  fileId: Type.String(),
+  filename: Type.String(),
+  originalName: Type.String(),
+  mimeType: Type.String(),
+  size: Type.Number(),
+  checksum: Type.String(),
+  provider: Type.String(),
+  dataClassification: DataClassificationSchema,
+  encrypted: Type.Boolean(),
+  tags: Type.Optional(Type.Array(Type.String())),
+  customMetadata: Type.Optional(Type.Record(Type.String(), Type.Any())),
+  createdBy: Type.Optional(Type.String()),
+  createdAt: Type.String({ format: 'date-time' }),
+  updatedAt: Type.String({ format: 'date-time' }),
+  lastAccessedAt: Type.Optional(Type.String({ format: 'date-time' })),
+  accessCount: Type.Number(),
+  status: FileStatusSchema,
+  shareInfo: SharedFileInfoSchema
+})
+
+// Shared Files List Response Schema
+export const SharedFilesResponseSchema = Type.Object({
+  files: Type.Array(SharedFileResponseSchema),
+  total: Type.Number({ description: 'Total number of shared files' })
+})
+
+// My Shares Response Schema  
+export const MySharesResponseSchema = Type.Object({
+  files: Type.Array(SharedFileResponseSchema),
+  total: Type.Number({ description: 'Total number of files you have shared' })
+})
+
+// Revoke Share Request Params Schema
+export const RevokeShareParamsSchema = Type.Object({
+  shareId: Type.String({ minLength: 1, description: 'Share ID to revoke' })
+})
+
+// Revoke Share Response Schema
+export const RevokeShareResponseSchema = Type.Object({
+  success: Type.Boolean(),
+  message: Type.String(),
+  shareId: Type.String()
+})
+
 // TypeScript types derived from schemas
 export type UploadRequest = Static<typeof UploadRequestSchema>
 export type UploadResponse = Static<typeof UploadResponseSchema>
@@ -265,6 +340,15 @@ export type ErrorResponse = Static<typeof ErrorResponseSchema>
 export type PresignedUrlRequest = Static<typeof PresignedUrlRequestSchema>
 export type PresignedUrlResponse = Static<typeof PresignedUrlResponseSchema>
 export type MultipartUploadBody = Static<typeof MultipartUploadBodySchema>
+
+// Shared Files types
+export type SharePermissions = Static<typeof SharePermissionsSchema>
+export type SharedFileInfo = Static<typeof SharedFileInfoSchema>
+export type SharedFileResponse = Static<typeof SharedFileResponseSchema>
+export type SharedFilesResponse = Static<typeof SharedFilesResponseSchema>
+export type MySharesResponse = Static<typeof MySharesResponseSchema>
+export type RevokeShareParams = Static<typeof RevokeShareParamsSchema>
+export type RevokeShareResponse = Static<typeof RevokeShareResponseSchema>
 
 // === MULTIPART UPLOAD BODY SCHEMA ===
 // For Swagger documentation with @aegisx/fastify-multipart

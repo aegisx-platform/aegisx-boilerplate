@@ -317,6 +317,78 @@ export class StorageFileRepository {
       .orderBy('created_at', 'desc')
   }
 
+  async getMyShares(userId: string): Promise<StorageFileShareRecord[]> {
+    return await this.knex('storage_file_shares')
+      .where({ shared_by: userId, is_active: true })
+      .orderBy('created_at', 'desc')
+  }
+
+  async getShareById(shareId: string): Promise<StorageFileShareRecord | null> {
+    return await this.knex('storage_file_shares')
+      .where({ id: shareId })
+      .first()
+  }
+
+  async revokeShare(shareId: string, userId: string): Promise<boolean> {
+    const result = await this.knex('storage_file_shares')
+      .where({ id: shareId, shared_by: userId })
+      .update({
+        is_active: false,
+        updated_at: this.knex.fn.now()
+      })
+    
+    return result > 0
+  }
+
+  async getSharedFilesWithDetails(userId: string): Promise<any[]> {
+    return await this.knex('storage_file_shares as sfs')
+      .join('storage_files as sf', 'sfs.file_id', 'sf.id')
+      .join('users as u', 'sfs.shared_by', 'u.id')
+      .select(
+        'sf.*',
+        'sfs.id as share_id',
+        'sfs.can_read',
+        'sfs.can_write', 
+        'sfs.can_delete',
+        'sfs.can_share',
+        'sfs.expires_at',
+        'sfs.created_at as shared_at',
+        'u.username as shared_by_username',
+        'u.email as shared_by_email'
+      )
+      .where('sfs.shared_with', userId)
+      .where('sfs.is_active', true)
+      .where('sf.status', 'active')
+      .where(function() {
+        this.whereNull('sfs.expires_at')
+          .orWhere('sfs.expires_at', '>', new Date())
+      })
+      .orderBy('sfs.created_at', 'desc')
+  }
+
+  async getMySharesWithDetails(userId: string): Promise<any[]> {
+    return await this.knex('storage_file_shares as sfs')
+      .join('storage_files as sf', 'sfs.file_id', 'sf.id')
+      .join('users as u', 'sfs.shared_with', 'u.id')
+      .select(
+        'sf.*',
+        'sfs.id as share_id',
+        'sfs.can_read',
+        'sfs.can_write',
+        'sfs.can_delete', 
+        'sfs.can_share',
+        'sfs.expires_at',
+        'sfs.created_at as shared_at',
+        'sfs.last_accessed_at as share_last_accessed_at',
+        'u.username as shared_with_username',
+        'u.email as shared_with_email'
+      )
+      .where('sfs.shared_by', userId)
+      .where('sfs.is_active', true)
+      .where('sf.status', 'active')
+      .orderBy('sfs.created_at', 'desc')
+  }
+
   // Quota Management
 
   async getUserQuota(userId: string): Promise<StorageQuotaRecord | null> {

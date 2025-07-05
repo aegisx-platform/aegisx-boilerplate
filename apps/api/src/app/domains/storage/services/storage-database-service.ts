@@ -307,19 +307,125 @@ export class StorageDatabaseService {
     return true
   }
 
-  async getSharedFiles(userId: string): Promise<DatabaseFileMetadata[]> {
-    const shares = await this.repository.getUserShares(userId)
-    const fileIds = shares.map(share => share.file_id)
+  async getSharedFiles(userId: string): Promise<{
+    files: DatabaseFileMetadata[]
+    shares: any[]
+  }> {
+    const sharedFilesWithDetails = await this.repository.getSharedFilesWithDetails(userId)
     
-    const files: DatabaseFileMetadata[] = []
-    for (const fileId of fileIds) {
-      const file = await this.repository.getFileById(fileId)
-      if (file) {
-        files.push(this.mapRecordToMetadata(file))
+    const files = sharedFilesWithDetails.map(record => {
+      const fileRecord = { ...record }
+      // Remove share-specific fields to create clean file record
+      delete fileRecord.share_id
+      delete fileRecord.can_read
+      delete fileRecord.can_write
+      delete fileRecord.can_delete
+      delete fileRecord.can_share
+      delete fileRecord.expires_at
+      delete fileRecord.shared_at
+      delete fileRecord.shared_by_username
+      delete fileRecord.shared_by_email
+      
+      return this.mapRecordToMetadata(fileRecord)
+    })
+
+    const shares = sharedFilesWithDetails.map(record => ({
+      shareId: record.share_id,
+      fileId: record.file_id,
+      permissions: {
+        canRead: record.can_read,
+        canWrite: record.can_write,
+        canDelete: record.can_delete,
+        canShare: record.can_share
+      },
+      expiresAt: record.expires_at,
+      sharedAt: record.shared_at,
+      sharedBy: {
+        username: record.shared_by_username,
+        email: record.shared_by_email
+      }
+    }))
+
+    return { files, shares }
+  }
+
+  async getMyShares(userId: string): Promise<{
+    files: DatabaseFileMetadata[]
+    shares: any[]
+  }> {
+    const mySharesWithDetails = await this.repository.getMySharesWithDetails(userId)
+    
+    const files = mySharesWithDetails.map(record => {
+      const fileRecord = { ...record }
+      // Remove share-specific fields to create clean file record
+      delete fileRecord.share_id
+      delete fileRecord.can_read
+      delete fileRecord.can_write
+      delete fileRecord.can_delete
+      delete fileRecord.can_share
+      delete fileRecord.expires_at
+      delete fileRecord.shared_at
+      delete fileRecord.share_last_accessed_at
+      delete fileRecord.shared_with_username
+      delete fileRecord.shared_with_email
+      
+      return this.mapRecordToMetadata(fileRecord)
+    })
+
+    const shares = mySharesWithDetails.map(record => ({
+      shareId: record.share_id,
+      fileId: record.file_id,
+      permissions: {
+        canRead: record.can_read,
+        canWrite: record.can_write,
+        canDelete: record.can_delete,
+        canShare: record.can_share
+      },
+      expiresAt: record.expires_at,
+      sharedAt: record.shared_at,
+      lastAccessedAt: record.share_last_accessed_at,
+      sharedWith: {
+        username: record.shared_with_username,
+        email: record.shared_with_email
+      }
+    }))
+
+    return { files, shares }
+  }
+
+  async revokeShare(shareId: string, userId: string): Promise<{
+    success: boolean
+    message: string
+  }> {
+    const share = await this.repository.getShareById(shareId)
+    
+    if (!share) {
+      return {
+        success: false,
+        message: 'Share not found'
       }
     }
+
+    if (share.shared_by !== userId) {
+      return {
+        success: false,
+        message: 'You can only revoke shares you created'
+      }
+    }
+
+    if (!share.is_active) {
+      return {
+        success: false,
+        message: 'Share is already inactive'
+      }
+    }
+
+    const success = await this.repository.revokeShare(shareId, userId)
     
-    return files
+    return {
+      success,
+      message: success ? 'Share revoked successfully' : 'Failed to revoke share'
+    }
   }
 
   // Cleanup Operations

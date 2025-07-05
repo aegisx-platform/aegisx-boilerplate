@@ -37,10 +37,11 @@ apps/api/src/app/domains/
 ├── 📁 auth/             # ✅ Authentication & Registration
 ├── 📁 rbac/             # ✅ Role-Based Access Control  
 ├── 📁 user-management/  # ✅ User Profile Management
-└── 📁 audit-log/        # ✅ Audit Log Management
+├── 📁 audit-log/        # ✅ Audit Log Management
+└── 📁 storage/          # ✅ File Storage & Sharing Management
 ```
 **Purpose**: Core business domains that every application needs
-**When to use**: Authentication, user management, permissions, audit
+**When to use**: Authentication, user management, permissions, audit, file storage
 
 ### 🏥 Layer 3: Features Layer - "Healthcare Features" 🚧
 ```
@@ -196,6 +197,7 @@ Healthcare features in `/features/` directory:
 - `docs/notification-service.md` - Notification service usage guide
 - `docs/notification-database-schema.md` - Database schema documentation
 - `docs/storage-database.md` - **📁 Storage database integration guide** (comprehensive storage persistence)
+- `docs/storage-shared-files.md` - **🤝 Shared Files Management documentation** (collaborative file sharing with permissions)
 
 ### Configuration Files
 - `knexfile.ts` / `knexfile.prod.js` - Database configuration
@@ -212,7 +214,7 @@ Healthcare features in `/features/` directory:
 - `apps/api/src/app/core/plugins/security/rbac.ts` - RBAC implementation
 - `apps/api/src/app/core/shared/services/` - Enterprise infrastructure services
 - `apps/api/src/app/core/shared/services/storage.service.ts` - **Enterprise storage service with database integration**
-- `apps/api/src/app/domains/storage/` - **Storage domain with database persistence layer**
+- `apps/api/src/app/domains/storage/` - **Storage domain with database persistence & shared files management**
 
 ### Monitoring & Logging
 - `config/fluent-bit*.conf` - Fluent Bit configurations (simple, advanced, Graylog)
@@ -460,7 +462,8 @@ This is designed for healthcare applications requiring:
 ## Recent Development Focus
 - **✅ CLI Scaffolding Tool**: Complete healthcare-focused code generator with templates
 - **✅ Storage Database Integration**: Complete database persistence layer for storage service with 5-table schema
-- **Enterprise Infrastructure Foundation**: Complete suite of 14 production-ready services
+- **✅ Shared Files Management**: Complete collaborative file sharing with granular permissions, user management, and revocation
+- **Enterprise Infrastructure Foundation**: Complete suite of 15 production-ready services
 - **Event-Driven Architecture**: Multi-adapter Event Bus (Memory, Redis, RabbitMQ) with middleware support
 - **Comprehensive Audit System**: Multi-adapter audit logging (Direct DB, Redis Pub/Sub, RabbitMQ)
 - **Notification Service**: Multi-channel notifications with HIPAA compliance and template system

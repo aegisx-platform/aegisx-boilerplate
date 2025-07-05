@@ -665,4 +665,142 @@ export class StorageController {
       })
     }
   }
+
+  /**
+   * Get files shared with current user
+   * GET /storage/shared-files
+   */
+  async getSharedFiles(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const currentUser = (request as any).user
+
+      if (!this.databaseService) {
+        return reply.code(503).send({
+          error: {
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Database service is not available'
+          }
+        })
+      }
+
+      const { files, shares } = await this.databaseService.getSharedFiles(currentUser.id)
+
+      // Map files with their share information
+      const sharedFiles = files.map((file, index) => ({
+        ...file,
+        shareInfo: shares[index]
+      }))
+
+      return reply.send({
+        files: sharedFiles,
+        total: files.length
+      })
+
+    } catch (error) {
+      request.log.error('Get shared files failed:', error)
+      return reply.code(500).send({
+        error: {
+          code: 'INTERNAL_SERVER_ERROR', 
+          message: 'Failed to retrieve shared files'
+        }
+      })
+    }
+  }
+
+  /**
+   * Get files that current user has shared with others
+   * GET /storage/my-shares
+   */
+  async getMyShares(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const currentUser = (request as any).user
+
+      if (!this.databaseService) {
+        return reply.code(503).send({
+          error: {
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Database service is not available'
+          }
+        })
+      }
+
+      const { files, shares } = await this.databaseService.getMyShares(currentUser.id)
+
+      // Map files with their share information
+      const myShares = files.map((file, index) => ({
+        ...file,
+        shareInfo: shares[index]
+      }))
+
+      return reply.send({
+        files: myShares,
+        total: files.length
+      })
+
+    } catch (error) {
+      request.log.error('Get my shares failed:', error)
+      return reply.code(500).send({
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to retrieve your shares'
+        }
+      })
+    }
+  }
+
+  /**
+   * Revoke a file share
+   * DELETE /storage/shares/:shareId
+   */
+  async revokeShare(request: FastifyRequest<{ Params: { shareId: string } }>, reply: FastifyReply) {
+    try {
+      const currentUser = (request as any).user
+      const { shareId } = request.params
+
+      if (!shareId) {
+        return reply.code(400).send({
+          error: {
+            code: 'INVALID_REQUEST',
+            message: 'Share ID is required'
+          }
+        })
+      }
+
+      if (!this.databaseService) {
+        return reply.code(503).send({
+          error: {
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Database service is not available'
+          }
+        })
+      }
+
+      const result = await this.databaseService.revokeShare(shareId, currentUser.id)
+
+      if (!result.success) {
+        const statusCode = result.message === 'Share not found' ? 404 : 403
+        return reply.code(statusCode).send({
+          error: {
+            code: result.message === 'Share not found' ? 'SHARE_NOT_FOUND' : 'FORBIDDEN',
+            message: result.message
+          }
+        })
+      }
+
+      return reply.send({
+        success: true,
+        message: result.message,
+        shareId
+      })
+
+    } catch (error) {
+      request.log.error('Revoke share failed:', error)
+      return reply.code(500).send({
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to revoke share'
+        }
+      })
+    }
+  }
 }

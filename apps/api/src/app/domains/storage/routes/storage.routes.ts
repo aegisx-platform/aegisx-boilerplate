@@ -23,7 +23,11 @@ import {
   StorageStatsResponseSchema,
   PresignedUrlRequestSchema,
   PresignedUrlResponseSchema,
-  ErrorResponseSchema
+  ErrorResponseSchema,
+  SharedFilesResponseSchema,
+  MySharesResponseSchema,
+  RevokeShareParamsSchema,
+  RevokeShareResponseSchema
 } from '../schemas/storage.schemas'
 
 export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
@@ -266,6 +270,61 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
     }
   }, async (request, reply) => {
     return controller.shareFile(request as any, reply)
+  })
+
+  // Get files shared with current user
+  fastify.get('/shared-files', {
+    preHandler: (fastify as any).authenticate,
+    schema: {
+      description: 'Get files that have been shared with the current user',
+      summary: 'Get shared files',
+      tags: ['Storage', 'File Sharing'],
+      security: [{ bearerAuth: [] }],
+      response: {
+        200: SharedFilesResponseSchema,
+        500: ErrorResponseSchema
+      }
+    }
+  }, async (request, reply) => {
+    return controller.getSharedFiles(request as any, reply)
+  })
+
+  // Get files that current user has shared
+  fastify.get('/my-shares', {
+    preHandler: (fastify as any).authenticate,
+    schema: {
+      description: 'Get files that the current user has shared with others',
+      summary: 'Get my shares',
+      tags: ['Storage', 'File Sharing'],
+      security: [{ bearerAuth: [] }],
+      response: {
+        200: MySharesResponseSchema,
+        500: ErrorResponseSchema
+      }
+    }
+  }, async (request, reply) => {
+    return controller.getMyShares(request as any, reply)
+  })
+
+  // Revoke a file share
+  fastify.delete('/shares/:shareId', {
+    preHandler: (fastify as any).authenticate,
+    schema: {
+      description: 'Revoke a file share by share ID',
+      summary: 'Revoke file share',
+      tags: ['Storage', 'File Sharing'],
+      security: [{ bearerAuth: [] }],
+      params: RevokeShareParamsSchema,
+      response: {
+        200: RevokeShareResponseSchema,
+        400: ErrorResponseSchema,
+        403: ErrorResponseSchema,
+        404: ErrorResponseSchema,
+        500: ErrorResponseSchema
+      }
+    }
+  }, async (request, reply) => {
+    return controller.revokeShare(request as any, reply)
   })
 }
 
