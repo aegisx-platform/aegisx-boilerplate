@@ -51,3 +51,31 @@ test-output
 .env.*.local
 .env.production
 .env.staging
+
+# Storage files - user data and uploads
+storage/local/.metadata/
+storage/local/**/*.pdf
+storage/local/**/*.jpg
+storage/local/**/*.png
+storage/local/**/*.txt
+storage/local/**/*.doc
+storage/local/**/*.docx
+storage/local/**/*
+!storage/local/.gitkeep
+storage/minio/
+storage/temp/*
+!storage/temp/.gitkeep
+storage/thumbnails/*
+!storage/thumbnails/.gitkeep
+uploads/*
+!uploads/.gitkeep
+
+# Log files
+logs/
+*.log
+server.log
+
+# Test files
+test-*.txt
+test-*.html
+test-*.sh
