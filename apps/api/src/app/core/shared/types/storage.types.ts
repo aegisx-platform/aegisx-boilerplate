@@ -526,6 +526,23 @@ export class StorageError extends Error {
     super(message)
     this.name = 'StorageError'
   }
+
+  toJSON() {
+    return {
+      name: this.name,
+      message: this.message,
+      code: this.code,
+      provider: this.provider,
+      fileId: this.fileId,
+      path: this.path,
+      stack: this.stack,
+      originalError: this.originalError ? {
+        name: this.originalError.name,
+        message: this.originalError.message,
+        stack: this.originalError.stack
+      } : undefined
+    }
+  }
 }
 
 export type StorageErrorCode = 

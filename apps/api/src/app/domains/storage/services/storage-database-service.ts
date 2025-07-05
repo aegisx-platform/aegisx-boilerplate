@@ -6,6 +6,7 @@
 
 import { StorageFileRepository, StorageFileRecord, StorageOperationRecord, FileListOptions } from '../repositories/storage-file-repository'
 import { FileMetadata, UploadRequest, DataClassification } from '../../../core/shared/types/storage.types'
+import { FileSearchOptions } from '../types/storage.types'
 
 export interface DatabaseFileMetadata {
   id: string
@@ -46,11 +47,6 @@ export interface StorageOperationLog {
   errorMessage?: string
   purpose?: string
   metadata?: Record<string, any>
-}
-
-export interface FileQueryOptions extends FileListOptions {
-  includeDeleted?: boolean
-  includeShared?: boolean
 }
 
 export class StorageDatabaseService {
@@ -125,7 +121,7 @@ export class StorageDatabaseService {
     return await this.repository.deleteFile(file.id, softDelete)
   }
 
-  async listFiles(options: FileQueryOptions = {}): Promise<{
+  async listFiles(options: FileSearchOptions = {}): Promise<{
     files: DatabaseFileMetadata[]
     total: number
     hasMore: boolean
@@ -144,7 +140,7 @@ export class StorageDatabaseService {
     }
   }
 
-  async searchFiles(query: string, options: FileQueryOptions = {}): Promise<DatabaseFileMetadata[]> {
+  async searchFiles(query: string, options: FileSearchOptions = {}): Promise<DatabaseFileMetadata[]> {
     const searchOptions: FileListOptions = {
       ...options,
       search: query,
@@ -349,28 +345,96 @@ export class StorageDatabaseService {
   }
 
   private mapRecordToMetadata(record: StorageFileRecord): DatabaseFileMetadata {
-    return {
-      id: record.id,
-      fileId: record.file_id,
-      filename: record.filename,
-      originalName: record.original_name,
-      mimeType: record.mime_type,
-      size: record.size,
-      checksum: record.checksum,
-      provider: record.provider,
-      providerPath: record.provider_path,
-      dataClassification: record.data_classification,
-      encrypted: record.encrypted,
-      tags: record.tags ? JSON.parse(record.tags) : undefined,
-      customMetadata: record.custom_metadata ? JSON.parse(record.custom_metadata) : undefined,
-      createdBy: record.created_by,
-      updatedBy: record.updated_by,
-      createdAt: record.created_at,
-      updatedAt: record.updated_at,
-      lastAccessedAt: record.last_accessed_at,
-      accessCount: record.access_count,
-      status: record.status
+    try {
+      // Handle tags parsing
+      let tags: string[] | undefined
+      if (record.tags) {
+        if (Array.isArray(record.tags)) {
+          tags = record.tags
+        } else if (typeof record.tags === 'string') {
+          // Handle PostgreSQL array format
+          tags = this.parsePostgresArray(record.tags)
+        }
+      }
+
+      // Handle custom metadata parsing
+      let customMetadata: Record<string, any> | undefined
+      if (record.custom_metadata) {
+        if (typeof record.custom_metadata === 'object' && record.custom_metadata !== null) {
+          customMetadata = record.custom_metadata
+        } else if (typeof record.custom_metadata === 'string') {
+          try {
+            customMetadata = JSON.parse(record.custom_metadata)
+          } catch (e) {
+            console.error('Failed to parse custom_metadata:', record.custom_metadata)
+            console.error('Parse error:', e)
+            customMetadata = undefined
+          }
+        }
+      }
+
+      return {
+        id: record.id,
+        fileId: record.file_id,
+        filename: record.filename,
+        originalName: record.original_name,
+        mimeType: record.mime_type,
+        size: record.size,
+        checksum: record.checksum,
+        provider: record.provider,
+        providerPath: record.provider_path,
+        dataClassification: record.data_classification,
+        encrypted: record.encrypted,
+        tags,
+        customMetadata,
+        createdBy: record.created_by,
+        updatedBy: record.updated_by,
+        createdAt: record.created_at,
+        updatedAt: record.updated_at,
+        lastAccessedAt: record.last_accessed_at,
+        accessCount: record.access_count,
+        status: record.status
+      }
+    } catch (error) {
+      console.error('Error in mapRecordToMetadata:', error)
+      console.error('Record that caused error:', JSON.stringify(record, null, 2))
+      throw error
     }
+  }
+
+  private parsePostgresArray(value: string): string[] {
+    // Handle PostgreSQL array format like {value1,value2} or {"value1","value2"}
+    if (typeof value !== 'string') return []
+    
+    // Remove curly braces
+    const cleaned = value.replace(/^\{|\}$/g, '')
+    
+    // Handle empty array
+    if (!cleaned) return []
+    
+    // Split by comma, handling quoted values
+    const result: string[] = []
+    let current = ''
+    let inQuotes = false
+    
+    for (let i = 0; i < cleaned.length; i++) {
+      const char = cleaned[i]
+      
+      if (char === '"' && (i === 0 || cleaned[i-1] !== '\\')) {
+        inQuotes = !inQuotes
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim().replace(/^"|"$/g, ''))
+        current = ''
+      } else {
+        current += char
+      }
+    }
+    
+    if (current) {
+      result.push(current.trim().replace(/^"|"$/g, ''))
+    }
+    
+    return result
   }
 
   // Maintenance Operations

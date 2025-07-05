@@ -361,6 +361,16 @@ export class StorageController {
         offset: parseInt(query.offset) || 0
       }
 
+      // Check if database service is available
+      if (!this.databaseService) {
+        return reply.code(503).send({
+          error: {
+            code: 'SERVICE_UNAVAILABLE',
+            message: 'Database service is not available'
+          }
+        })
+      }
+
       // Get files from database service
       const result = await this.databaseService.listFiles(searchOptions)
 
@@ -395,10 +405,21 @@ export class StorageController {
 
     } catch (error) {
       request.log.error('List files failed:', error)
+      
+      // Log the full error for debugging
+      console.error('Storage listFiles error:', error)
+      console.error('Error type:', typeof error)
+      console.error('Error details:', JSON.stringify(error, null, 2))
+      
       return reply.code(500).send({
         error: {
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to list files'
+          message: 'Failed to list files',
+          details: process.env.NODE_ENV === 'development' ? {
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            raw: error
+          } : undefined
         }
       })
     }
@@ -458,6 +479,16 @@ export class StorageController {
         })
       }
 
+      // Validate operation
+      if (!['read', 'write'].includes(operation)) {
+        return reply.code(400).send({
+          error: {
+            code: 'INVALID_OPERATION',
+            message: 'operation must be either "read" or "write"'
+          }
+        })
+      }
+
       const result = await this.storageService.generatePresignedUrl({
         fileId,
         operation,
@@ -474,10 +505,55 @@ export class StorageController {
 
     } catch (error) {
       request.log.error('Generate presigned URL failed:', error)
+      
+      // Log detailed error information for debugging
+      console.error('Presigned URL generation error:', error)
+      console.error('Request body:', request.body)
+      
+      // Handle StorageError specifically
+      if (error && typeof error === 'object' && 'code' in error) {
+        const storageError = error as any
+        
+        if (storageError.code === 'FILE_NOT_FOUND') {
+          return reply.code(404).send({
+            error: {
+              code: 'FILE_NOT_FOUND',
+              message: 'File not found or inaccessible',
+              details: process.env.NODE_ENV === 'development' ? storageError.message : undefined
+            }
+          })
+        }
+        
+        if (storageError.code === 'CONFIGURATION_ERROR') {
+          return reply.code(500).send({
+            error: {
+              code: 'METADATA_PARSE_ERROR',
+              message: 'Failed to parse file metadata',
+              details: process.env.NODE_ENV === 'development' ? storageError.message : undefined
+            }
+          })
+        }
+      }
+      
+      // Handle generic error cases
+      if (error instanceof Error && error.message.includes('JSON')) {
+        return reply.code(500).send({
+          error: {
+            code: 'METADATA_PARSE_ERROR',
+            message: 'Failed to parse file metadata',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+          }
+        })
+      }
+      
       return reply.code(500).send({
         error: {
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to generate presigned URL'
+          message: 'Failed to generate presigned URL',
+          details: process.env.NODE_ENV === 'development' ? {
+            message: error instanceof Error ? error.message : String(error),
+            type: error ? error.constructor.name : 'Unknown'
+          } : undefined
         }
       })
     }

@@ -85,6 +85,7 @@ export default fp(async function (fastify: FastifyInstance) {
             type: 'http',
             scheme: 'bearer',
             bearerFormat: 'JWT',
+            description: 'JWT token for authentication. Use the login endpoint to get a token.',
           },
           apiKey: {
             type: 'apiKey',
@@ -93,6 +94,11 @@ export default fp(async function (fastify: FastifyInstance) {
           },
         },
       },
+      security: [
+        {
+          bearerAuth: [],
+        },
+      ],
     },
   });
 

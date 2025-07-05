@@ -393,7 +393,24 @@ export class MinIOStorageProvider implements IStorageProvider {
     try {
       const stream = await this.client.getObject(this.config.bucket, metadataObjectName)
       const metadataContent = await this.streamToBuffer(stream)
-      const metadata = JSON.parse(metadataContent.toString()) as FileMetadata
+      const metadataString = metadataContent.toString()
+      
+      let metadata: FileMetadata
+      try {
+        metadata = JSON.parse(metadataString) as FileMetadata
+      } catch (parseError) {
+        console.error('JSON parsing error for file:', fileId)
+        console.error('Metadata content:', metadataString)
+        console.error('Parse error:', parseError)
+        throw new StorageError(
+          `Invalid metadata JSON for file: ${fileId}`,
+          'CONFIGURATION_ERROR',
+          'minio',
+          fileId,
+          undefined,
+          parseError as Error
+        )
+      }
       
       // Convert date strings back to Date objects
       metadata.createdAt = new Date(metadata.createdAt)
@@ -401,6 +418,9 @@ export class MinIOStorageProvider implements IStorageProvider {
       
       return metadata
     } catch (error) {
+      if (error instanceof StorageError) {
+        throw error
+      }
       throw new StorageError(
         `Metadata not found for file: ${fileId}`,
         'FILE_NOT_FOUND',

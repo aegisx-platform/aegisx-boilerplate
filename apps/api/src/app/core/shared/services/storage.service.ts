@@ -696,7 +696,22 @@ export class StorageService implements IStorageService {
   async generatePresignedUrl(request: PresignedUrlRequest): Promise<PresignedUrlResult> {
     return this.executeOperation(async () => {
       // Check cache for presigned URLs
-      const cacheKey = `presigned:${JSON.stringify(request)}`
+      let cacheKey = `presigned:${request.fileId || request.path}:${request.operation}`
+      try {
+        // Safe JSON stringification with error handling
+        const requestForCache = {
+          fileId: request.fileId,
+          path: request.path,
+          operation: request.operation,
+          expiresIn: request.expiresIn,
+          contentType: request.contentType
+        }
+        cacheKey = `presigned:${JSON.stringify(requestForCache)}`
+      } catch (stringifyError) {
+        console.warn('Failed to stringify request for cache key, using fallback:', stringifyError)
+        cacheKey = `presigned:${request.fileId || request.path}:${request.operation}:${request.expiresIn || 3600}`
+      }
+      
       if (this.cache && this.config.caching.presignedUrlCache.enabled) {
         const cached = await this.cache.get<PresignedUrlResult>(cacheKey)
         if (cached && cached.expiresAt > new Date()) {

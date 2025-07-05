@@ -76,7 +76,7 @@ export const FileInfoResponseSchema = Type.Object({
   originalName: Type.String(),
   mimeType: Type.String(),
   size: Type.Number(),
-  path: Type.String(),
+  path: Type.Optional(Type.String()),
   checksum: Type.String(),
   metadata: Type.Object({
     filename: Type.String(),
@@ -130,9 +130,28 @@ export const ListFilesRequestSchema = Type.Object({
   offset: Type.Optional(Type.Number({ minimum: 0, default: 0 }))
 })
 
+// Simple File Item Schema for list endpoint
+export const FileListItemSchema = Type.Object({
+  fileId: Type.String(),
+  filename: Type.String(),
+  originalName: Type.String(),
+  mimeType: Type.String(),
+  size: Type.Number(),
+  checksum: Type.String(),
+  dataClassification: DataClassificationSchema,
+  encrypted: Type.Boolean(),
+  tags: Type.Optional(Type.Array(Type.String())),
+  customMetadata: Type.Optional(Type.Record(Type.String(), Type.Any())),
+  createdAt: Type.String({ format: 'date-time' }),
+  updatedAt: Type.String({ format: 'date-time' }),
+  lastAccessedAt: Type.Optional(Type.String({ format: 'date-time' })),
+  accessCount: Type.Number(),
+  status: FileStatusSchema
+})
+
 // List Files Response Schema
 export const ListFilesResponseSchema = Type.Object({
-  files: Type.Array(FileInfoResponseSchema),
+  files: Type.Array(FileListItemSchema),
   total: Type.Number(),
   hasMore: Type.Boolean(),
   pagination: Type.Object({
