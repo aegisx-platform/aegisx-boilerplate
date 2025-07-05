@@ -44,7 +44,6 @@ MINIO_USE_SSL=false
 # Storage Features
 STORAGE_COMPRESSION_ENABLED=true
 STORAGE_ENCRYPTION_ENABLED=false
-STORAGE_HEALTHCARE_ENABLED=false
 ```
 
 ### 3. Create Storage Directories
@@ -147,35 +146,32 @@ export class FileController {
 }
 ```
 
-### 7. Healthcare Compliance Migration
+### 7. Data Classification and Security
 
-If your project handles healthcare data, enable compliance features:
+Configure data classification and security features:
 
 ```bash
 # Environment variables
-STORAGE_HEALTHCARE_ENABLED=true
-STORAGE_HEALTHCARE_ENCRYPTION_REQUIRED=true
-STORAGE_HEALTHCARE_AUDIT_TRAIL=true
 STORAGE_ENCRYPTION_ENABLED=true
 ```
 
 ```typescript
-// Upload healthcare documents
+// Upload sensitive documents
 const result = await fastify.storage.upload({
   file: buffer,
-  filename: 'patient-record.pdf',
+  filename: 'confidential-document.pdf',
   mimeType: 'application/pdf',
-  options: {
-    dataClassification: 'restricted',
-    healthcare: {
-      patientId: 'P12345',
-      recordType: 'medical-record',
-      classification: 'restricted',
-      hipaaCompliant: true,
-      retentionPeriod: new Date(Date.now() + 7 * 365 * 24 * 60 * 60 * 1000), // 7 years
-      consentRequired: true,
-      anonymized: false
+  metadata: {
+    dataClassification: 'confidential',
+    tags: ['sensitive', 'legal'],
+    customMetadata: {
+      department: 'legal',
+      project: 'compliance-audit'
     }
+  },
+  options: {
+    encrypt: true,
+    path: 'legal/confidential'
   }
 })
 ```
@@ -200,9 +196,14 @@ fastify.eventBus.subscribe('storage.operation', async (event) => {
 
 #### Audit Integration
 ```typescript
-// Storage operations are automatically audited when healthcare is enabled
-// Manual audit logging is also available
-await fastify.storage.auditFileAccess(fileId, 'download', 'Medical review')
+// Storage operations are automatically audited
+// Manual audit logging is also available through the audit system
+await fastify.auditLog.log({
+  action: 'file.access',
+  resource: 'storage',
+  resourceId: fileId,
+  details: { purpose: 'Document review' }
+})
 ```
 
 #### Metrics Integration
@@ -258,9 +259,8 @@ MINIO_SECRET_KEY=your-production-secret-key
 STORAGE_ENCRYPTION_ENABLED=true
 STORAGE_ENCRYPTION_KEY=your-256-bit-encryption-key
 
-# Enable healthcare compliance
-STORAGE_HEALTHCARE_ENABLED=true
-STORAGE_HEALTHCARE_ENCRYPTION_REQUIRED=true
+# Enable security features
+STORAGE_ENCRYPTION_ENABLED=true
 ```
 
 #### Performance Optimization
@@ -285,7 +285,7 @@ STORAGE_RETRY_ENABLED=true
 - [ ] Created storage directories
 - [ ] Updated Docker Compose (if using MinIO)
 - [ ] Tested file upload/download functionality
-- [ ] Verified healthcare compliance (if applicable)
+- [ ] Verified security and encryption features
 - [ ] Checked integration with existing services
 - [ ] Tested both local and MinIO providers
 - [ ] Configured production settings
@@ -341,7 +341,7 @@ For additional help with migration:
 1. Check the main documentation: `docs/storage-service.md`
 2. Review the API reference in the service files
 3. Examine the example usage in the controllers
-4. Consult the Healthcare compliance section for HIPAA requirements
+4. Review the security and encryption configuration options
 
 ## Next Steps
 

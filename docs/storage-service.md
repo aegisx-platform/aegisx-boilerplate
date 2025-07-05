@@ -2,25 +2,29 @@
 
 ## Overview
 
-The AegisX Storage Service is a comprehensive, enterprise-grade file storage solution designed for healthcare applications requiring HIPAA compliance, audit trails, and multi-provider support. It provides a unified interface for both local file system and MinIO (S3-compatible) storage backends.
+The AegisX Storage Service is a comprehensive, enterprise-grade file storage solution with multi-provider support, healthcare compliance features, and seamless integration with modern web applications. It supports both local file system and MinIO (S3-compatible) storage providers with advanced features like encryption, compression, caching, and database integration.
 
 ## Features
 
-### Core Capabilities
-- **Multi-Provider Support**: Local file system and MinIO object storage
-- **Healthcare Compliance**: HIPAA-compliant with audit trails and encryption
-- **Enterprise Integration**: Circuit breaker, retry, caching, and metrics
-- **Event-Driven Architecture**: Real-time events via Event Bus
-- **Advanced Security**: Encryption, data classification, and access controls
-- **Performance Optimization**: Caching, compression, and connection pooling
+### Core Features
+- **Multi-Provider Support**: Local file system and MinIO (S3-compatible) storage
+- **Swagger UI Integration**: Custom `@aegisx/fastify-multipart` plugin for form-based file uploads in Swagger UI
+- **Database Integration**: Complete file metadata persistence with PostgreSQL
+- **Enterprise Security**: AES-256-CBC encryption with proper IV handling
+- **File Compression**: Configurable compression for supported MIME types
+- **Caching**: Multi-level caching for metadata, files, and presigned URLs
+- **Audit Logging**: Comprehensive operation tracking and compliance logging
+- **Health Monitoring**: Real-time health checks and performance metrics
+- **Circuit Breaker**: Resilience patterns for external service failures
+- **Retry Logic**: Configurable retry mechanisms with exponential backoff
 
-### Healthcare Features
-- **HIPAA Compliance**: Built-in compliance validation and enforcement
-- **Data Classification**: Automatic classification (public, internal, confidential, restricted)
-- **Audit Trails**: Comprehensive access logging for healthcare data
-- **Encryption**: AES-256-GCM encryption for sensitive data
-- **Retention Policies**: Configurable retention based on data classification
-- **Consent Management**: Track and enforce patient consent requirements
+### Advanced Features
+- **Data Classification**: Support for public, internal, confidential, and restricted data
+- **Quota Management**: User-based storage quota tracking and enforcement
+- **Presigned URLs**: Secure, time-limited access URLs for direct file operations
+- **File Validation**: MIME type validation, size limits, and integrity checks
+- **Batch Operations**: Upload, download, and delete multiple files efficiently
+- **Event-Driven Architecture**: Integration with EventBus for real-time notifications
 
 ### Database Integration Features
 - **Metadata Persistence**: All file metadata stored in PostgreSQL database
@@ -75,7 +79,23 @@ The AegisX Storage Service is a comprehensive, enterprise-grade file storage sol
 7. **Event System**: Real-time event publishing and subscription
 8. **Enterprise Integration**: Circuit breaker, retry, cache, metrics
 
-## Installation & Configuration
+## Installation & Setup
+
+### Prerequisites
+- Node.js 18+ with TypeScript support
+- PostgreSQL database
+- MinIO server (optional, for S3-compatible storage)
+- Redis (optional, for caching)
+
+### Package Dependencies
+```bash
+# Core dependencies
+npm install @aegisx/fastify-multipart uuid crypto zlib
+npm install minio @types/minio
+
+# Development dependencies
+npm install --save-dev @types/uuid
+```
 
 ### Environment Variables
 
@@ -100,15 +120,8 @@ MINIO_BUCKET=aegisx-storage
 MINIO_REGION=us-east-1
 
 # Security & Encryption
-STORAGE_ENCRYPTION_ENABLED=true
-STORAGE_ENCRYPTION_ALGORITHM=AES-256-GCM
-STORAGE_ENCRYPT_METADATA=true
-
-# Healthcare Compliance
-STORAGE_HEALTHCARE_ENABLED=true
-STORAGE_HIPAA_COMPLIANCE=true
-STORAGE_AUDIT_TRAIL=true
-STORAGE_HEALTHCARE_ENCRYPTION_REQUIRED=true
+STORAGE_ENCRYPTION_ENABLED=false
+STORAGE_ENCRYPTION_ALGORITHM=aes-256-cbc
 
 # Database Configuration
 DATABASE_URL=postgresql://user:password@localhost:5432/aegisx_db
@@ -144,6 +157,197 @@ const result = await fastify.storage.upload({
 })
 ```
 
+## API Documentation
+
+### Authentication
+All storage endpoints require JWT authentication:
+```bash
+Authorization: Bearer <jwt-token>
+```
+
+### Upload Endpoint
+
+**POST** `/api/v1/storage/upload`
+
+Upload files with metadata using multipart form data. This endpoint supports Swagger UI form interface.
+
+#### Form Fields
+- `file` (required): Binary file data
+- `path` (optional): Storage path for the file
+- `dataClassification` (optional): `public` | `internal` | `confidential` | `restricted`
+- `encrypt` (optional): `true` | `false` - Force encryption regardless of global settings
+- `overwrite` (optional): `true` | `false` - Allow overwriting existing files
+- `tags` (optional): Comma-separated tags for file organization
+- `customMetadata` (optional): JSON string with additional metadata
+
+#### Example using curl
+```bash
+curl -X POST "http://localhost:3000/api/v1/storage/upload" \
+  -H "Authorization: Bearer <jwt-token>" \
+  -F "file=@document.pdf" \
+  -F "path=documents/2025" \
+  -F "dataClassification=confidential" \
+  -F "encrypt=true" \
+  -F "tags=financial,report,2025" \
+  -F "customMetadata={\"department\":\"finance\",\"quarter\":\"Q1\"}"
+```
+
+#### Response
+```json
+{
+  "success": true,
+  "fileId": "uuid-string",
+  "filename": "uuid-string.pdf",
+  "path": "documents/2025",
+  "size": 1048576,
+  "checksum": "sha256-hash",
+  "mimeType": "application/pdf",
+  "encrypted": true,
+  "dataClassification": "confidential",
+  "metadata": {
+    "originalName": "document.pdf",
+    "createdAt": "2025-01-05T10:30:00Z",
+    "tags": ["financial", "report", "2025"],
+    "customMetadata": {
+      "department": "finance",
+      "quarter": "Q1"
+    }
+  },
+  "url": "/api/v1/storage/download/uuid-string"
+}
+```
+
+### Download Endpoint
+
+**GET** `/api/v1/storage/download/:fileId`
+
+Download files with automatic decryption and decompression.
+
+#### Parameters
+- `fileId` (required): Unique file identifier
+- `purpose` (optional): Audit purpose for the download
+- `validateChecksum` (optional): Verify file integrity
+- `decrypt` (optional): Auto-decrypt encrypted files (default: true)
+- `decompress` (optional): Auto-decompress compressed files (default: true)
+
+#### Example
+```bash
+curl -X GET "http://localhost:3000/api/v1/storage/download/uuid-string?purpose=user-request" \
+  -H "Authorization: Bearer <jwt-token>" \
+  --output downloaded-file.pdf
+```
+
+### File Information Endpoint
+
+**GET** `/api/v1/storage/info/:fileId`
+
+Retrieve comprehensive file metadata without downloading the actual file.
+
+#### Response
+```json
+{
+  "success": true,
+  "fileInfo": {
+    "fileId": "uuid-string",
+    "filename": "uuid-string.pdf",
+    "originalName": "document.pdf",
+    "mimeType": "application/pdf",
+    "size": 1048576,
+    "path": "documents/2025",
+    "checksum": "sha256-hash",
+    "encrypted": true,
+    "dataClassification": "confidential",
+    "metadata": {
+      "createdAt": "2025-01-05T10:30:00Z",
+      "updatedAt": "2025-01-05T10:30:00Z",
+      "createdBy": "user-id",
+      "tags": ["financial", "report", "2025"],
+      "customMetadata": {
+        "department": "finance",
+        "quarter": "Q1"
+      }
+    },
+    "urls": {
+      "download": "/api/v1/storage/download/uuid-string"
+    },
+    "permissions": {
+      "canRead": true,
+      "canWrite": true,
+      "canDelete": true,
+      "canShare": true
+    }
+  }
+}
+```
+
+### List Files Endpoint
+
+**GET** `/api/v1/storage/files`
+
+List files with advanced filtering, sorting, and pagination.
+
+#### Query Parameters
+- `limit`: Maximum files to return (1-1000, default: 50)
+- `offset`: Files to skip for pagination (default: 0)
+- `sortBy`: Sort field (`name` | `size` | `created` | `modified`, default: `created`)
+- `sortOrder`: Sort direction (`asc` | `desc`, default: `desc`)
+- `mimeType`: Filter by MIME type
+- `dataClassification`: Filter by classification level
+- `tags`: Comma-separated tags to filter by
+- `sizeMin`: Minimum file size in bytes
+- `sizeMax`: Maximum file size in bytes
+- `createdAfter`: ISO date string for created date filter
+- `createdBefore`: ISO date string for created date filter
+
+#### Example
+```bash
+curl -X GET "http://localhost:3000/api/v1/storage/files?limit=10&dataClassification=confidential&sortBy=size&sortOrder=desc" \
+  -H "Authorization: Bearer <jwt-token>"
+```
+
+### Delete Endpoint
+
+**DELETE** `/api/v1/storage/delete/:fileId`
+
+Safely delete files with audit logging and quota updates.
+
+#### Parameters
+- `fileId` (required): File to delete
+- `force` (optional): Force delete even if file has dependencies
+- `reason` (optional): Deletion reason for audit purposes
+
+#### Example
+```bash
+curl -X DELETE "http://localhost:3000/api/v1/storage/delete/uuid-string?reason=user-request" \
+  -H "Authorization: Bearer <jwt-token>"
+```
+
+### Health Check Endpoint
+
+**GET** `/api/v1/storage/health`
+
+Monitor storage service health and performance metrics.
+
+#### Response
+```json
+{
+  "status": "healthy",
+  "score": 95,
+  "provider": "local",
+  "connected": true,
+  "latency": 25,
+  "errorRate": 0.001,
+  "diskUsage": {
+    "used": 1073741824,
+    "total": 107374182400,
+    "percentage": 0.01
+  },
+  "issues": [],
+  "recommendations": [],
+  "lastCheck": "2025-01-05T10:30:00Z"
+}
+```
+
 ## Usage Examples
 
 ### Basic File Operations
@@ -157,12 +361,10 @@ const uploadResult = await fastify.storage.upload({
   options: {
     dataClassification: 'restricted',
     tags: ['patient-record', 'medical'],
-    healthcare: {
-      patientId: 'PAT-12345',
-      recordType: 'medical-record',
-      classification: 'restricted',
-      hipaaCompliant: true,
-      consentRequired: true
+    customMetadata: {
+      department: 'medical',
+      recordType: 'patient-document',
+      sensitivity: 'high'
     }
   }
 })
@@ -195,26 +397,27 @@ const files = await fastify.storage.listFiles({
 const deleted = await fastify.storage.delete(uploadResult.fileId)
 ```
 
-### Healthcare Compliance Features
+### Advanced Data Handling
 
 ```typescript
-// Validate HIPAA compliance
-const isCompliant = await fastify.storage.validateHIPAACompliance(fileId)
+// Check file classification
+const fileInfo = await fastify.storage.getFileInfo(fileId)
 
-// Classify data automatically
-const classification = await fastify.storage.classifyData(fileBuffer, {
-  healthcare: {
-    patientId: 'PAT-12345',
-    recordType: 'lab-result'
+// File search with classification filter
+const searchResults = await fastify.storage.searchFiles('document', {
+  filters: { 
+    dataClassification: ['confidential', 'restricted'],
+    tags: ['sensitive']
   }
 })
 
-// Audit file access
-await fastify.storage.auditFileAccess(
-  fileId, 
-  'download', 
-  'Patient care - lab review'
-)
+// Audit file access through the audit system
+await fastify.auditLog.log({
+  action: 'file.download',
+  resource: 'storage',
+  resourceId: fileId,
+  details: { purpose: 'Document review' }
+})
 ```
 
 ### Advanced Features
@@ -290,7 +493,7 @@ const userStats = await fastify.storage.getUserStatistics('user-456')
 |--------|----------|-------------|
 | GET | `/admin/storage/config` | Get configuration |
 | POST | `/admin/storage/cleanup` | Trigger cleanup |
-| GET | `/admin/storage/hipaa-compliance/:fileId` | Check HIPAA compliance |
+| GET | `/admin/storage/classify/:fileId` | Get file classification |
 
 ## Database Schema
 
@@ -392,6 +595,114 @@ npm run db:seed
 npm run db:reset
 ```
 
+## Multipart Integration
+
+### Custom @aegisx/fastify-multipart Plugin
+
+The storage service uses a custom multipart plugin that enables Swagger UI form support while maintaining security and validation.
+
+#### Key Features
+- **Swagger UI Compatibility**: Form-based file uploads work seamlessly in Swagger documentation
+- **Plain Field Values**: Returns clean string values instead of wrapped objects
+- **Security**: Maintains file size limits and validation
+- **Performance**: Optimized for large file uploads
+
+#### Configuration
+```typescript
+// In storage.routes.ts
+await fastify.register(multipart, {
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB
+    files: 1,
+    fieldSize: 1024 * 1024,
+    fields: 10
+  },
+  autoContentTypeParser: true
+})
+
+// Validation bypass for multipart routes
+fastify.setValidatorCompiler(({ schema, method, url, httpPart }) => {
+  return function validate(data) {
+    if (httpPart === 'body' && url && url.includes('/upload')) {
+      return { value: data }
+    }
+    return { value: data }
+  }
+})
+```
+
+#### Usage in Controller
+```typescript
+// Parse multipart data
+const { files, fields } = await (request as any).parseMultipart()
+const file = files[0]
+const fileBuffer = await file.toBuffer()
+
+// Access clean field values
+const dataClassification = fields.dataClassification // "public" (not wrapped)
+const encrypt = fields.encrypt === 'true' // Clean boolean conversion
+const tags = fields.tags ? fields.tags.split(',') : []
+```
+
+## Security Features
+
+### Encryption
+
+#### Modern AES-256-CBC Encryption
+The service uses secure encryption with proper initialization vectors:
+
+```typescript
+// Encryption process
+private async encryptFile(data: Buffer, fileId: string): Promise<Buffer> {
+  const key = crypto.scryptSync(fileId, 'salt', 32)
+  const iv = crypto.randomBytes(16) // Generate random IV
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv)
+  
+  const encrypted = Buffer.concat([
+    iv, // Prepend IV to encrypted data
+    cipher.update(data),
+    cipher.final()
+  ])
+  
+  return encrypted
+}
+
+// Decryption process  
+private async decryptFile(encryptedData: Buffer, fileId: string): Promise<Buffer> {
+  const key = crypto.scryptSync(fileId, 'salt', 32)
+  const iv = encryptedData.subarray(0, 16) // Extract IV from beginning
+  const ciphertext = encryptedData.subarray(16) // Rest is encrypted data
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv)
+  
+  const decrypted = Buffer.concat([
+    decipher.update(ciphertext),
+    decipher.final()
+  ])
+  
+  return decrypted
+}
+```
+
+#### Encryption Triggers
+Files are automatically encrypted when:
+- `encrypt=true` is explicitly set in upload request (overrides global config)
+- `dataClassification` is set to `restricted` or `confidential`
+- Global encryption is enabled and conditions are met
+
+### Data Classification
+
+#### Classification Levels
+- **Public**: No encryption required, accessible to all authenticated users
+- **Internal**: Standard encryption, accessible to organization members
+- **Confidential**: Strong encryption, restricted access logging
+- **Restricted**: Maximum encryption, comprehensive audit trails
+
+#### Field Persistence Fix
+Recent fixes ensure that field values are correctly persisted:
+- `dataClassification` now reads from `request.metadata` instead of `request.options`
+- `encrypt` flag properly overrides global configuration settings
+- All form field values are validated and stored correctly
+
 ## Configuration Templates
 
 ### Development Configuration
@@ -430,9 +741,8 @@ const prodConfig = {
     algorithm: 'AES-256-GCM',
     encryptMetadata: true
   },
-  healthcare: {
+  security: {
     enabled: true,
-    hipaaCompliance: true,
     auditTrail: true,
     encryptionRequired: true
   },
@@ -459,9 +769,8 @@ const healthcareConfig = {
       keyRotationInterval: 30 * 24 * 60 * 60 * 1000 // 30 days
     }
   },
-  healthcare: {
+  security: {
     enabled: true,
-    hipaaCompliance: true,
     auditTrail: true,
     encryptionRequired: true,
     accessLogging: true,
@@ -505,7 +814,7 @@ fastify.eventBus.subscribe('storage.health-changed', (event) => {
 
 // Compliance violation events
 fastify.eventBus.subscribe('storage.compliance-violation', (event) => {
-  // Handle HIPAA violations
+  // Handle compliance violations
   console.log(`Compliance violation: ${event.violationType}`)
 })
 
@@ -519,35 +828,35 @@ fastify.eventBus.subscribe('storage.cleanup-completed', (event) => {
 
 - **storage.operation**: File operations (upload, download, delete)
 - **storage.health-changed**: Provider health status changes
-- **storage.compliance-violation**: HIPAA/compliance violations
+- **storage.compliance-violation**: Data compliance violations
 - **storage.cleanup-completed**: Cleanup operation results
 
 ## Security & Compliance
 
-### HIPAA Compliance Features
+### Security & Compliance Features
 
-1. **Encryption**: AES-256-GCM encryption for files and metadata
+1. **Encryption**: AES-256-CBC encryption for files and metadata
 2. **Audit Trails**: Comprehensive access logging
 3. **Data Classification**: Automatic classification and handling
 4. **Access Controls**: Role-based access and permissions
 5. **Retention Policies**: Configurable retention based on classification
-6. **Consent Management**: Track patient consent requirements
+6. **Metadata Protection**: Secure handling of sensitive file information
 
 ### Data Classification Levels
 
 - **Public**: Non-sensitive data (1 year retention)
 - **Internal**: Internal company data (7 years retention)
 - **Confidential**: Sensitive business data (10 years retention)
-- **Restricted**: HIPAA/PHI data (20+ years retention)
+- **Restricted**: Highly sensitive data (20+ years retention)
 
 ### Security Best Practices
 
-1. Always enable encryption for healthcare data
+1. Always enable encryption for sensitive data
 2. Use strong access controls and authentication
 3. Regularly rotate encryption keys
 4. Monitor and audit file access
 5. Implement proper backup and disaster recovery
-6. Validate HIPAA compliance regularly
+6. Validate data classification and compliance regularly
 
 ## Monitoring & Health Checks
 
@@ -619,7 +928,7 @@ fastify.eventBus.subscribe('storage.cleanup-completed', (event) => {
 - **STORAGE_FULL**: Storage capacity exceeded
 - **NETWORK_ERROR**: Connection issues
 - **ENCRYPTION_ERROR**: Encryption/decryption failed
-- **HIPAA_VIOLATION**: HIPAA compliance violation
+- **COMPLIANCE_VIOLATION**: Data compliance violation
 - **PROVIDER_UNAVAILABLE**: Storage provider offline
 
 ### Error Response Format
@@ -672,29 +981,227 @@ fastify.eventBus.subscribe('storage.cleanup-completed', (event) => {
 
 ### Common Issues
 
-**Connection Issues**
-- Check MinIO endpoint and credentials
-- Verify network connectivity
-- Check firewall settings
-- Validate SSL/TLS configuration
+#### 1. Encryption Failures
+**Problem**: RetryService failures with 500 errors during encryption
+**Solution**: Updated to use modern `crypto.createCipheriv()` with proper IV handling
 
-**Upload Failures**
-- Verify file size limits
-- Check available storage space
-- Validate MIME type restrictions
-- Review permission settings
+```typescript
+// Old (deprecated and causes failures)
+const cipher = crypto.createCipher('aes-256-cbc', key)
 
-**Performance Issues**
-- Monitor cache hit rates
-- Check network latency
-- Review compression settings
-- Analyze storage metrics
+// New (secure and reliable)
+const iv = crypto.randomBytes(16)
+const cipher = crypto.createCipheriv('aes-256-cbc', key, iv)
+```
 
-**Compliance Issues**
-- Verify encryption settings
-- Check audit trail configuration
-- Review data classification
-- Validate retention policies
+#### 2. Field Value Persistence
+**Problem**: `dataClassification` and `encrypt` values not saving correctly
+**Solution**: Fixed to read from `request.metadata` instead of `request.options`
+
+```typescript
+// Old (incorrect field mapping)
+dataClassification: request.options?.dataClassification
+
+// New (correct field mapping)
+dataClassification: request.metadata?.dataClassification
+```
+
+#### 3. Swagger UI Multipart Issues  
+**Problem**: Multipart uploads not working in Swagger UI
+**Solution**: Migrated to `@aegisx/fastify-multipart` with validation bypass
+
+```typescript
+// Migration steps:
+npm uninstall @fastify/multipart
+npm install @aegisx/fastify-multipart
+
+// Update configuration
+await fastify.register(multipart, {
+  autoContentTypeParser: true  // Instead of attachFieldsToBody: true
+})
+```
+
+#### 4. Database Connection Issues
+**Problem**: File metadata not saving to database
+**Solution**: Ensure Knex instance is properly injected into StorageService
+
+```typescript
+// Correct initialization
+const repository = new StorageFileRepository(knex)
+const databaseService = new StorageDatabaseService(repository)
+const storageService = new StorageService(config, eventBus, circuitBreaker, retry, cache, metrics, knex)
+```
+
+### Debug Tips
+
+#### Enable Debug Logging
+```typescript
+// Add debug logging to storage operations
+console.log('Upload request:', {
+  filename: request.filename,
+  size: request.file.length,
+  dataClassification: request.metadata?.dataClassification,
+  encrypt: request.options?.encrypt
+})
+```
+
+#### Health Check Monitoring
+```bash
+# Check storage service health
+curl -H "Authorization: Bearer <token>" \
+  http://localhost:3000/api/v1/storage/health
+```
+
+#### Database Query Debugging
+```sql
+-- Check recent uploads
+SELECT file_id, original_name, data_classification, encrypted, created_at 
+FROM storage_files 
+WHERE created_at > NOW() - INTERVAL '1 hour'
+ORDER BY created_at DESC;
+
+-- Check operation logs
+SELECT operation, status, error_message, created_at
+FROM storage_operations 
+WHERE created_at > NOW() - INTERVAL '1 hour'
+ORDER BY created_at DESC;
+```
+
+### Migration Guide
+
+#### From @fastify/multipart to @aegisx/fastify-multipart
+
+1. **Update package.json**:
+```bash
+npm uninstall @fastify/multipart
+npm install @aegisx/fastify-multipart
+```
+
+2. **Update imports**:
+```typescript
+// Old
+import multipart from '@fastify/multipart'
+
+// New  
+import multipart from '@aegisx/fastify-multipart'
+```
+
+3. **Update multipart configuration**:
+```typescript
+// Old
+await fastify.register(multipart, {
+  attachFieldsToBody: true
+})
+
+// New
+await fastify.register(multipart, {
+  autoContentTypeParser: true
+})
+```
+
+4. **Update request parsing**:
+```typescript
+// Old
+const body = request.body as any
+const fileBuffer = await body.file.toBuffer()
+const dataClassification = body.dataClassification?.value
+
+// New
+const { files, fields } = await (request as any).parseMultipart()
+const fileBuffer = await files[0].toBuffer()
+const dataClassification = fields.dataClassification // Plain string
+```
+
+### Performance Monitoring
+
+#### Caching Strategy
+```typescript
+// Metadata caching
+const cacheKey = `fileinfo:${fileId}`
+if (this.cache && this.config.caching.metadataCache.enabled) {
+  const cached = await this.cache.get<FileInfo>(cacheKey)
+  if (cached) return cached
+}
+
+// File content caching (for small files)
+if (result.size <= this.config.caching.fileCache.maxFileSize) {
+  await this.cache.set(cacheKey, result, {
+    ttl: this.config.caching.fileCache.ttl
+  })
+}
+```
+
+#### Custom Metrics
+```typescript
+// Operation metrics
+await this.recordMetric('storage.upload.success', 1, {
+  provider: this.config.provider,
+  size: request.file.length,
+  mimeType: request.mimeType,
+  encrypted: result.encrypted
+})
+
+// Business metrics
+await this.recordMetric('storage.classification.usage', 1, {
+  classification: request.metadata?.dataClassification,
+  department: request.metadata?.customMetadata?.department
+})
+```
+
+### Resilience Patterns
+
+#### Circuit Breaker Integration
+```typescript
+// Circuit breaker protection
+if (this.circuitBreaker && this.config.integration.circuitBreaker.enabled) {
+  return await this.circuitBreaker.execute(async () => {
+    return await operation()
+  })
+}
+```
+
+#### Retry Mechanism
+```typescript
+// Exponential backoff retry
+if (this.retry && this.config.integration.retry.enabled) {
+  return await this.retry.execute({
+    operation,
+    strategy: 'standard',
+    maxAttempts: 3,
+    baseDelay: 1000
+  })
+}
+```
+
+### Best Practices
+
+#### Security
+1. Always validate file types and sizes before upload
+2. Use explicit encryption for sensitive data classifications
+3. Implement proper audit logging for compliance
+4. Regularly rotate encryption keys (future enhancement)
+5. Monitor access patterns for anomaly detection
+
+#### Performance
+1. Enable caching for frequently accessed metadata
+2. Use presigned URLs for large file operations
+3. Implement file compression for supported types
+4. Monitor disk usage and implement cleanup policies
+5. Use batch operations for multiple file handling
+
+#### Monitoring
+1. Set up health check alerts for storage providers
+2. Monitor error rates and latency metrics
+3. Track storage usage by user and classification
+4. Implement log aggregation for audit trails
+5. Set up automated backup verification
+
+#### Development
+1. Use development configuration for local testing
+2. Test with various file types and sizes
+3. Validate multipart form handling in Swagger UI
+4. Test encryption/decryption cycles thoroughly
+5. Verify database integration with proper migrations
 
 ### Debug Mode
 
@@ -771,6 +1278,17 @@ For issues and questions:
 
 ## Changelog
 
+### v2.1.0 (2025-01-05) - Latest Updates
+- **@aegisx/fastify-multipart Integration**: Migrated from `@fastify/multipart` for Swagger UI support
+- **Secure Encryption**: Updated to modern `crypto.createCipheriv()` with proper IV handling
+- **Field Persistence Fixes**: Corrected `dataClassification` and `encrypt` field mapping from form data
+- **Database Integration**: Enhanced PostgreSQL integration with comprehensive metadata persistence
+- **Swagger UI Support**: Form-based file uploads now work seamlessly in Swagger documentation
+- **Performance Improvements**: Fixed RetryService failures and encryption errors
+- **Enhanced Security**: Removed deprecated crypto methods and added proper IV generation
+- **API Enhancements**: Clean field value parsing with `parseMultipart()` method
+- **Documentation**: Complete API documentation with troubleshooting guides
+
 ### v2.0.0 (2024-12-30)
 - **Database Integration**: Complete PostgreSQL integration for metadata management
 - **Advanced API**: RESTful API with TypeBox schema validation
@@ -783,8 +1301,8 @@ For issues and questions:
 
 ### v1.0.0 (2024-01-01)
 - Initial release with local and MinIO providers
-- HIPAA compliance features
+- Data compliance features
 - Enterprise integration (circuit breaker, retry, cache)
 - Comprehensive API and health monitoring
 - Event-driven architecture
-- Healthcare-specific features and compliance
+- Security and compliance framework
