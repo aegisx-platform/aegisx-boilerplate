@@ -131,12 +131,12 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
           },
           encrypt: {
             type: 'string',
-            enum: ['true', 'false'],
+            enum: ['false', 'true'],
             description: 'Encrypt file at rest (default: false)'
           },
           overwrite: {
             type: 'string',
-            enum: ['true', 'false'],
+            enum: ['false', 'true'],
             description: 'Overwrite if file exists (default: false)'
           }
         },
@@ -271,7 +271,7 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
         // Custom middleware to check share permission with fileId from body
         const user = request.user
         const { fileId } = request.body
-        
+
         if (!fileId) {
           return reply.code(400).send({
             error: {
