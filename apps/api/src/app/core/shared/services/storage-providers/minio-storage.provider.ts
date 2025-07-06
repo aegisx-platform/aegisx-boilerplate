@@ -38,6 +38,7 @@ const gunzip = promisify(zlib.gunzip)
 
 export class MinIOStorageProvider implements IStorageProvider {
   private client: MinioClient
+  private externalClient?: MinioClient // Client for external presigned URLs
   private connected = false
   private stats = {
     uploads: 0,
@@ -63,6 +64,19 @@ export class MinIOStorageProvider implements IStorageProvider {
       region: this.config.region,
       pathStyle: this.config.pathStyle
     })
+    
+    // Create external client for presigned URLs if external endpoint is different
+    if (this.config.externalEndpoint && this.config.externalEndpoint !== this.config.endpoint) {
+      this.externalClient = new MinioClient({
+        endPoint: this.config.externalEndpoint,
+        port: this.config.port,
+        useSSL: this.config.useSSL,
+        accessKey: this.config.accessKey,
+        secretKey: this.config.secretKey,
+        region: this.config.region,
+        pathStyle: this.config.pathStyle
+      })
+    }
   }
 
   async connect(): Promise<void> {
@@ -718,7 +732,9 @@ export class MinIOStorageProvider implements IStorageProvider {
       let method: string
       
       if (request.operation === 'read') {
-        url = await this.client.presignedGetObject(this.config.bucket, objectName, expiresIn)
+        // Use external client for presigned URLs if available
+        const clientToUse = this.externalClient || this.client
+        url = await clientToUse.presignedGetObject(this.config.bucket, objectName, expiresIn)
         method = 'GET'
       } else {
         // For write operations, create a presigned POST policy
@@ -735,7 +751,9 @@ export class MinIOStorageProvider implements IStorageProvider {
           policy.setContentType(request.contentType)
         }
         
-        const postData = await this.client.presignedPostPolicy(policy)
+        // Use external client for presigned URLs if available
+        const clientToUse = this.externalClient || this.client
+        const postData = await clientToUse.presignedPostPolicy(policy)
         url = postData.postURL
         method = 'POST'
       }

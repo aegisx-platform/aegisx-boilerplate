@@ -30,7 +30,9 @@ export const UploadRequestSchema = Type.Object({
   tags: Type.Optional(Type.Array(Type.String())),
   customMetadata: Type.Optional(Type.Record(Type.String(), Type.Any())),
   path: Type.Optional(Type.String({ description: 'Storage path for the file' })),
-  encrypt: Type.Optional(Type.Boolean({ description: 'Whether to encrypt the file' })),
+  encrypt: Type.Optional(Type.Boolean({ 
+    description: 'Whether to encrypt the file. If not specified: MinIO=false (uses server-side encryption), Local=based on STORAGE_LOCAL_AUTO_ENCRYPT environment variable' 
+  })),
   overwrite: Type.Optional(Type.Boolean({ description: 'Whether to overwrite existing file' }))
 })
 

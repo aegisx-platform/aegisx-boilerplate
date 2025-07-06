@@ -254,6 +254,7 @@ export interface MinIOStorageConfig {
   bucket: string
   region?: string
   pathStyle?: boolean
+  externalEndpoint?: string // External endpoint for presigned URLs (accessible from browser)
   presignedUrlExpiry: number
   maxFileSize: number
   multipartThreshold: number

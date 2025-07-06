@@ -472,6 +472,7 @@ export class StorageFactory {
         secretKey: process.env.MINIO_SECRET_KEY || '',
         bucket: process.env.MINIO_BUCKET || 'aegisx-storage',
         region: process.env.MINIO_REGION || 'us-east-1',
+        externalEndpoint: process.env.MINIO_EXTERNAL_ENDPOINT || process.env.MINIO_ENDPOINT || 'localhost',
         presignedUrlExpiry: parseInt(process.env.MINIO_PRESIGNED_URL_EXPIRY || '3600'),
         maxFileSize: parseInt(process.env.MINIO_MAX_FILE_SIZE || '104857600'), // 100MB
         multipartThreshold: parseInt(process.env.MINIO_MULTIPART_THRESHOLD || '67108864'), // 64MB

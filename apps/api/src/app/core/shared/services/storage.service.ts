@@ -1070,4 +1070,12 @@ export class StorageService implements IStorageService {
       'audit': 'read'
     }
     return mappings[type] || 'read'
-  }}
+  }
+
+  /**
+   * Get current storage provider type
+   */
+  getCurrentProvider(): string {
+    return this.config.provider
+  }
+}

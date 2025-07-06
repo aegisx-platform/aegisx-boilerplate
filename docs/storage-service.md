@@ -175,7 +175,7 @@ Upload files with metadata using multipart form data. This endpoint supports Swa
 - `file` (required): Binary file data
 - `path` (optional): Storage path for the file
 - `dataClassification` (optional): `public` | `internal` | `confidential` | `restricted`
-- `encrypt` (optional): `true` | `false` - Force encryption regardless of global settings
+- `encrypt` (optional): `true` | `false` - Override default encryption strategy (MinIO: false, Local: env-based)
 - `overwrite` (optional): `true` | `false` - Allow overwriting existing files
 - `tags` (optional): Comma-separated tags for file organization
 - `customMetadata` (optional): JSON string with additional metadata
@@ -683,11 +683,37 @@ private async decryptFile(encryptedData: Buffer, fileId: string): Promise<Buffer
 }
 ```
 
-#### Encryption Triggers
-Files are automatically encrypted when:
-- `encrypt=true` is explicitly set in upload request (overrides global config)
-- `dataClassification` is set to `restricted` or `confidential`
-- Global encryption is enabled and conditions are met
+#### Encryption Strategy
+
+The encryption strategy follows a smart default approach based on storage provider and user preferences:
+
+**Priority Order:**
+1. **User Choice** (highest priority): If `encrypt` field is specified, it always takes precedence
+2. **Provider-Based Defaults**: When user doesn't specify `encrypt`:
+   - **MinIO**: Default `false` (uses MinIO's server-side encryption)
+   - **Local Storage**: Based on `STORAGE_LOCAL_AUTO_ENCRYPT` environment variable
+
+**Examples:**
+```yaml
+# User specifies encrypt=true (always encrypted regardless of provider)
+MinIO + encrypt: true → Encrypted file in MinIO
+Local + encrypt: true → Encrypted file on disk
+
+# User specifies encrypt=false (never encrypted)
+MinIO + encrypt: false → Plain file in MinIO  
+Local + encrypt: false → Plain file on disk
+
+# User doesn't specify (uses defaults)
+MinIO + undefined → Plain file (MinIO handles encryption)
+Local + undefined → Based on STORAGE_LOCAL_AUTO_ENCRYPT
+```
+
+**Environment Variables:**
+```bash
+# For local storage when user doesn't specify encrypt option
+STORAGE_LOCAL_AUTO_ENCRYPT=false  # Development: convenience
+STORAGE_LOCAL_AUTO_ENCRYPT=true   # Production: security
+```
 
 ### Data Classification
 

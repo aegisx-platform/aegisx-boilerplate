@@ -27,6 +27,26 @@ export class StorageController {
   ) { }
 
   /**
+   * Determine whether to encrypt file based on user choice and provider
+   */
+  private shouldEncryptFile(userChoice?: boolean): boolean {
+    // 1. If user specified, use user's choice
+    if (userChoice !== undefined) {
+      return userChoice;
+    }
+
+    // 2. If user didn't specify, use default strategy based on provider
+    const provider = this.storageService.getCurrentProvider();
+    
+    if (provider === 'minio') {
+      return false; // MinIO default: no encryption (use server-side encryption)
+    }
+    
+    // 3. Local storage: use environment variable
+    return process.env.STORAGE_LOCAL_AUTO_ENCRYPT === 'true';
+  }
+
+  /**
    * Validate and parse multipart form data for upload (using @aegisx/fastify-multipart)
    */
   private validateUploadFormData(file: any, fields: any): ApiUploadRequest {
@@ -75,6 +95,10 @@ export class StorageController {
       throw new Error('Filename cannot exceed 255 characters')
     }
 
+    // Determine encryption based on user choice and provider
+    const userEncryptChoice = fields.encrypt ? fields.encrypt === 'true' : undefined
+    const shouldEncrypt = this.shouldEncryptFile(userEncryptChoice)
+
     return {
       filename: file.filename,
       mimeType: file.mimetype,
@@ -82,7 +106,7 @@ export class StorageController {
       tags,
       customMetadata,
       path: fields.path,
-      encrypt: fields.encrypt === 'true',
+      encrypt: shouldEncrypt,
       overwrite: fields.overwrite === 'true'
     }
   }
