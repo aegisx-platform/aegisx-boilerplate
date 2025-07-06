@@ -198,6 +198,7 @@ Healthcare features in `/features/` directory:
 - `docs/notification-database-schema.md` - Database schema documentation
 - `docs/storage-database.md` - **📁 Storage database integration guide** (comprehensive storage persistence)
 - `docs/storage-shared-files.md` - **🤝 Shared Files Management documentation** (collaborative file sharing with permissions)
+- `docs/file-access-control-plugin.md` - **🔐 File Access Control Plugin documentation** (security middleware for file operations)
 
 ### Configuration Files
 - `knexfile.ts` / `knexfile.prod.js` - Database configuration
@@ -212,6 +213,7 @@ Healthcare features in `/features/` directory:
 - `apps/api/src/app/core/plugins/logging/` - Structured logging implementation
 - `apps/api/src/app/core/shared/audit/` - Audit system implementation
 - `apps/api/src/app/core/plugins/security/rbac.ts` - RBAC implementation
+- `apps/api/src/app/core/plugins/security/file-access-control.ts` - **File access control middleware with caching & audit**
 - `apps/api/src/app/core/shared/services/` - Enterprise infrastructure services
 - `apps/api/src/app/core/shared/services/storage.service.ts` - **Enterprise storage service with database integration**
 - `apps/api/src/app/domains/storage/` - **Storage domain with database persistence & shared files management**
@@ -463,6 +465,7 @@ This is designed for healthcare applications requiring:
 - **✅ CLI Scaffolding Tool**: Complete healthcare-focused code generator with templates
 - **✅ Storage Database Integration**: Complete database persistence layer for storage service with 5-table schema
 - **✅ Shared Files Management**: Complete collaborative file sharing with granular permissions, user management, and revocation
+- **✅ File Access Control Plugin**: Security middleware with ownership & permission validation, caching, and audit integration
 - **Enterprise Infrastructure Foundation**: Complete suite of 15 production-ready services
 - **Event-Driven Architecture**: Multi-adapter Event Bus (Memory, Redis, RabbitMQ) with middleware support
 - **Comprehensive Audit System**: Multi-adapter audit logging (Direct DB, Redis Pub/Sub, RabbitMQ)

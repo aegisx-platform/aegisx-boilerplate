@@ -153,7 +153,10 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Download file
   fastify.get('/download/:fileId', {
-    preHandler: (fastify as any).authenticate,
+    preHandler: [
+      (fastify as any).authenticate,
+      (fastify as any).checkFileAccess('read')
+    ],
     schema: {
       description: 'Download a file from storage',
       tags: ['Storage'],
@@ -174,7 +177,10 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Get file information
   fastify.get('/files/:fileId', {
-    preHandler: (fastify as any).authenticate,
+    preHandler: [
+      (fastify as any).authenticate,
+      (fastify as any).checkFileAccess('read')
+    ],
     schema: {
       description: 'Get file information and metadata',
       tags: ['Storage'],
@@ -207,7 +213,10 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Delete file
   fastify.delete('/files/:fileId', {
-    preHandler: (fastify as any).authenticate,
+    preHandler: [
+      (fastify as any).authenticate,
+      (fastify as any).checkFileAccess('delete')
+    ],
     schema: {
       description: 'Delete a file from storage',
       tags: ['Storage'],
@@ -256,7 +265,33 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
 
   // Share file
   fastify.post('/share', {
-    preHandler: (fastify as any).authenticate,
+    preHandler: [
+      (fastify as any).authenticate,
+      async (request: any, reply: any) => {
+        // Custom middleware to check share permission with fileId from body
+        const user = request.user
+        const { fileId } = request.body
+        
+        if (!fileId) {
+          return reply.code(400).send({
+            error: {
+              code: 'INVALID_REQUEST',
+              message: 'fileId is required'
+            }
+          })
+        }
+
+        const accessResult = await fastify.fileAccessControl.checkAccess(fileId, user.id, 'share')
+        if (!accessResult.allowed) {
+          return reply.code(403).send({
+            error: {
+              code: 'ACCESS_DENIED',
+              message: accessResult.reason || 'You do not have permission to share this file'
+            }
+          })
+        }
+      }
+    ],
     schema: {
       description: 'Share a file with another user',
       tags: ['Storage'],

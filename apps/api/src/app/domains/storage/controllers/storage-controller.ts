@@ -618,6 +618,7 @@ export class StorageController {
         })
       }
 
+
       // Share the file
       const success = await this.databaseService.shareFile(
         fileId,
