@@ -509,13 +509,18 @@ export class ApiKeyService {
   private async getUserPermissions(userId: string): Promise<string[]> {
     try {
       // Get user permissions from RBAC
-      const permissions = await this.db('permissions as p')
+      const permissionRows = await this.db('permissions as p')
         .join('role_permissions as rp', 'p.id', 'rp.permission_id')
         .join('user_roles as ur', 'rp.role_id', 'ur.role_id')
         .where('ur.user_id', userId)
-        .select('p.name')
-        .pluck('name')
+        .where('ur.is_active', true)
+        .whereRaw('(ur.expires_at IS NULL OR ur.expires_at > NOW())')
+        .select('p.resource', 'p.action', 'p.scope')
+        .distinct()
 
+      // Format permissions as resource:action:scope
+      const permissions = permissionRows.map(p => `${p.resource}:${p.action}:${p.scope}`)
+      
       return permissions
     } catch (error) {
       this.logger.error('Failed to get user permissions', { userId, error })

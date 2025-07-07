@@ -24,6 +24,8 @@ interface JWTPayload {
 declare module 'fastify' {
     interface FastifyInstance {
         authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+        authenticateJWT: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+        authenticateApiKey: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
         generateToken: (payload: JWTPayload) => string;
         verifyToken: (token: string) => Promise<JWTPayload>;
         generateRefreshToken: (payload: JWTPayload) => string;
@@ -33,6 +35,7 @@ declare module 'fastify' {
     interface FastifyRequest {
         authMethod?: 'jwt' | 'api_key';
         apiKeyId?: string;
+        userPermissions?: string[];
     }
 }
 
@@ -73,7 +76,53 @@ export default fp(async function (fastify: FastifyInstance) {
         }
     });
 
-    // Create authenticate decorator with API key support
+    // JWT-only authentication decorator
+    fastify.decorate('authenticateJWT', async function (request: FastifyRequest, reply: FastifyReply) {
+        try {
+            await request.jwtVerify();
+            request.authMethod = 'jwt';
+            
+            // JWT token already contains permissions, no need to query DB
+            // Permissions are embedded in the token during login
+        } catch (err) {
+            reply.send(err);
+        }
+    });
+
+    // API Key-only authentication decorator
+    fastify.decorate('authenticateApiKey', async function (request: FastifyRequest, reply: FastifyReply) {
+        try {
+            const apiKey = request.headers['x-api-key'] as string;
+            if (!apiKey) {
+                throw fastify.httpErrors.unauthorized('API Key required');
+            }
+
+            const validation: ApiKeyValidation = await apiKeyService.validateApiKey(
+                apiKey,
+                request.ip
+            );
+
+            if (!validation.valid) {
+                throw fastify.httpErrors.unauthorized(validation.reason || 'Invalid API key');
+            }
+
+            // Set user context from API key
+            request.user = {
+                id: validation.user!.id,
+                email: validation.user!.email,
+                name: validation.user!.name,
+                roles: validation.user!.roles || [],
+                permissions: validation.user!.permissions || []
+            };
+            request.authMethod = 'api_key';
+            request.apiKeyId = validation.apiKeyId;
+            request.userPermissions = validation.user?.permissions;
+        } catch (err) {
+            reply.send(err);
+        }
+    });
+
+    // Dual authentication decorator (API Key first, JWT fallback)
     fastify.decorate('authenticate', async function (request: FastifyRequest, reply: FastifyReply) {
         try {
             // 1. Check for API Key first (higher priority)
@@ -88,10 +137,6 @@ export default fp(async function (fastify: FastifyInstance) {
                     throw fastify.httpErrors.unauthorized(validation.reason || 'Invalid API key');
                 }
 
-                // Check rate limit using existing Rate Limiter if available
-                // Note: Rate limiting integration would be implemented based on available rate limiter
-                // Skip for now to avoid compilation errors
-
                 // Set user context from API key
                 request.user = {
                     id: validation.user!.id,
@@ -102,7 +147,7 @@ export default fp(async function (fastify: FastifyInstance) {
                 };
                 request.authMethod = 'api_key';
                 request.apiKeyId = validation.apiKeyId;
-                request.permissions = validation.permissions;
+                request.userPermissions = validation.user?.permissions;
                 return;
             }
 
@@ -110,22 +155,9 @@ export default fp(async function (fastify: FastifyInstance) {
             await request.jwtVerify();
             request.authMethod = 'jwt';
             
-            // Load user permissions for JWT auth
-            if (request.user && fastify.knex) {
-                const permissions = await fastify.knex('permissions as p')
-                    .join('role_permissions as rp', 'p.id', 'rp.permission_id')
-                    .join('user_roles as ur', 'rp.role_id', 'ur.role_id')
-                    .where('ur.user_id', request.user.id)
-                    .select('p.name')
-                    .pluck('name');
-                
-                (request.user as any).permissions = permissions;
-            }
+            // JWT token already contains permissions, no need to query DB
+            // Permissions are embedded in the token during login
         } catch (err) {
-            // Use existing error tracker if available
-            // Note: Error tracking integration would be implemented based on available error tracker
-            // Skip for now to avoid compilation errors
-            
             reply.send(err);
         }
     });

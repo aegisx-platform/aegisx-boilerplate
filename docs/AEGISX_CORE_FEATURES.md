@@ -168,16 +168,43 @@ AegisX Boilerplate is a **production-ready** Fastify API boilerplate designed sp
 #### Features:
 - ✅ JWT Authentication with Access + Refresh tokens
 - ✅ API Key Authentication with enterprise features
-- ✅ Dual authentication support
+- ✅ **Three Authentication Strategies**:
+  - `fastify.authenticate` - Dual auth (API Key priority, JWT fallback)
+  - `fastify.authenticateJWT` - JWT only
+  - `fastify.authenticateApiKey` - API Key only
 - ✅ Session management
 - ✅ Password reset flows
 
 #### API Key Features:
-- Environment-based prefixes (sk_live_, sk_test_)
+- Environment-based prefixes (sk_live_, sk_test_, sk_sandbox_)
 - Dual expiration strategy (Cron + Redis TTL)
-- IP whitelisting
-- Rate limiting per key
+- IP whitelisting and rate limiting per key
 - Usage tracking and analytics
+- Enterprise-grade security with BCrypt hashing
+
+#### Route-Level Flexibility:
+```typescript
+// JWT only routes
+fastify.get('/user/profile', {
+  preHandler: [fastify.authenticateJWT],
+  handler: profileHandler
+});
+
+// API Key only routes
+fastify.post('/admin/bulk', {
+  preHandler: [fastify.authenticateApiKey], 
+  handler: bulkHandler
+});
+
+// Dual auth routes (API Key priority)
+fastify.get('/files/:id', {
+  preHandler: [fastify.authenticate],
+  handler: fileHandler
+});
+
+// Public routes
+fastify.get('/health', healthHandler);
+```
 
 **Documentation**: [`api-key-authentication.md`](./api-key-authentication.md)
 
@@ -226,19 +253,40 @@ AegisX Boilerplate is a **production-ready** Fastify API boilerplate designed sp
 
 ## 🔒 Security & Authentication
 
+### Authentication Strategies
+The system provides **three flexible authentication decorators**:
+
+#### **1. Dual Authentication** (`fastify.authenticate`)
+- **Priority**: API Key → JWT (if API Key header present, uses API Key)
+- **Use Case**: Mixed access routes (both users and services)
+- **Performance**: Fast JWT fallback, comprehensive API Key validation
+
+#### **2. JWT Only** (`fastify.authenticateJWT`)
+- **Performance**: ~1-3ms (no database queries)
+- **Use Case**: User-specific operations, web applications
+- **Features**: Permissions embedded in token
+
+#### **3. API Key Only** (`fastify.authenticateApiKey`)
+- **Performance**: ~10-50ms (database validation)
+- **Use Case**: Service integrations, automation, bulk operations
+- **Features**: IP whitelisting, rate limiting, usage tracking
+
 ### Authentication Methods
 1. **JWT Authentication**
    - Access tokens (short-lived)
    - Refresh tokens (long-lived)
    - Secure token rotation
+   - Permissions embedded in payload
 
 2. **API Key Authentication**
    - Enterprise-grade key management
-   - BCrypt hashing
-   - Usage analytics
+   - BCrypt hashing with 12 rounds
+   - Environment-based prefixes
+   - Usage analytics and monitoring
 
 ### Security Features
-- ✅ **Rate Limiting**: Per-user and per-IP
+- ✅ **Flexible Auth**: Route-level authentication strategy selection
+- ✅ **Rate Limiting**: Per-user, per-IP, and per-API-key
 - ✅ **IP Whitelisting**: Network-level access control
 - ✅ **CORS Configuration**: Secure cross-origin policies
 - ✅ **Helmet Integration**: Security headers
@@ -253,6 +301,15 @@ Examples:
 - users:read:all
 - patients:write:department
 - reports:delete:own
+```
+
+### Developer Experience
+```typescript
+// Choose auth strategy per route
+preHandler: [fastify.authenticateJWT]     // Fast JWT only
+preHandler: [fastify.authenticateApiKey]  // Secure API Key only
+preHandler: [fastify.authenticate]        // Smart dual auth
+// No preHandler = Public route
 ```
 
 ---
@@ -491,10 +548,27 @@ AegisX Boilerplate provides a **complete, production-ready foundation** for buil
 
 - ✅ **15+ Enterprise Services** ready to use
 - ✅ **5 Core Business Domains** fully implemented
-- ✅ **Healthcare Compliance** built-in
-- ✅ **Modern Architecture** with best practices
-- ✅ **Comprehensive Documentation**
-- ✅ **Developer Tools** for productivity
+- ✅ **Flexible Authentication**: Three auth strategies for different use cases
+- ✅ **Healthcare Compliance** built-in (HIPAA ready)
+- ✅ **Modern Architecture** with Fastify best practices
+- ✅ **Developer-Friendly**: Route-level auth configuration
+- ✅ **Performance Optimized**: JWT fast path, API Key comprehensive validation
+- ✅ **Comprehensive Documentation** with usage examples
+
+### 🚀 **Ready-to-Use Authentication**
+```typescript
+// JWT for web apps (fast)
+preHandler: [fastify.authenticateJWT]
+
+// API Key for services (secure)  
+preHandler: [fastify.authenticateApiKey]
+
+// Smart dual auth (API Key priority)
+preHandler: [fastify.authenticate]
+
+// Public endpoints
+// No preHandler needed
+```
 
 **Start building your healthcare application today with confidence!** 🚀
 

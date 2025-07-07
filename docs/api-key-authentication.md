@@ -261,23 +261,69 @@ curl -H "X-API-Key: sk_live_abc123def456..." \
      https://api.example.com/api/v1/users
 ```
 
-### Dual Authentication Support
+### Authentication Strategies
 
-The system supports both authentication methods in the same request:
+The system provides three authentication decorators for different use cases:
+
+#### **1. Dual Authentication** (`fastify.authenticate`)
+```typescript
+// Supports both JWT and API Key with API Key priority
+fastify.get('/files/:id', {
+  preHandler: [fastify.authenticate],
+  handler: fileHandler
+});
+```
+
+**Priority Order:**
+1. **API Key** (higher priority) - if X-API-Key header present, validates API key
+2. **JWT Token** (fallback) - if no API key header, validates JWT
+
+#### **2. JWT Only** (`fastify.authenticateJWT`)
+```typescript
+// JWT authentication only
+fastify.get('/user/profile', {
+  preHandler: [fastify.authenticateJWT],
+  handler: profileHandler
+});
+```
+
+#### **3. API Key Only** (`fastify.authenticateApiKey`)
+```typescript
+// API Key authentication only
+fastify.post('/admin/bulk-import', {
+  preHandler: [fastify.authenticateApiKey],
+  handler: bulkImportHandler
+});
+```
+
+### Usage Scenarios
 
 ```javascript
-// JavaScript example
-const response = await fetch('/api/v1/users', {
+// Web Application (JWT only)
+const response = await fetch('/api/v1/user/profile', {
+    headers: {
+        'Authorization': 'Bearer jwt_token_here'
+    }
+});
+// → Uses JWT authentication
+
+// Service Integration (API Key only)
+const response = await fetch('/api/v1/admin/bulk', {
+    headers: {
+        'X-API-Key': 'sk_live_api_key_here'
+    }
+});
+// → Uses API Key authentication
+
+// Mixed Access (both headers sent)
+const response = await fetch('/api/v1/files/shared', {
     headers: {
         'Authorization': 'Bearer jwt_token_here',
         'X-API-Key': 'sk_live_api_key_here'
     }
 });
+// → Uses API Key authentication (higher priority)
 ```
-
-**Priority Order:**
-1. **API Key** (higher priority) - if present, validates the API key
-2. **JWT Token** (fallback) - if no API key, validates JWT
 
 ### Permission System
 
