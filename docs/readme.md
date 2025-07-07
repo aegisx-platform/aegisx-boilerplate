@@ -1,291 +1,271 @@
-# 📚 AegisX Boilerplate - Documentation Index
+# 📚 AegisX Boilerplate Documentation
 
-Welcome to the comprehensive documentation for **AegisX Boilerplate** - a production-ready Healthcare Information System (HIS) API framework built with Fastify, TypeScript, and enterprise-grade infrastructure.
+<div align="center">
 
----
+**Complete documentation for enterprise-grade Healthcare Information Systems and ERP applications**
 
-## 🚀 Getting Started
+[🚀 Quick Start](#-quick-start) • [🏗️ Architecture](#️-architecture) • [🔧 Core Systems](#-core-systems) • [🏥 Features](#-features)
 
-### **Quick Setup**
-- 📖 [Main README](../README.md) - Project overview and quick start
-- ⚡ [Database Quick Start](./database-quickstart.md) - 5-minute database setup
-- 🐳 [Docker Setup](./docker.md) - Container orchestration
-- ⚙️ [Environment Configuration](../.env.example) - Configuration reference
-
-### **First Steps**
-- 🏗️ [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) - Complete system design
-- 📂 [Folder Structure Guide](./FOLDER_STRUCTURE_GUIDE.md) - Project organization
-- 🔧 [Development Workflow](#development-workflow) - How to contribute
+</div>
 
 ---
 
-## 🏗️ Architecture & Design
+## 📖 Documentation Navigation
 
-### **System Architecture**
-- 🏛️ [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) - 4-layer architecture design
-- 📂 [Folder Structure Guide](./FOLDER_STRUCTURE_GUIDE.md) - Detailed project organization
-- 🎯 [Design Patterns](#design-patterns) - Plugin, Factory, Repository patterns
-- 🔄 [Request Flow](#request-flow) - HTTP request journey
+### 🚀 **Quick Start & Setup**
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [**🏃 Quick Start Guide**](../README.md#-quick-start) | 5-minute setup to get running | All Developers |
+| [**🗄️ Database Setup**](./setup/database-quickstart.md) | PostgreSQL setup and migrations | Backend Developers |
+| [**🐳 Docker Setup**](./setup/docker-quickstart.md) | Container-based development | DevOps Engineers |
+| [**🚀 Production Deployment**](./setup/production-deployment-guide.md) | Production environment setup | DevOps Engineers |
 
-### **Technology Stack**
-- ⚡ **Framework:** Fastify 5.2.1 (high-performance)
-- 📊 **Database:** PostgreSQL + Knex.js migrations
-- 💾 **Caching:** Redis with connection pooling
-- 🚌 **Messaging:** RabbitMQ for enterprise messaging
-- 🔒 **Security:** JWT + RBAC + comprehensive audit
+### 🏗️ **Architecture & Design**
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [**🏗️ Complete Architecture Guide**](./ARCHITECTURE_OVERVIEW.md) | 4-layer architecture overview | All Developers |
+| [**📂 Folder Structure Guide**](./FOLDER_STRUCTURE_GUIDE.md) | Project organization patterns | All Developers |
+| [**📋 Feature Summary**](./feature-summary.md) | Complete feature overview | All Developers |
+| [**🗺️ Development Roadmap**](./CORE_DEVELOPMENT_ROADMAP.md) | Project development priorities | Team Leads |
 
----
+### 🔧 **Core Systems**
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [**📝 Complete Logging Guide**](./monitoring/logging-system.md) | Structured logging & monitoring | All Developers |
+| [**📊 Audit System**](./core/audit-logging.md) | HIPAA-compliant audit trails | Backend Developers |
+| [**🔐 Authentication & Security**](./core/api-key-authentication.md) | JWT + API key authentication | Backend Developers |
+| [**👥 RBAC System**](./core/rbac-system.md) | Role-based access control | Backend Developers |
+| [**🗄️ Database Guide**](./core/database.md) | PostgreSQL integration | Backend Developers |
+| [**🐳 Docker Guide**](./core/docker.md) | Complete containerization | DevOps Engineers |
 
-## 🔧 Core Systems
+### 🏥 **Features & Services**
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [**📁 Storage Service**](./features/storage-service.md) | File storage & management | Backend Developers |
+| [**🎨 Image Processing**](./features/image-processing-service.md) | Image manipulation & optimization | Backend Developers |
+| [**📊 Report Builder**](./features/report-builder.md) | Low-code report generation | Full Stack Developers |
+| [**🌐 WebSocket Service**](./features/websocket-service.md) | Real-time communication | Full Stack Developers |
+| [**📧 Notification Service**](./features/notification-database-schema.md) | Multi-channel notifications | Backend Developers |
 
-### **Logging & Monitoring**
-- 🚀 [**Quick Reference**](./logging-quick-reference.md) - **Commands, URLs, and troubleshooting**
-- 📝 [Logging System Documentation](./logging-system.md) - Complete logging architecture with Seq & Grafana + Loki
-- 🚀 [Fluent Bit Integration Guide](./fluent-bit-setup.md) - Advanced log processing with HIPAA compliance
-- 🔍 [Graylog Setup Guide](./graylog-setup.md) - **Enterprise centralized log management**
-- 🎯 [Logging Selector Guide](./logging-selector-guide.md) - Interactive tool for choosing monitoring solutions
-- 📖 [Logging Selector Usage](./logging-selector-usage.md) - **Detailed usage guide and troubleshooting**
-- 🏭 [Production Deployment Guide](./production-deployment-guide.md) - **Production readiness and hardening**
-- 💡 [How to Use Logging](./HOW_TO_USE_LOGGING.md) - Developer guide with examples
-- 🪶 [Lightweight Log Monitoring](./LIGHTWEIGHT_LOG_MONITORING.md) - Alternative monitoring solutions
-- 📊 [APM Integration](#apm-integration) - Performance monitoring
-- 🔍 [Seq Configuration](../docker-compose.seq.yml) - SQL-based log analysis
-- 📈 [Grafana + Loki Setup](../docker-compose.loki.yml) - Cloud-native log monitoring
-- ⚡ [Fluent Bit Stack](../docker-compose.fluent-bit.yml) - Advanced log processing and routing
-- 🏢 [Graylog Stack](../docker-compose.graylog.yml) - Enterprise centralized logging
+### 🔧 **Infrastructure Services**
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [**🔗 HTTP Client Service**](./infrastructure/http-client-service.md) | External API integration | Backend Developers |
+| [**⚡ Circuit Breaker**](./infrastructure/circuit-breaker-service.md) | Resilience patterns | Backend Developers |
+| [**❌ Error Tracker**](./infrastructure/error-tracker-service.md) | Error handling & reporting | Backend Developers |
+| [**🔐 Secrets Manager**](./infrastructure/secrets-manager-service.md) | Secure credential management | DevOps Engineers |
+| [**🔄 Background Jobs**](./infrastructure/background-jobs-system.md) | Async task processing | Backend Developers |
 
-### **Core Infrastructure**
-- 🌐 [HTTP Client Service](./http-client-service.md) - **Enterprise-grade HTTP client with retry, circuit breaker, and caching**
-- 🔐 [Secrets Manager Service](./secrets-manager-service.md) - **Secure storage and management of API keys, tokens, and sensitive data**
+### 🔧 **Specialized Guides**
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [**🧪 API Key Testing**](./core/api-key-testing-guide.md) | Testing authentication systems | QA Engineers |
+| [**📁 Storage Database Schema**](./features/storage-database.md) | Database integration patterns | Backend Developers |
+| [**🤝 Shared Files Management**](./features/storage-shared-files.md) | Collaborative file features | Backend Developers |
+| [**🔐 File Access Control**](./features/file-access-control-plugin.md) | Security middleware | Backend Developers |
+| [**🖼️ Thumbnail Generation**](./features/thumbnail-generation.md) | Image thumbnail creation | Backend Developers |
 
-### **Security & Authentication**
-- 🔐 [JWT Authentication](#jwt-authentication) - Token-based auth system
-- 👥 [RBAC System](#rbac-system) - Role-based access control (`resource:action:scope`)
-- 🛡️ [Security Middleware](#security-middleware) - Helmet, rate limiting, CORS
-- 📋 [Audit System](#audit-system) - HIPAA-compliant audit trails
-
-### **Data & Infrastructure**
-- 🗄️ [Database Integration](./database.md) - PostgreSQL setup and migrations
-- 💾 [Redis Caching](#redis-caching) - Caching strategies
-- 🚌 [Event Bus System](#event-bus) - Event-driven architecture
-- 📨 [Message Queues](#message-queues) - RabbitMQ integration
-
----
-
-## 🏥 Healthcare Features
-
-### **✅ Implemented Features**
-- 🔐 **Authentication System** - Complete login/registration flow
-- 👥 **RBAC with Healthcare Roles** - Doctor, nurse, admin, patient roles
-- 📋 **Comprehensive Audit System** - Multi-adapter support (DB, Redis, RabbitMQ)
-- 📝 **Structured Logging** - Correlation ID tracking for compliance
-- 🚌 **Event Bus** - Event-driven architecture with multiple adapters
-
-### **🚧 Structured (Ready for Development)**
-Healthcare features are structured but not yet implemented:
-- 👩‍⚕️ **Patient Management** - Patient profiles, medical history
-- 📅 **Appointment Scheduling** - Calendar integration, notifications  
-- 📋 **Medical Records** - Clinical notes, lab results, prescriptions
-- 💰 **Billing System** - Insurance claims, payment processing
-- 📊 **Healthcare Reports** - Analytics, compliance reports
-- 💊 **Prescription Management** - Drug interactions, dosage tracking
-
-### **HIPAA Compliance**
-- 📝 **Complete Audit Trails** - Every data access logged with who, what, when, where
-- 🔒 **Data Encryption** - At rest and in transit
-- 👤 **User Attribution** - All actions tied to specific users
-- ⏰ **Precise Timestamping** - Audit trail integrity
-- 🔍 **Integrity Verification** - Cryptographic audit log verification
+### 📊 **Monitoring & Observability**
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [**📝 Logging Quick Reference**](./monitoring/logging-quick-reference.md) | Common logging commands | All Developers |
+| [**📊 Fluent Bit Setup**](./monitoring/fluent-bit-setup.md) | Advanced log processing | DevOps Engineers |
+| [**📈 Graylog Setup**](./monitoring/graylog-setup.md) | Centralized log management | DevOps Engineers |
+| [**🎯 Logging Selector Guide**](./monitoring/logging-selector-guide.md) | Choose monitoring solution | DevOps Engineers |
 
 ---
 
-## 💻 Development
-
-### **Development Setup**
-- 🚀 [Core Development Roadmap](./CORE_DEVELOPMENT_ROADMAP.md) - Development priorities
-- 🧪 [Testing Strategy](#testing-strategy) - Unit, integration, E2E tests
-- 📦 [Package Management](#package-management) - Nx monorepo setup
-- 🔧 [Code Quality](#code-quality) - ESLint, Prettier, TypeScript strict
-
-### **API Development**
-- 📝 [API Documentation](#api-documentation) - Swagger/OpenAPI 3.0
-- ✅ [Input Validation](#input-validation) - TypeBox schemas
-- 🔄 [Plugin Development](#plugin-development) - Fastify plugin patterns
-- 🎯 [Business Logic](#business-logic) - Domain-driven design
-
-### **Database Development**
-- 🗄️ [Schema Design](#schema-design) - Database structure
-- 🔄 [Migrations](#migrations) - Schema evolution
-- 🌱 [Data Seeding](#data-seeding) - Test data generation
-- 📊 [Query Optimization](#query-optimization) - Performance tuning
-
----
-
-## 🚀 Infrastructure
-
-### **Deployment**
-- 🐳 [Docker Setup](./docker.md) - Complete containerization
-- ☁️ [Cloud Deployment](#cloud-deployment) - AWS, Azure, GCP guidelines
-- 🔧 [Environment Management](#environment-management) - Config strategies
-- 📈 [Scaling Strategies](#scaling-strategies) - Horizontal and vertical scaling
-
-### **Operations**
-- 📊 [Monitoring & Alerting](#monitoring-alerting) - Production monitoring
-- 🔄 [Backup & Recovery](#backup-recovery) - Data protection strategies
-- 🔒 [Security Operations](#security-operations) - Production security
-- 🚨 [Incident Response](#incident-response) - Emergency procedures
-
-### **Performance**
-- ⚡ [Performance Optimization](#performance-optimization) - Speed improvements
-- 💾 [Caching Strategies](#caching-strategies) - Multi-layer caching
-- 📊 [Load Testing](#load-testing) - Performance validation
-- 🔍 [Profiling](#profiling) - Performance analysis
-
----
-
-## 📖 Tutorials & Examples
-
-### **Basic Tutorials**
-- 🌟 [Your First Feature](#first-feature) - Step-by-step feature development
-- 🔐 [Adding Authentication](#adding-authentication) - Secure your endpoints
-- 📋 [Implementing Audit Logs](#implementing-audit) - Compliance logging
-- 🧪 [Writing Tests](#writing-tests) - Comprehensive testing
-
-### **Advanced Tutorials**
-- 🏥 [Building Healthcare Features](#healthcare-features) - Patient management example
-- 🚌 [Event-Driven Architecture](#event-driven) - Using the event bus
-- 📊 [Custom Monitoring](#custom-monitoring) - Building dashboards
-- 🔧 [Performance Tuning](#performance-tuning) - Optimization techniques
-
-### **Integration Examples**
-- 🌐 [External API Integration](#external-api) - Third-party services
-- 📨 [Email/SMS Notifications](#notifications) - Communication systems
-- 💳 [Payment Processing](#payment-processing) - Financial transactions
-- 📄 [Document Management](#document-management) - File handling
-
----
-
-## 🔧 Troubleshooting
-
-### **Common Issues**
-- 🚫 [Startup Problems](#startup-problems) - Server won't start
-- 🗄️ [Database Issues](#database-issues) - Connection and migration problems
-- 🔐 [Authentication Errors](#auth-errors) - JWT and permission issues
-- 📝 [Logging Problems](#logging-problems) - Log configuration issues
-
-### **Performance Issues**
-- 🐌 [Slow Queries](#slow-queries) - Database optimization
-- 💾 [Memory Leaks](#memory-leaks) - Resource management
-- 🔄 [High CPU Usage](#high-cpu) - Performance bottlenecks
-- 📡 [Network Issues](#network-issues) - Connectivity problems
-
-### **Production Issues**
-- 🚨 [Error Monitoring](#error-monitoring) - Production error tracking
-- 📊 [Capacity Planning](#capacity-planning) - Resource scaling
-- 🔒 [Security Incidents](#security-incidents) - Threat response
-- 📋 [Compliance Issues](#compliance-issues) - Regulatory requirements
-
----
-
-## 📚 Reference
-
-### **API Reference**
-- 📝 [API Endpoints](#api-endpoints) - Complete endpoint documentation
-- 🔒 [Authentication API](#auth-api) - Login, registration, tokens
-- 👥 [User Management API](#user-api) - User operations
-- 📋 [Audit API](#audit-api) - Audit log access
-- 🏥 [Healthcare APIs](#healthcare-api) - Clinical data endpoints
-
-### **Configuration Reference**
-- ⚙️ [Environment Variables](#env-vars) - Complete configuration options
-- 🗄️ [Database Configuration](#db-config) - PostgreSQL settings
-- 💾 [Redis Configuration](#redis-config) - Caching setup
-- 📨 [Message Queue Configuration](#mq-config) - RabbitMQ settings
-- 📝 [Logging Configuration](#log-config) - Winston and structured logging
-
-### **Schema Reference**
-- 🗄️ [Database Schema](#db-schema) - Complete table definitions
-- ✅ [Validation Schemas](#validation-schemas) - TypeBox schemas
-- 🔒 [Permission Schema](#permission-schema) - RBAC definitions
-- 📋 [Audit Schema](#audit-schema) - Audit log structure
-
----
-
-## 🤝 Contributing
-
-### **Getting Started**
-- 🚀 [Contribution Guidelines](#contribution-guidelines) - How to contribute
-- 🔧 [Development Setup](#dev-setup) - Local development environment
-- 🎯 [Issue Templates](#issue-templates) - Bug reports and feature requests
-- 📝 [Pull Request Guidelines](#pr-guidelines) - Code submission process
-
-### **Code Standards**
-- ✅ [Coding Standards](#coding-standards) - Style guide and conventions
-- 🧪 [Testing Requirements](#testing-requirements) - Test coverage and quality
-- 📚 [Documentation Standards](#doc-standards) - Documentation guidelines
-- 🔒 [Security Guidelines](#security-guidelines) - Security best practices
-
-### **Community**
-- 💬 [Discussions](https://github.com/your-org/aegisx-boilerplate/discussions) - Q&A and ideas
-- 🐛 [Issues](https://github.com/your-org/aegisx-boilerplate/issues) - Bug reports
-- 📧 [Contact](#contact) - Direct support options
-
----
-
-## 🆘 Support & Community
-
-### **Getting Help**
-- ❓ [FAQ](#faq) - Frequently asked questions
-- 💬 [Community Discussions](#discussions) - Ask questions and share ideas
-- 📧 [Direct Support](#direct-support) - Email and chat support
-- 📞 [Emergency Support](#emergency-support) - Critical issue support
-
-### **Resources**
-- 🎓 [Learning Resources](#learning-resources) - External tutorials and guides
-- 📖 [Best Practices](#best-practices) - Industry recommendations
-- 🔗 [Useful Links](#useful-links) - Related tools and services
-- 📰 [Newsletter](#newsletter) - Updates and announcements
-
----
-
-## 🗺️ Roadmap & Future
-
-### **Current Status**
-- 🟢 **Production Ready**: Core infrastructure, authentication, audit system
-- 🟡 **In Development**: Healthcare features, advanced monitoring
-- 🔵 **Planned**: HL7 FHIR integration, telemedicine support
-
-### **Upcoming Features**
-- 🏥 **Healthcare Features** - Patient management, appointments, medical records
-- 📱 **Mobile Backend** - Mobile app support APIs
-- 🤖 **AI Integration** - Machine learning capabilities
-- 🏢 **Multi-Tenant** - Enterprise multi-tenancy support
-
-### **Version History**
-- 📋 [Changelog](#changelog) - Version history and changes
-- 🏷️ [Release Notes](#release-notes) - Detailed release information
-- 🎯 [Migration Guides](#migration-guides) - Upgrade instructions
-
----
-
-## 📊 Quick Stats
+## 🗂️ **Documentation by Folder Structure**
 
 ```
-🏥 Healthcare-focused API framework
-⚡ 3x faster than Express (Fastify)
-🔒 HIPAA-compliant audit system
-📊 4-layer architecture design
-🧪 80%+ test coverage target
-📚 Comprehensive documentation
-🚀 Production-ready infrastructure
+📁 docs/
+├── 📁 setup/          # Quick start & deployment guides
+├── 📁 core/           # Core system documentation  
+├── 📁 features/       # Feature-specific guides
+├── 📁 infrastructure/ # Infrastructure services
+├── 📁 monitoring/     # Logging & monitoring setup
+├── 📄 ARCHITECTURE_OVERVIEW.md    # System architecture
+├── 📄 FOLDER_STRUCTURE_GUIDE.md   # Project structure
+├── 📄 feature-summary.md          # Complete feature list
+└── 📄 CORE_DEVELOPMENT_ROADMAP.md # Development priorities
 ```
+
+---
+
+## 📚 **By Experience Level**
+
+#### **🟢 Beginner (New to Project)**
+1. [Quick Start Guide](../README.md#-quick-start)
+2. [Architecture Overview](./ARCHITECTURE_OVERVIEW.md)
+3. [Folder Structure Guide](./FOLDER_STRUCTURE_GUIDE.md)
+4. [Database Quickstart](./setup/database-quickstart.md)
+
+#### **🟡 Intermediate (Building Features)**
+1. [Complete Logging Guide](./monitoring/logging-system.md)
+2. [Authentication System](./core/api-key-authentication.md)
+3. [RBAC Implementation](./core/rbac-system.md)
+4. [Storage Service](./features/storage-service.md)
+
+#### **🔴 Advanced (Production Deployment)**
+1. [Production Deployment](./setup/production-deployment-guide.md)
+2. [Advanced Monitoring](./monitoring/fluent-bit-setup.md)
+3. [Security Hardening](./features/file-access-control-plugin.md)
+4. [Performance Optimization](./infrastructure/circuit-breaker-service.md)
+
+---
+
+## 🏥 **By Healthcare Use Case**
+
+#### **👩‍⚕️ Clinical Applications**
+- [Audit System](./core/audit-logging.md) - HIPAA compliance
+- [File Access Control](./features/file-access-control-plugin.md) - Secure patient data
+- [RBAC System](./core/rbac-system.md) - Healthcare roles
+
+#### **📊 Administrative Systems**
+- [Report Builder](./features/report-builder.md) - Healthcare analytics
+- [Notification Service](./features/notification-database-schema.md) - Patient alerts
+- [Background Jobs](./infrastructure/background-jobs-system.md) - Automated tasks
+
+#### **🔧 Technical Integration**
+- [WebSocket Service](./features/websocket-service.md) - Real-time monitoring
+- [HTTP Client](./infrastructure/http-client-service.md) - HL7 FHIR integration
+- [Image Processing](./features/image-processing-service.md) - Medical imaging
+
+---
+
+## 🎯 **Quick Access by Task**
+
+### **Setting Up Development Environment**
+```bash
+# Follow these docs in order:
+1. README.md (Quick Start)
+2. setup/database-quickstart.md
+3. setup/docker-quickstart.md
+4. FOLDER_STRUCTURE_GUIDE.md
+```
+
+### **Implementing Authentication**
+```bash
+# Authentication implementation:
+1. core/api-key-authentication.md
+2. core/rbac-system.md
+3. core/audit-logging.md
+4. core/api-key-testing-guide.md
+```
+
+### **Building Healthcare Features**
+```bash
+# Healthcare feature development:
+1. ARCHITECTURE_OVERVIEW.md
+2. features/storage-service.md
+3. features/file-access-control-plugin.md
+4. features/report-builder.md
+```
+
+### **Production Deployment**
+```bash
+# Production readiness:
+1. setup/production-deployment-guide.md
+2. core/docker.md
+3. monitoring/logging-system.md
+4. monitoring/graylog-setup.md
+```
+
+---
+
+## 🔍 **Finding What You Need**
+
+### **🔍 Search by Technology**
+- **PostgreSQL**: `core/database.md`, `setup/database-quickstart.md`
+- **Redis**: `monitoring/logging-system.md`, `infrastructure/circuit-breaker-service.md`
+- **Docker**: `core/docker.md`, `setup/docker-quickstart.md`
+- **TypeScript**: `FOLDER_STRUCTURE_GUIDE.md`, `core/api-key-authentication.md`
+- **Fastify**: `ARCHITECTURE_OVERVIEW.md`, `features/websocket-service.md`
+
+### **🔍 Search by Feature**
+- **Authentication**: `core/api-key-authentication.md`, `core/rbac-system.md`
+- **File Storage**: `features/storage-service.md`, `features/storage-shared-files.md`
+- **Monitoring**: `monitoring/logging-system.md`, `monitoring/fluent-bit-setup.md`
+- **Real-time**: `features/websocket-service.md`, `features/notification-database-schema.md`
+- **Security**: `features/file-access-control-plugin.md`, `infrastructure/secrets-manager-service.md`
+
+---
+
+## 📝 **Documentation Standards**
+
+### **📋 Document Structure**
+All documentation follows this standard structure:
+1. **Overview** - What this document covers
+2. **Architecture** - How the system works
+3. **Usage Examples** - Practical implementation
+4. **Configuration** - Environment setup
+5. **API Reference** - Endpoints and methods
+6. **Troubleshooting** - Common issues and solutions
+
+### **🎯 Writing Guidelines**
+- **Audience-First**: Written for specific developer personas
+- **Example-Driven**: Code examples for every concept
+- **Healthcare-Focused**: Real healthcare use cases
+- **Production-Ready**: Production deployment considerations
+
+### **🏷️ Document Tags**
+- **📚 Complete Guide** - Comprehensive documentation
+- **⚡ Quick Reference** - Fast lookup guides
+- **🚀 Getting Started** - Beginner-friendly tutorials
+- **🔧 Advanced** - Expert-level configuration
+- **🏥 Healthcare** - HIPAA and compliance-focused
+
+---
+
+## 🤝 **Contributing to Documentation**
+
+### **📝 Adding New Documentation**
+1. **Follow naming convention**: `feature-name-type.md`
+2. **Place in correct folder**: setup/, core/, features/, infrastructure/, monitoring/
+3. **Use standard structure**: Overview → Usage → Configuration → API
+4. **Include examples**: Real healthcare/ERP scenarios
+5. **Update this index**: Add to appropriate sections
+
+### **✏️ Improving Existing Docs**
+1. **Check for accuracy**: Ensure examples work
+2. **Add missing sections**: Fill gaps in coverage
+3. **Update screenshots**: Keep visuals current
+4. **Cross-reference**: Link related documentation
+
+### **🔍 Documentation Review Checklist**
+- [ ] **Clear objectives** - What will readers learn?
+- [ ] **Working examples** - All code examples tested
+- [ ] **Production ready** - Deployment considerations included
+- [ ] **Healthcare context** - Relevant use cases provided
+- [ ] **Cross-linked** - Related docs referenced
+- [ ] **Updated index** - This README.md updated
+
+---
+
+## 📞 **Getting Help**
+
+### **🔍 Can't Find What You Need?**
+1. **Search this index** for related topics
+2. **Check the main README** for quick start info
+3. **Review architecture docs** for system understanding
+4. **Consult feature-specific guides** for detailed implementation
+
+### **🐛 Found an Issue?**
+- **Documentation errors**: Open issue with "docs" label
+- **Missing examples**: Request examples in discussions
+- **Outdated information**: Submit PR with corrections
+
+### **💡 Suggestions**
+- **New documentation needs**: Open discussion
+- **Better organization**: Suggest improvements
+- **Additional examples**: Share your use cases
 
 ---
 
 <div align="center">
 
-**🏥 Built for Healthcare • 🔒 Security First • ⚡ Production Ready**
+**📚 Complete • 🎯 Practical • 🏥 Healthcare-Ready**
 
-[⭐ Star the Project](https://github.com/your-org/aegisx-boilerplate) • [💬 Join Discussions](https://github.com/your-org/aegisx-boilerplate/discussions) • [📧 Get Support](mailto:support@aegisx.com)
+Last updated: January 2025 | AegisX Boilerplate v2.0
 
 </div>

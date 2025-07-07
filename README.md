@@ -190,21 +190,40 @@ npm run db:seed
 
 ## 📚 Documentation
 
-### **📖 Getting Started**
-- [🏗️ Architecture Overview](./docs/ARCHITECTURE_OVERVIEW.md) - Complete system architecture
-- [📂 Folder Structure Guide](./docs/FOLDER_STRUCTURE_GUIDE.md) - Project organization
-- [⚡ Quick Start Guide](./docs/database-quickstart.md) - 5-minute setup
+### **📖 Complete Documentation Hub**
+🎯 **[📚 Documentation Index](./docs/README.md)** - **START HERE** - Complete navigation to all guides
+
+### **🚀 Essential Guides**
+| Guide | Description | Quick Link |
+|-------|-------------|------------|
+| **🏗️ Architecture** | 4-layer system design | [View Guide](./docs/ARCHITECTURE_OVERVIEW.md) |
+| **📂 Project Structure** | Folder organization | [View Guide](./docs/FOLDER_STRUCTURE_GUIDE.md) |
+| **📋 Feature Overview** | Complete feature summary | [View Guide](./docs/feature-summary.md) |
+| **🔐 Authentication** | JWT + API key system | [View Guide](./docs/api-key-authentication.md) |
 
 ### **🔧 Core Systems**
-- [📝 Structured Logging System](./docs/STRUCTURED_LOGGING_SYSTEM.md) - Logging architecture
-- [💡 How to Use Logging](./docs/HOW_TO_USE_LOGGING.md) - Developer guide
-- [🪶 Lightweight Log Monitoring](./docs/LIGHTWEIGHT_LOG_MONITORING.md) - Monitoring options
-- [🗄️ Database Integration](./docs/database.md) - PostgreSQL + Knex.js setup
+| System | Description | Quick Link |
+|--------|-------------|------------|
+| **📝 Logging** | Structured logging & monitoring | [View Guide](./docs/logging-system.md) |
+| **📊 Audit System** | HIPAA-compliant audit trails | [View Guide](./docs/audit-logging.md) |
+| **👥 RBAC** | Role-based access control | [View Guide](./docs/rbac-system.md) |
+| **🗄️ Database** | PostgreSQL integration | [View Guide](./docs/database.md) |
 
-### **🚀 Development**
-- [🚀 Core Development Roadmap](./docs/CORE_DEVELOPMENT_ROADMAP.md) - Development priorities
-- [🐳 Docker Setup](./docs/docker.md) - Container orchestration
-- [⚙️ Environment Configuration](./.env.example) - Configuration reference
+### **🏥 Healthcare Features**
+| Feature | Description | Quick Link |
+|---------|-------------|------------|
+| **📁 Storage** | File management & sharing | [View Guide](./docs/storage-service.md) |
+| **🎨 Image Processing** | Medical image manipulation | [View Guide](./docs/image-processing-service.md) |
+| **📊 Report Builder** | Low-code analytics | [View Guide](./docs/report-builder.md) |
+| **🌐 WebSocket** | Real-time communication | [View Guide](./docs/websocket-service.md) |
+
+### **🚀 Development & Deployment**
+| Topic | Description | Quick Link |
+|-------|-------------|------------|
+| **🗺️ Roadmap** | Development priorities | [View Guide](./docs/CORE_DEVELOPMENT_ROADMAP.md) |
+| **🐳 Docker** | Container orchestration | [View Guide](./docs/docker.md) |
+| **⚙️ Environment** | Configuration reference | [View File](./.env.example) |
+| **🚀 Production** | Deployment guide | [View Guide](./docs/production-deployment-guide.md) |
 
 ---
 
