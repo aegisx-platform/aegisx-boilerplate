@@ -213,6 +213,7 @@ Healthcare features in `/features/` directory:
 - `docs/storage-database.md` - **📁 Storage database integration guide** (comprehensive storage persistence)
 - `docs/storage-shared-files.md` - **🤝 Shared Files Management documentation** (collaborative file sharing with permissions)
 - `docs/file-access-control-plugin.md` - **🔐 File Access Control Plugin documentation** (security middleware for file operations)
+- `docs/websocket-service.md` - **🌐 WebSocket Service documentation** (complete real-time communication system with connection management)
 - `docs/thumbnail-generation.md` - **🖼️ Thumbnail Generation Service documentation** (automatic image thumbnail creation with Sharp)
 - `docs/image-processing-service.md` - **🎨 Image Processing Service documentation** (comprehensive Sharp.js integration with storage system)
 
@@ -505,6 +506,14 @@ This is designed for healthcare applications requiring:
 - Scalable architecture for enterprise healthcare systems
 
 ## Recent Development Focus
+- **✅ WebSocket Service**: Complete real-time communication system for enterprise applications
+  - **✅ Core Infrastructure**: Enterprise-grade WebSocket plugin with connection management and channel subscriptions
+  - **✅ Report Integration**: Real-time report progress tracking, live data streaming, and system notifications
+  - **✅ Connection Management**: Automatic cleanup, health monitoring, and user-specific messaging
+  - **✅ Channel System**: Topic-based message routing with subscription management
+  - **✅ Enterprise Features**: Authentication integration, error handling, and structured logging
+  - **✅ API Endpoints**: `/ws`, `/ws/health`, `/reports/progress/:id`, `/reports/stream/:id`, `/reports/notifications`
+  - **✅ Complete Documentation**: Comprehensive usage guide with JavaScript examples and testing instructions
 - **✅ Image Processing Service**: Complete Sharp.js image processing integration with storage system
   - **✅ Comprehensive Operations**: Resize, crop, rotate, filters, color adjustments, watermarking
   - **✅ Format Conversion**: JPEG, PNG, WebP, AVIF, TIFF support with quality controls
