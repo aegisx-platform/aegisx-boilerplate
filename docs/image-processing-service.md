@@ -526,6 +526,455 @@ IMAGE_AUDIT_ALL_OPERATIONS=true     # Log all operations
 - Verify healthcare compliance settings
 - Check audit logs for confirmation
 
+## Use Cases & Examples
+
+### 🏥 **Healthcare & Medical Applications**
+
+#### **Medical Record Processing**
+```json
+{
+  "operations": {
+    "resize": {
+      "width": 2048,
+      "height": 2048,
+      "fit": "inside",
+      "withoutEnlargement": true
+    },
+    "sharpen": {
+      "sigma": 1.5,
+      "flat": 2,
+      "jagged": 3
+    },
+    "modulate": {
+      "brightness": 1.2,
+      "saturation": 0.9
+    },
+    "format": "tiff",
+    "quality": 100,
+    "progressive": false
+  },
+  "saveAsNew": true,
+  "filename": "xray_enhanced_for_diagnosis.tiff"
+}
+```
+
+#### **HIPAA Compliant Patient Privacy**
+```json
+{
+  "operations": {
+    "resize": {
+      "width": 1024,
+      "height": 768,
+      "fit": "inside"
+    },
+    "watermark": {
+      "text": "PATIENT ID: ******* - CONFIDENTIAL",
+      "position": "bottom-right",
+      "opacity": 0.8
+    },
+    "format": "jpeg",
+    "quality": 95,
+    "stripMetadata": true
+  },
+  "saveAsNew": true,
+  "filename": "patient_image_hipaa_compliant.jpg"
+}
+```
+
+### 💼 **Enterprise & Business**
+
+#### **Document Processing**
+```json
+{
+  "operations": {
+    "resize": {
+      "width": 2480,
+      "height": 3508,
+      "fit": "inside",
+      "withoutEnlargement": true
+    },
+    "rotate": {
+      "angle": 2,
+      "background": "#ffffff"
+    },
+    "sharpen": true,
+    "modulate": {
+      "brightness": 1.15,
+      "saturation": 0.8
+    },
+    "watermark": {
+      "text": "AegisX Corporation - Internal Document",
+      "position": "top-right",
+      "opacity": 0.6
+    },
+    "format": "pdf",
+    "quality": 100
+  },
+  "saveAsNew": true,
+  "filename": "company_document_processed.pdf"
+}
+```
+
+#### **Employee ID Card Processing**
+```json
+{
+  "operations": {
+    "resize": {
+      "width": 300,
+      "height": 400,
+      "fit": "cover"
+    },
+    "crop": {
+      "left": 25,
+      "top": 50,
+      "width": 250,
+      "height": 300
+    },
+    "sharpen": true,
+    "modulate": {
+      "brightness": 1.05,
+      "saturation": 1.1
+    },
+    "format": "png",
+    "quality": 100
+  },
+  "saveAsNew": true,
+  "filename": "employee_id_photo.png"
+}
+```
+
+### 🛒 **E-commerce & Retail**
+
+#### **Product Catalog Optimization**
+```json
+{
+  "operations": {
+    "resize": {
+      "width": 1000,
+      "height": 1000,
+      "fit": "contain",
+      "withoutEnlargement": true
+    },
+    "crop": {
+      "left": 50,
+      "top": 50,
+      "width": 900,
+      "height": 900
+    },
+    "sharpen": {
+      "sigma": 1.2,
+      "flat": 1,
+      "jagged": 2
+    },
+    "modulate": {
+      "brightness": 1.05,
+      "saturation": 1.15
+    },
+    "watermark": {
+      "text": "© AegisX Store - Premium Quality",
+      "position": "bottom-right",
+      "opacity": 0.6
+    },
+    "format": "webp",
+    "quality": 88
+  },
+  "saveAsNew": true,
+  "filename": "product_catalog_optimized.webp"
+}
+```
+
+#### **Mobile App Thumbnails**
+```json
+{
+  "operations": {
+    "resize": {
+      "width": 300,
+      "height": 300,
+      "fit": "cover"
+    },
+    "sharpen": true,
+    "modulate": {
+      "brightness": 1.1,
+      "saturation": 1.2
+    },
+    "format": "webp",
+    "quality": 85
+  },
+  "saveAsNew": true,
+  "filename": "product_mobile_thumb.webp"
+}
+```
+
+### 📱 **Social Media & Marketing**
+
+#### **Instagram Posts**
+```json
+{
+  "operations": {
+    "resize": {
+      "width": 1080,
+      "height": 1080,
+      "fit": "cover"
+    },
+    "modulate": {
+      "brightness": 1.05,
+      "saturation": 1.3,
+      "hue": 5
+    },
+    "sharpen": true,
+    "watermark": {
+      "text": "@AegisX_Official #AegisXTech",
+      "position": "bottom-left",
+      "opacity": 0.9
+    },
+    "format": "jpeg",
+    "quality": 90,
+    "progressive": true
+  },
+  "saveAsNew": true,
+  "filename": "instagram_post_1080x1080.jpg"
+}
+```
+
+#### **YouTube Thumbnails**
+```json
+{
+  "operations": {
+    "resize": {
+      "width": 1280,
+      "height": 720,
+      "fit": "cover"
+    },
+    "sharpen": true,
+    "modulate": {
+      "brightness": 1.15,
+      "saturation": 1.4
+    },
+    "watermark": {
+      "text": "AegisX Tech Channel",
+      "position": "top-right",
+      "opacity": 0.85
+    },
+    "format": "jpeg",
+    "quality": 95
+  },
+  "saveAsNew": true,
+  "filename": "youtube_thumbnail_hd.jpg"
+}
+```
+
+### 🎨 **Creative & Design**
+
+#### **Portfolio Images**
+```json
+{
+  "operations": {
+    "resize": {
+      "width": 1200,
+      "height": 800,
+      "fit": "inside"
+    },
+    "rotate": {
+      "angle": 2,
+      "background": "#f8f8f8"
+    },
+    "modulate": {
+      "brightness": 0.95,
+      "saturation": 1.2,
+      "hue": 15
+    },
+    "sharpen": {
+      "sigma": 1.0,
+      "flat": 1,
+      "jagged": 2
+    },
+    "watermark": {
+      "text": "© AegisX Creative Studio 2024",
+      "position": "bottom-right",
+      "opacity": 0.5
+    },
+    "format": "jpeg",
+    "quality": 95
+  },
+  "saveAsNew": true,
+  "filename": "portfolio_artwork.jpg"
+}
+```
+
+#### **Artistic Effects**
+```json
+{
+  "operations": {
+    "resize": {
+      "width": 800,
+      "height": 600,
+      "fit": "inside"
+    },
+    "rotate": {
+      "angle": 45,
+      "background": "#000000"
+    },
+    "flip": true,
+    "blur": 2.0,
+    "modulate": {
+      "brightness": 0.8,
+      "saturation": 2.0,
+      "hue": 180
+    },
+    "watermark": {
+      "text": "Digital Art - AegisX Studio",
+      "position": "center",
+      "opacity": 0.4
+    },
+    "format": "png",
+    "quality": 100
+  },
+  "saveAsNew": true,
+  "filename": "digital_art_effect.png"
+}
+```
+
+## Batch Processing Examples
+
+### **Healthcare Workflow**
+```javascript
+// Process multiple medical images with HIPAA compliance
+const medicalImages = ['scan1.jpg', 'scan2.jpg', 'scan3.jpg'];
+
+for (const imageId of medicalImages) {
+  await fetch(`/api/v1/storage/images/process/${imageId}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer token',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      operations: {
+        resize: { width: 2048, height: 2048, fit: 'inside' },
+        sharpen: { sigma: 1.5, flat: 2, jagged: 3 },
+        modulate: { brightness: 1.1, saturation: 0.95 },
+        watermark: {
+          text: 'PATIENT CONFIDENTIAL - Hospital ID: 12345',
+          position: 'bottom-right',
+          opacity: 0.8
+        },
+        format: 'tiff',
+        quality: 100,
+        stripMetadata: true  // HIPAA compliance
+      },
+      saveAsNew: true,
+      filename: `medical_processed_${imageId.split('.')[0]}.tiff`
+    })
+  });
+}
+```
+
+### **E-commerce Product Pipeline**
+```javascript
+// Create multiple product image sizes
+const productSizes = [
+  { width: 300, height: 300, suffix: 'thumb' },
+  { width: 800, height: 800, suffix: 'medium' },
+  { width: 1600, height: 1600, suffix: 'large' }
+];
+
+for (const size of productSizes) {
+  await fetch(`/api/v1/storage/images/process/${productId}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer token',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      operations: {
+        resize: { 
+          width: size.width, 
+          height: size.height, 
+          fit: 'contain',
+          withoutEnlargement: true 
+        },
+        sharpen: true,
+        modulate: { brightness: 1.05, saturation: 1.1 },
+        watermark: {
+          text: '© AegisX Store',
+          position: 'bottom-right',
+          opacity: 0.5
+        },
+        format: 'webp',
+        quality: 90
+      },
+      saveAsNew: true,
+      filename: `product_${size.suffix}.webp`
+    })
+  });
+}
+```
+
+## Use Case Best Practices
+
+### **Healthcare Applications**
+- **Quality**: Use 95-100 for diagnostic images
+- **Privacy**: Always enable `stripMetadata: true` for HIPAA compliance
+- **Format**: Use TIFF for high-precision medical images
+- **Watermarking**: Include patient confidentiality notices
+- **Storage**: Implement proper access controls and audit logging
+
+### **Business & Enterprise**
+- **Documents**: Use PDF format for official documents
+- **Quality**: 90-95 quality for print materials
+- **Watermarking**: Include company branding and document classification
+- **Security**: Strip metadata for sensitive documents
+- **Archival**: Use lossless formats for important records
+
+### **E-commerce Applications**
+- **Web Optimization**: Use WebP format for faster loading
+- **Quality**: 85-90 quality for web display
+- **Responsive**: Create multiple sizes for different devices
+- **Branding**: Include store watermarks and copyright notices
+- **Performance**: Optimize for mobile viewing
+
+### **Social Media & Marketing**
+- **Platform Specific**: Use recommended dimensions for each platform
+- **Visual Appeal**: Increase saturation (1.2-1.4) for vibrant colors
+- **Branding**: Include social media handles and hashtags
+- **Engagement**: Optimize for thumbnail visibility
+- **Format**: Use JPEG for photos, PNG for graphics
+
+### **Creative & Design**
+- **Artistic Freedom**: Experiment with rotation, filters, and effects
+- **Quality**: Use high quality (95-100) for portfolio pieces
+- **Formats**: PNG for graphics with transparency, JPEG for photos
+- **Attribution**: Include artist/studio watermarks
+- **Preservation**: Keep original metadata when appropriate
+
+## Common Dimension Guidelines
+
+### **Social Media Platforms**
+- **Instagram Post**: 1080x1080px
+- **Instagram Story**: 1080x1920px
+- **Facebook Post**: 1200x630px
+- **Twitter Header**: 1500x500px
+- **YouTube Thumbnail**: 1280x720px
+- **LinkedIn Post**: 1200x627px
+
+### **E-commerce Standards**
+- **Product Thumbnail**: 300x300px
+- **Product Gallery**: 800x800px
+- **Zoom Image**: 1600x1600px
+- **Category Banner**: 1200x400px
+
+### **Print Specifications**
+- **A4 Document**: 2480x3508px (300 DPI)
+- **Letter Size**: 2550x3300px (300 DPI)
+- **Business Card**: 1050x600px (300 DPI)
+- **Poster A3**: 3508x4961px (300 DPI)
+
+### **Medical Imaging**
+- **Standard X-Ray**: 2048x2048px
+- **CT Scan**: 512x512px (standard) to 1024x1024px (high-res)
+- **MRI**: 256x256px to 512x512px
+- **Digital Radiography**: 2048x2048px to 4096x4096px
+
 ### Support
 
 For technical support or feature requests, please refer to the main project documentation or submit an issue through the project's issue tracking system.

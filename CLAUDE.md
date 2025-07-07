@@ -514,7 +514,8 @@ This is designed for healthcare applications requiring:
   - **✅ Intelligent Operations**: Smart skipping of invalid operations (tiny crops, oversized watermarks)
   - **✅ Multi-step Processing**: Proper sequencing of resize → crop → filters → watermark operations
   - **✅ Production Ready**: Tested and working with comprehensive error handling
-  - **✅ Documentation**: Complete usage guide with examples and best practices
+  - **✅ Documentation**: Complete usage guide with real-world use cases and industry examples
+  - **✅ Use Case Library**: 20+ practical examples covering healthcare, business, e-commerce, social media
 - **✅ Thumbnail Generation Service**: Complete image thumbnail generation with Sharp library
   - **✅ Optional Generation**: User can choose whether to generate thumbnails
   - **✅ Custom Sizes**: Support for custom thumbnail sizes and configurations
