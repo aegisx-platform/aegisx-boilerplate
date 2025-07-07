@@ -37,7 +37,7 @@ export interface StorageFileRecord {
 export interface StorageOperationRecord {
   id: string
   file_id: string
-  operation: 'upload' | 'download' | 'delete' | 'copy' | 'move' | 'update_metadata'
+  operation: 'upload' | 'download' | 'delete' | 'copy' | 'move' | 'update_metadata' | 'image_process' | 'image_convert' | 'image_optimize'
   status: 'success' | 'failed' | 'pending'
   provider: string
   bytes_transferred?: number

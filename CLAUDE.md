@@ -16,6 +16,7 @@ AegisX Boilerplate is a production-ready Fastify API boilerplate designed for He
 - **Logging**: Winston structured logging with multiple adapters
 - **Monitoring**: Seq and Grafana + Loki support
 - **Documentation**: Swagger/OpenAPI 3.0
+- **Image Processing**: Sharp.js for comprehensive image operations
 
 ## Project Structure
 
@@ -111,6 +112,7 @@ domain-name/
   - **Custom Metrics Service** - Business and performance monitoring
   - **Notification Service** - Multi-channel notifications (email, SMS, push)
   - **Storage Service** - Multi-provider file storage with HIPAA compliance
+  - **Image Processing Service** - Comprehensive Sharp.js integration with storage system
 
 ### 🚧 Structured But Not Implemented
 Healthcare features in `/features/` directory:
@@ -211,6 +213,7 @@ Healthcare features in `/features/` directory:
 - `docs/storage-shared-files.md` - **🤝 Shared Files Management documentation** (collaborative file sharing with permissions)
 - `docs/file-access-control-plugin.md` - **🔐 File Access Control Plugin documentation** (security middleware for file operations)
 - `docs/thumbnail-generation.md` - **🖼️ Thumbnail Generation Service documentation** (automatic image thumbnail creation with Sharp)
+- `docs/image-processing-service.md` - **🎨 Image Processing Service documentation** (comprehensive Sharp.js integration with storage system)
 
 ### Configuration Files
 - `knexfile.ts` / `knexfile.prod.js` - Database configuration
@@ -229,8 +232,10 @@ Healthcare features in `/features/` directory:
 - `apps/api/src/app/core/plugins/security/file-access-control.ts` - **File access control middleware with caching & audit**
 - `apps/api/src/app/core/shared/services/` - Enterprise infrastructure services
 - `apps/api/src/app/core/shared/services/storage.service.ts` - **Enterprise storage service with database integration**
+- `apps/api/src/app/core/shared/services/image-processing.service.ts` - **Image Processing Service with Sharp.js integration**
 - `apps/api/src/app/domains/auth/` - **Authentication domain with JWT & API key support**
 - `apps/api/src/app/domains/storage/` - **Storage domain with database persistence & shared files management**
+- `apps/api/src/app/domains/storage/controllers/storage-image-controller.ts` - **Image processing API controller**
 
 ### Monitoring & Logging
 - `config/fluent-bit*.conf` - Fluent Bit configurations (simple, advanced, Graylog)
@@ -499,6 +504,17 @@ This is designed for healthcare applications requiring:
 - Scalable architecture for enterprise healthcare systems
 
 ## Recent Development Focus
+- **✅ Image Processing Service**: Complete Sharp.js image processing integration with storage system
+  - **✅ Comprehensive Operations**: Resize, crop, rotate, filters, color adjustments, watermarking
+  - **✅ Format Conversion**: JPEG, PNG, WebP, AVIF, TIFF support with quality controls
+  - **✅ Healthcare Compliance**: HIPAA-compliant metadata stripping and audit logging
+  - **✅ Storage Integration**: Full integration with existing authentication and file access control
+  - **✅ API Endpoints**: 5 comprehensive endpoints for processing, conversion, optimization, metadata
+  - **✅ Parameter Validation**: Robust error handling for invalid parameters and type mismatches
+  - **✅ Intelligent Operations**: Smart skipping of invalid operations (tiny crops, oversized watermarks)
+  - **✅ Multi-step Processing**: Proper sequencing of resize → crop → filters → watermark operations
+  - **✅ Production Ready**: Tested and working with comprehensive error handling
+  - **✅ Documentation**: Complete usage guide with examples and best practices
 - **✅ Thumbnail Generation Service**: Complete image thumbnail generation with Sharp library
   - **✅ Optional Generation**: User can choose whether to generate thumbnails
   - **✅ Custom Sizes**: Support for custom thumbnail sizes and configurations

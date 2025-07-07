@@ -11,7 +11,7 @@ import crypto from 'crypto'
 import { promisify } from 'util'
 import zlib from 'zlib'
 import { v4 as uuidv4 } from 'uuid'
-import { ThumbnailService } from '../thumbnail.service'
+import { ImageProcessingService } from '../image-processing.service'
 import {
   IStorageProvider,
   StorageConfig,
@@ -40,7 +40,7 @@ const gunzip = promisify(zlib.gunzip)
 
 export class LocalStorageProvider implements IStorageProvider {
   private connected = false
-  private thumbnailService = new ThumbnailService()
+  private thumbnailService = new ImageProcessingService()
   private stats = {
     uploads: 0,
     downloads: 0,
@@ -172,7 +172,7 @@ export class LocalStorageProvider implements IStorageProvider {
 
       // Generate thumbnails if requested and supported
       let thumbnailInfo: any[] = []
-      if (request.options?.generateThumbnail && ThumbnailService.canGenerateThumbnail(request.mimeType)) {
+      if (request.options?.generateThumbnail && ImageProcessingService.canGenerateThumbnail(request.mimeType)) {
         try {
           thumbnailInfo = await this.generateThumbnails(fileId, request, fullPath)
         } catch (thumbnailError) {
@@ -1020,9 +1020,9 @@ export class LocalStorageProvider implements IStorageProvider {
       // Save each thumbnail
       for (let i = 0; i < thumbnails.length; i++) {
         const thumbnail = thumbnails[i]
-        const size = request.options?.thumbnailSizes?.[i] || ThumbnailService.getDefaultSizes()[i]
+        const size = request.options?.thumbnailSizes?.[i] || ImageProcessingService.getDefaultSizes()[i]
         
-        const thumbnailFilename = ThumbnailService.generateThumbnailFilename(
+        const thumbnailFilename = ImageProcessingService.generateThumbnailFilename(
           request.filename,
           size,
           fileId

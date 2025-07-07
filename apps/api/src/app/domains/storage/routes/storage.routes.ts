@@ -7,6 +7,7 @@
 import { FastifyInstance } from 'fastify'
 import multipart from '@aegisx/fastify-multipart'
 import { StorageController } from '../controllers/storage-controller'
+import { StorageImageController } from '../controllers/storage-image-controller'
 import { StorageDatabaseService } from '../services/storage-database-service'
 import { StorageFileRepository } from '../repositories/storage-file-repository'
 import { storageFactory } from '../../../core/shared/services/storage.factory'
@@ -82,6 +83,7 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
   }
 
   const controller = new StorageController((fastify as any).storage, databaseService)
+  const imageController = new StorageImageController((fastify as any).storage, databaseService)
 
   // Upload file
   fastify.post('/upload', {
@@ -400,6 +402,397 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
     }
   }, async (request, reply) => {
     return controller.revokeShare(request as any, reply)
+  })
+
+  // ================================
+  // Image Processing API Endpoints
+  // ================================
+
+  // Process image with comprehensive operations
+  fastify.post('/images/process/:fileId', {
+    preHandler: [
+      (fastify as any).authenticate,
+      (fastify as any).checkFileAccess('read')
+    ],
+    schema: {
+      description: 'Process image with comprehensive operations including resize, crop, rotate, filters, and format conversion',
+      summary: 'Process image with operations',
+      tags: ['Storage', 'Image Processing'],
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        properties: {
+          fileId: { type: 'string', format: 'uuid', description: 'ID of the image file to process' }
+        },
+        required: ['fileId']
+      },
+      body: {
+        type: 'object',
+        properties: {
+          operations: {
+            type: 'object',
+            description: 'Image processing operations to apply',
+            properties: {
+              resize: {
+                type: 'object',
+                properties: {
+                  width: { type: 'number', minimum: 1, maximum: 4096 },
+                  height: { type: 'number', minimum: 1, maximum: 4096 },
+                  fit: { type: 'string', enum: ['cover', 'contain', 'fill', 'inside', 'outside'] },
+                  withoutEnlargement: { type: 'boolean' }
+                }
+              },
+              crop: {
+                type: 'object',
+                properties: {
+                  left: { type: 'number', minimum: 0 },
+                  top: { type: 'number', minimum: 0 },
+                  width: { type: 'number', minimum: 1 },
+                  height: { type: 'number', minimum: 1 }
+                },
+                required: ['left', 'top', 'width', 'height']
+              },
+              rotate: {
+                type: 'object',
+                properties: {
+                  angle: { type: 'number', minimum: -360, maximum: 360 },
+                  background: { type: 'string', pattern: '^#[0-9a-fA-F]{6}$' }
+                },
+                required: ['angle']
+              },
+              flip: { type: 'boolean' },
+              flop: { type: 'boolean' },
+              format: { type: 'string', enum: ['jpeg', 'png', 'webp', 'avif', 'tiff', 'gif'] },
+              quality: { type: 'number', minimum: 1, maximum: 100 },
+              progressive: { type: 'boolean' },
+              blur: { type: ['number', 'boolean'] },
+              sharpen: { type: ['boolean', 'object'] },
+              grayscale: { type: 'boolean' },
+              modulate: {
+                type: 'object',
+                properties: {
+                  brightness: { type: 'number', minimum: 0, maximum: 3 },
+                  saturation: { type: 'number', minimum: 0, maximum: 3 },
+                  hue: { type: 'number', minimum: -360, maximum: 360 }
+                }
+              },
+              watermark: {
+                type: 'object',
+                properties: {
+                  text: { type: 'string', maxLength: 100 },
+                  position: { type: 'string', enum: ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center'] },
+                  opacity: { type: 'number', minimum: 0, maximum: 1 }
+                }
+              }
+            }
+          },
+          saveAsNew: { type: 'boolean', default: true, description: 'Save as new file or overwrite original' },
+          filename: { type: 'string', maxLength: 255, description: 'Custom filename for processed image' }
+        },
+        required: ['operations']
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            originalFileId: { type: 'string' },
+            processedFileId: { type: 'string' },
+            operation: { type: 'string' },
+            parameters: { type: 'object' },
+            processingTime: { type: 'number' },
+            metadata: {
+              type: 'object',
+              properties: {
+                originalSize: { type: 'number' },
+                processedSize: { type: 'number' },
+                format: { type: 'string' },
+                dimensions: {
+                  type: 'object',
+                  properties: {
+                    original: {
+                      type: 'object',
+                      properties: {
+                        width: { type: 'number' },
+                        height: { type: 'number' }
+                      }
+                    },
+                    processed: {
+                      type: 'object',
+                      properties: {
+                        width: { type: 'number' },
+                        height: { type: 'number' }
+                      }
+                    }
+                  }
+                },
+                operations: { type: 'array', items: { type: 'string' } }
+              }
+            }
+          }
+        },
+        400: ErrorResponseSchema,
+        404: ErrorResponseSchema,
+        500: ErrorResponseSchema
+      }
+    }
+  }, async (request, reply) => {
+    return imageController.processImage(request as any, reply)
+  })
+
+  // Convert image format
+  fastify.post('/images/convert/:fileId', {
+    preHandler: [
+      (fastify as any).authenticate,
+      (fastify as any).checkFileAccess('read')
+    ],
+    schema: {
+      description: 'Convert image to different format with quality options',
+      summary: 'Convert image format',
+      tags: ['Storage', 'Image Processing'],
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        properties: {
+          fileId: { type: 'string', format: 'uuid', description: 'ID of the image file to convert' }
+        },
+        required: ['fileId']
+      },
+      body: {
+        type: 'object',
+        properties: {
+          format: { 
+            type: 'string', 
+            enum: ['jpeg', 'png', 'webp', 'avif', 'tiff'],
+            description: 'Target format for conversion'
+          },
+          quality: { 
+            type: 'number', 
+            minimum: 1, 
+            maximum: 100,
+            description: 'Quality level (1-100)'
+          },
+          lossless: { type: 'boolean', description: 'Use lossless compression (WebP/AVIF only)' },
+          progressive: { type: 'boolean', description: 'Progressive encoding for JPEG' },
+          saveAsNew: { type: 'boolean', default: true, description: 'Save as new file or overwrite original' },
+          filename: { type: 'string', maxLength: 255, description: 'Custom filename for converted image' }
+        },
+        required: ['format']
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            originalFileId: { type: 'string' },
+            processedFileId: { type: 'string' },
+            operation: { type: 'string' },
+            parameters: { type: 'object' },
+            processingTime: { type: 'number' },
+            metadata: {
+              type: 'object',
+              properties: {
+                originalSize: { type: 'number' },
+                processedSize: { type: 'number' },
+                format: { type: 'string' },
+                dimensions: {
+                  type: 'object',
+                  properties: {
+                    original: {
+                      type: 'object',
+                      properties: {
+                        width: { type: 'number' },
+                        height: { type: 'number' }
+                      }
+                    },
+                    processed: {
+                      type: 'object',
+                      properties: {
+                        width: { type: 'number' },
+                        height: { type: 'number' }
+                      }
+                    }
+                  }
+                },
+                operations: { type: 'array', items: { type: 'string' } }
+              }
+            }
+          }
+        },
+        400: ErrorResponseSchema,
+        404: ErrorResponseSchema,
+        500: ErrorResponseSchema
+      }
+    }
+  }, async (request, reply) => {
+    return imageController.convertFormat(request as any, reply)
+  })
+
+  // Optimize image (reduce file size)
+  fastify.post('/images/optimize/:fileId', {
+    preHandler: [
+      (fastify as any).authenticate,
+      (fastify as any).checkFileAccess('read')
+    ],
+    schema: {
+      description: 'Optimize image to reduce file size while maintaining quality',
+      summary: 'Optimize image file size',
+      tags: ['Storage', 'Image Processing'],
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        properties: {
+          fileId: { type: 'string', format: 'uuid', description: 'ID of the image file to optimize' }
+        },
+        required: ['fileId']
+      },
+      body: {
+        type: 'object',
+        properties: {
+          quality: { 
+            type: 'number', 
+            minimum: 1, 
+            maximum: 100,
+            description: 'Quality level for optimization (default: 85)'
+          },
+          progressive: { type: 'boolean', description: 'Progressive encoding' },
+          stripMetadata: { type: 'boolean', description: 'Remove EXIF and other metadata for privacy' },
+          saveAsNew: { type: 'boolean', default: true, description: 'Save as new file or overwrite original' },
+          filename: { type: 'string', maxLength: 255, description: 'Custom filename for optimized image' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            originalFileId: { type: 'string' },
+            processedFileId: { type: 'string' },
+            operation: { type: 'string' },
+            parameters: { type: 'object' },
+            processingTime: { type: 'number' },
+            metadata: {
+              type: 'object',
+              properties: {
+                originalSize: { type: 'number' },
+                processedSize: { type: 'number' },
+                format: { type: 'string' },
+                dimensions: {
+                  type: 'object',
+                  properties: {
+                    original: {
+                      type: 'object',
+                      properties: {
+                        width: { type: 'number' },
+                        height: { type: 'number' }
+                      }
+                    },
+                    processed: {
+                      type: 'object',
+                      properties: {
+                        width: { type: 'number' },
+                        height: { type: 'number' }
+                      }
+                    }
+                  }
+                },
+                operations: { type: 'array', items: { type: 'string' } }
+              }
+            }
+          }
+        },
+        400: ErrorResponseSchema,
+        404: ErrorResponseSchema,
+        500: ErrorResponseSchema
+      }
+    }
+  }, async (request, reply) => {
+    return imageController.optimizeImage(request as any, reply)
+  })
+
+  // Get image metadata
+  fastify.get('/images/metadata/:fileId', {
+    preHandler: [
+      (fastify as any).authenticate,
+      (fastify as any).checkFileAccess('read')
+    ],
+    schema: {
+      description: 'Extract comprehensive metadata from image file',
+      summary: 'Get image metadata',
+      tags: ['Storage', 'Image Processing'],
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        properties: {
+          fileId: { type: 'string', format: 'uuid', description: 'ID of the image file' }
+        },
+        required: ['fileId']
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            fileId: { type: 'string' },
+            metadata: {
+              type: 'object',
+              properties: {
+                width: { type: 'number' },
+                height: { type: 'number' },
+                format: { type: 'string' },
+                size: { type: 'number' },
+                colorspace: { type: 'string' },
+                hasAlpha: { type: 'boolean' },
+                density: { type: 'number' },
+                orientation: { type: 'number' },
+                exif: { type: 'object' }
+              }
+            }
+          }
+        },
+        400: ErrorResponseSchema,
+        404: ErrorResponseSchema,
+        500: ErrorResponseSchema
+      }
+    }
+  }, async (request, reply) => {
+    return imageController.getImageMetadata(request as any, reply)
+  })
+
+  // Get supported formats
+  fastify.get('/images/formats', {
+    schema: {
+      description: 'Get list of supported image formats for input and output',
+      summary: 'Get supported image formats',
+      tags: ['Storage', 'Image Processing'],
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            formats: {
+              type: 'object',
+              properties: {
+                input: { type: 'array', items: { type: 'string' } },
+                output: { type: 'array', items: { type: 'string' } },
+                recommended: {
+                  type: 'object',
+                  properties: {
+                    photos: { type: 'string' },
+                    graphics: { type: 'string' },
+                    web: { type: 'string' },
+                    nextGen: { type: 'string' }
+                  }
+                }
+              }
+            }
+          }
+        },
+        500: ErrorResponseSchema
+      }
+    }
+  }, async (request, reply) => {
+    return imageController.getSupportedFormats(request as any, reply)
   })
 }
 

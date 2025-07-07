@@ -32,7 +32,7 @@ export interface DatabaseFileMetadata {
 }
 
 export interface StorageOperationLog {
-  operation: 'upload' | 'download' | 'delete' | 'copy' | 'move' | 'update_metadata'
+  operation: 'upload' | 'download' | 'delete' | 'copy' | 'move' | 'update_metadata' | 'image_process' | 'image_convert' | 'image_optimize'
   status: 'success' | 'failed' | 'pending'
   provider: string
   fileId: string

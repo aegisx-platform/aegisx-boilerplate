@@ -10,7 +10,7 @@ import crypto from 'crypto'
 import { v4 as uuidv4 } from 'uuid'
 import zlib from 'zlib'
 import { promisify } from 'util'
-import { ThumbnailService } from '../thumbnail.service'
+import { ImageProcessingService } from '../image-processing.service'
 import {
   IStorageProvider,
   StorageConfig,
@@ -42,7 +42,7 @@ export class MinIOStorageProvider implements IStorageProvider {
   private client: MinioClient
   private externalClient?: MinioClient // Client for external presigned URLs
   private connected = false
-  private thumbnailService = new ThumbnailService()
+  private thumbnailService = new ImageProcessingService()
   private stats = {
     uploads: 0,
     downloads: 0,
@@ -218,7 +218,7 @@ export class MinIOStorageProvider implements IStorageProvider {
 
       // Generate thumbnails if requested
       let thumbnailInfo: ThumbnailInfo[] = []
-      if (request.options?.generateThumbnail && ThumbnailService.canGenerateThumbnail(request.mimeType)) {
+      if (request.options?.generateThumbnail && ImageProcessingService.canGenerateThumbnail(request.mimeType)) {
         try {
           thumbnailInfo = await this.generateThumbnails(fileId, request, objectName)
         } catch (thumbnailError) {
