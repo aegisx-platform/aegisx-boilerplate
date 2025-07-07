@@ -96,7 +96,7 @@ domain-name/
 - Security middleware (Helmet, Rate Limiting, CORS)
 - API documentation with Swagger
 - Docker setup with health checks
-- **Enterprise Infrastructure Services** (Complete - 15 Services):
+- **Enterprise Infrastructure Services** (Complete - 16 Services):
   - **HTTP Client Service** - Retry, timeout, circuit breaker integration
   - **Secrets Manager Service** - Secure API keys and tokens handling
   - **Background Jobs System** - Async task processing
@@ -113,6 +113,7 @@ domain-name/
   - **Notification Service** - Multi-channel notifications (email, SMS, push)
   - **Storage Service** - Multi-provider file storage with HIPAA compliance
   - **Image Processing Service** - Comprehensive Sharp.js integration with storage system
+  - **WebSocket Service** - Real-time communication with connection management and channel subscriptions
 
 ### 🚧 Structured But Not Implemented
 Healthcare features in `/features/` directory:
@@ -559,7 +560,7 @@ This is designed for healthcare applications requiring:
 9. **Healthcare Features**: Build on existing foundation when boilerplate is complete
 
 ## Key Integration Points
-**When developing new features, ALWAYS integrate with these 15 available services:**
+**When developing new features, ALWAYS integrate with these 16 available services:**
 
 ### Core Services (Must Use)
 - 🔄 **Event Bus**: Cross-domain communication (`fastify.eventBus`)
@@ -571,6 +572,7 @@ This is designed for healthcare applications requiring:
 - 🔗 **HTTP Client**: External APIs (`fastify.httpClient`)
 - 📧 **Notification Service**: User communications (`fastify.notification`)
 - ⚙️ **Background Jobs**: Async processing (`fastify.backgroundJobs`)
+- 🌐 **WebSocket Manager**: Real-time communication (`fastify.websocketManager`)
 
 ### Resilience & Performance
 - 🔄 **Retry Service**: Resilient operations (`fastify.retry`)

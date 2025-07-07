@@ -26,6 +26,7 @@ import templateEngine from './template-engine';
 import customMetrics from './custom-metrics';
 import notification from './notification';
 import fileAccessControl from './security/file-access-control';
+import websocket from './websocket';
 
 const corePlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugins in specific order
@@ -52,6 +53,7 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
   await fastify.register(eventBus);
   await fastify.register(audit);
   await fastify.register(fileAccessControl);
+  await fastify.register(websocket);
   await fastify.register(healthCheck);
 
   fastify.log.info('✅ Core plugins loaded successfully');
