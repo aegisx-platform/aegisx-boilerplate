@@ -13,6 +13,9 @@ import {
   LogoutRequestSchema
 } from '../schemas/auth-schemas';
 
+// Export API Key types
+export * from './api-key.types';
+
 /**
  * TypeScript types derived from TypeBox schemas
  */
@@ -54,6 +57,19 @@ export interface InternalUser extends User {
 }
 
 /**
+ * Basic user data for authentication context
+ */
+export interface UserData {
+  id: string;
+  email: string;
+  username?: string;
+  name: string;
+  roles?: string[];
+  permissions?: string[];
+  is_active: boolean;
+}
+
+/**
  * User creation data interface
  */
 export interface CreateUserData extends RegisterRequest {
@@ -85,10 +101,21 @@ export interface RefreshTokenPayload {
 }
 
 /**
+ * Authentication context for requests
+ */
+export interface AuthContext {
+  method: 'jwt' | 'api_key'
+  userId: string
+  apiKeyId?: string
+  permissions?: Record<string, any>
+}
+
+/**
  * Extended request interface for authenticated routes
  */
 export interface AuthenticatedRequest {
   user: JWTPayload;
+  authContext?: AuthContext;
 }
 
 /**

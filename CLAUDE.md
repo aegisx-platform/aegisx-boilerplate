@@ -84,7 +84,9 @@ domain-name/
 ## Current Implementation Status
 
 ### ✅ Implemented & Ready
-- JWT Authentication with refresh tokens
+- **JWT Authentication** with refresh tokens
+- **API Key Authentication** with dual expiration strategy (cron + Redis TTL)
+- **Dual Authentication Support**: API keys work alongside JWT authentication
 - RBAC system with permission model: `resource:action:scope`
 - Advanced audit system with multiple adapters (Direct DB, Redis Pub/Sub, RabbitMQ)
 - Structured logging system with correlation ID tracking
@@ -194,6 +196,7 @@ Healthcare features in `/features/` directory:
 - `docs/FOLDER_STRUCTURE_GUIDE.md` - **📖 Complete folder structure guide** (must read!)
 - `docs/BOILERPLATE_ROADMAP.md` - **🚀 Development roadmap and feature status** (must read!)
 - `tools/cli/README.md` - **🛠️ CLI scaffolding tool documentation** (must read!)
+- `docs/api-key-authentication.md` - **🔑 API Key Authentication documentation** (enterprise API key management with dual expiration strategy)
 - `docs/notification-service.md` - Notification service usage guide
 - `docs/notification-database-schema.md` - Database schema documentation
 - `docs/storage-database.md` - **📁 Storage database integration guide** (comprehensive storage persistence)
@@ -213,9 +216,11 @@ Healthcare features in `/features/` directory:
 - `apps/api/src/app/core/plugins/logging/` - Structured logging implementation
 - `apps/api/src/app/core/shared/audit/` - Audit system implementation
 - `apps/api/src/app/core/plugins/security/rbac.ts` - RBAC implementation
+- `apps/api/src/app/core/plugins/security/jwt.ts` - **JWT & API Key dual authentication plugin**
 - `apps/api/src/app/core/plugins/security/file-access-control.ts` - **File access control middleware with caching & audit**
 - `apps/api/src/app/core/shared/services/` - Enterprise infrastructure services
 - `apps/api/src/app/core/shared/services/storage.service.ts` - **Enterprise storage service with database integration**
+- `apps/api/src/app/domains/auth/` - **Authentication domain with JWT & API key support**
 - `apps/api/src/app/domains/storage/` - **Storage domain with database persistence & shared files management**
 
 ### Monitoring & Logging
@@ -385,6 +390,27 @@ SERVICE_NAME=aegisx-api
 ENVIRONMENT=development
 ```
 
+### API Key Authentication Environment Variables
+```bash
+# Expiration Strategy Configuration
+API_KEY_EXPIRATION_STRATEGY=hybrid  # cronjob|redis_ttl|hybrid
+API_KEY_CRONJOB_ENABLED=true
+API_KEY_REDIS_TTL_ENABLED=true
+
+# Cron Job Configuration
+API_KEY_CLEANUP_SCHEDULE="0 2 * * *"  # 2 AM daily
+API_KEY_CLEANUP_BATCH_SIZE=100
+
+# Redis TTL Configuration
+API_KEY_REDIS_CHANNEL=api_key_expiration
+API_KEY_PRE_EXPIRATION_HOURS=24
+
+# Security & Limits
+API_KEY_MAX_PER_USER=10
+API_KEY_DEFAULT_RATE_LIMIT=1000
+API_KEY_MAX_RATE_LIMIT=10000
+```
+
 ### Storage Service Environment Variables
 ```bash
 # Storage Provider Configuration
@@ -462,6 +488,7 @@ This is designed for healthcare applications requiring:
 - Scalable architecture for enterprise healthcare systems
 
 ## Recent Development Focus
+- **✅ API Key Authentication**: Enterprise API key management with dual expiration strategy (cron + Redis TTL), comprehensive security features, and full infrastructure integration
 - **✅ CLI Scaffolding Tool**: Complete healthcare-focused code generator with templates
 - **✅ Storage Database Integration**: Complete database persistence layer for storage service with 5-table schema
 - **✅ Shared Files Management**: Complete collaborative file sharing with granular permissions, user management, and revocation
