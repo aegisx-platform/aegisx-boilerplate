@@ -75,7 +75,15 @@ export async function seed(knex: Knex): Promise<void> {
     
     // Audit Logs
     { resource: 'audit', action: 'read', scope: 'own', display_name: 'View Own Activity', description: 'View own activity logs' },
-    { resource: 'audit', action: 'read', scope: 'all', display_name: 'View All Audit Logs', description: 'View all system audit logs' }
+    { resource: 'audit', action: 'read', scope: 'all', display_name: 'View All Audit Logs', description: 'View all system audit logs' },
+    
+    // API Keys
+    { resource: 'api_keys', action: 'create', scope: 'own', display_name: 'Create API Keys', description: 'Create own API keys' },
+    { resource: 'api_keys', action: 'read', scope: 'own', display_name: 'View Own API Keys', description: 'View own API keys' },
+    { resource: 'api_keys', action: 'update', scope: 'own', display_name: 'Update Own API Keys', description: 'Update own API keys' },
+    { resource: 'api_keys', action: 'delete', scope: 'own', display_name: 'Delete Own API Keys', description: 'Delete own API keys' },
+    { resource: 'api_keys', action: 'read', scope: 'all', display_name: 'View All API Keys', description: 'View all API keys (admin)' },
+    { resource: 'api_keys', action: 'delete', scope: 'all', display_name: 'Delete All API Keys', description: 'Delete any API keys (admin)' }
   ].map(p => ({
     id: knex.raw('gen_random_uuid()'),
     ...p
@@ -111,7 +119,9 @@ export async function seed(knex: Knex): Promise<void> {
     'users:read:all', 'users:update:all',
     'roles:read:all', 'roles:assign:all',
     'dashboard:read:all', 'reports:read:all', 'reports:export:all',
-    'audit:read:all', 'system:read:all'
+    'audit:read:all', 'system:read:all',
+    'api_keys:create:own', 'api_keys:read:own', 'api_keys:update:own', 'api_keys:delete:own',
+    'api_keys:read:all'
   ];
   for (const perm of managerPermissions) {
     const [resource, action, scope] = perm.split(':');
@@ -130,7 +140,8 @@ export async function seed(knex: Knex): Promise<void> {
   const userPermissions = [
     'users:read:own', 'users:update:own',
     'dashboard:read:own', 'reports:read:own', 'reports:export:own',
-    'audit:read:own'
+    'audit:read:own',
+    'api_keys:create:own', 'api_keys:read:own', 'api_keys:update:own', 'api_keys:delete:own'
   ];
   for (const perm of userPermissions) {
     const [resource, action, scope] = perm.split(':');

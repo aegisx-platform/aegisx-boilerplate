@@ -141,6 +141,13 @@ Healthcare features in `/features/` directory:
 - **Model**: `resource:action:scope` (e.g., `patients:read:department`)
 - **Caching**: Redis-based permission caching
 - **Integration**: Middleware for route protection
+- **API Key Permissions**: Full CRUD permissions for API key management
+  - `api_keys:create:own` - Create own API keys (user, manager, admin)
+  - `api_keys:read:own` - View own API keys (user, manager, admin)
+  - `api_keys:update:own` - Update own API keys (user, manager, admin)
+  - `api_keys:delete:own` - Delete own API keys (user, manager, admin)
+  - `api_keys:read:all` - View all API keys (manager, admin)
+  - `api_keys:delete:all` - Delete any API keys (admin only)
 
 ### Database Schema
 **Core Tables**: users, refresh_tokens, roles, permissions, user_roles, role_permissions, audit_logs
@@ -197,6 +204,7 @@ Healthcare features in `/features/` directory:
 - `docs/BOILERPLATE_ROADMAP.md` - **🚀 Development roadmap and feature status** (must read!)
 - `tools/cli/README.md` - **🛠️ CLI scaffolding tool documentation** (must read!)
 - `docs/api-key-authentication.md` - **🔑 API Key Authentication documentation** (enterprise API key management with dual expiration strategy)
+- `docs/api-key-testing-guide.md` - **🧪 API Key Testing Guide** (complete testing examples and troubleshooting)
 - `docs/notification-service.md` - Notification service usage guide
 - `docs/notification-database-schema.md` - Database schema documentation
 - `docs/storage-database.md` - **📁 Storage database integration guide** (comprehensive storage persistence)
@@ -489,6 +497,9 @@ This is designed for healthcare applications requiring:
 
 ## Recent Development Focus
 - **✅ API Key Authentication**: Enterprise API key management with dual expiration strategy (cron + Redis TTL), comprehensive security features, and full infrastructure integration
+  - **✅ RBAC Integration**: Added API key permissions to RBAC seed data
+  - **✅ Permission Fix**: Resolved missing `api_keys:create:own` permission issue
+  - **✅ Testing Guide**: Created comprehensive API key testing documentation
 - **✅ CLI Scaffolding Tool**: Complete healthcare-focused code generator with templates
 - **✅ Storage Database Integration**: Complete database persistence layer for storage service with 5-table schema
 - **✅ Shared Files Management**: Complete collaborative file sharing with granular permissions, user management, and revocation
