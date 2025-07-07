@@ -203,6 +203,7 @@ Healthcare features in `/features/` directory:
 ## Important Files
 
 ### Project Structure & Guides
+- `docs/feature-summary.md` - **📋 Complete feature overview and summary** (must read!)
 - `docs/FOLDER_STRUCTURE_GUIDE.md` - **📖 Complete folder structure guide** (must read!)
 - `docs/BOILERPLATE_ROADMAP.md` - **🚀 Development roadmap and feature status** (must read!)
 - `tools/cli/README.md` - **🛠️ CLI scaffolding tool documentation** (must read!)
