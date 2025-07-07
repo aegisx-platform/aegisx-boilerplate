@@ -170,7 +170,7 @@ class FileAccessControlService {
     // Simple cache cleanup
     if (this.cache.size > 1000) {
       const now = Date.now()
-      for (const [cacheKey, cached] of this.cache.entries()) {
+      for (const [cacheKey, cached] of Array.from(this.cache.entries())) {
         if (cached.expires < now) {
           this.cache.delete(cacheKey)
         }
@@ -188,7 +188,7 @@ class FileAccessControlService {
     }
 
     const keysToDelete: string[] = []
-    for (const key of this.cache.keys()) {
+    for (const key of Array.from(this.cache.keys())) {
       const [cacheFileId, cacheUserId] = key.split(':')
       if ((fileId && cacheFileId === fileId) || (userId && cacheUserId === userId)) {
         keysToDelete.push(key)

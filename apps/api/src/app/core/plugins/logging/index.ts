@@ -1,7 +1,7 @@
 import fp from 'fastify-plugin'
 import { FastifyInstance } from 'fastify'
 import { StructuredLogger } from './structured-logger'
-import correlator from 'correlation-id'
+import * as correlator from 'correlation-id'
 
 declare module 'fastify' {
   interface FastifyInstance {

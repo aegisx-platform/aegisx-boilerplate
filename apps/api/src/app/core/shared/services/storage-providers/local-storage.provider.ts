@@ -11,6 +11,7 @@ import crypto from 'crypto'
 import { promisify } from 'util'
 import zlib from 'zlib'
 import { v4 as uuidv4 } from 'uuid'
+import { ThumbnailService } from '../thumbnail.service'
 import {
   IStorageProvider,
   StorageConfig,
@@ -39,6 +40,7 @@ const gunzip = promisify(zlib.gunzip)
 
 export class LocalStorageProvider implements IStorageProvider {
   private connected = false
+  private thumbnailService = new ThumbnailService()
   private stats = {
     uploads: 0,
     downloads: 0,
@@ -168,6 +170,17 @@ export class LocalStorageProvider implements IStorageProvider {
       // Set file permissions
       await fs.chmod(fullPath, this.config.permissions)
 
+      // Generate thumbnails if requested and supported
+      let thumbnailInfo: any[] = []
+      if (request.options?.generateThumbnail && ThumbnailService.canGenerateThumbnail(request.mimeType)) {
+        try {
+          thumbnailInfo = await this.generateThumbnails(fileId, request, fullPath)
+        } catch (thumbnailError) {
+          console.warn(`Failed to generate thumbnails for ${fileId}:`, thumbnailError)
+          // Don't fail the upload if thumbnail generation fails
+        }
+      }
+
       // Create metadata
       const metadata: FileMetadata = {
         filename,
@@ -190,7 +203,8 @@ export class LocalStorageProvider implements IStorageProvider {
         providerMetadata: {
           compressed,
           originalSize: request.file.length,
-          storedSize: fileData.length
+          storedSize: fileData.length,
+          thumbnails: thumbnailInfo.length > 0 ? thumbnailInfo : undefined
         }
       }
 
@@ -215,7 +229,8 @@ export class LocalStorageProvider implements IStorageProvider {
         checksum,
         mimeType: request.mimeType,
         metadata,
-        url: downloadUrl
+        url: downloadUrl,
+        thumbnails: thumbnailInfo.length > 0 ? thumbnailInfo : undefined
       }
 
     } catch (error) {
@@ -873,7 +888,10 @@ export class LocalStorageProvider implements IStorageProvider {
     return path.join(dir1, dir2)
   }
 
-  private generateLocalUrl(fileId: string, operation: 'download' | 'upload'): string {
+  private generateLocalUrl(fileId: string, operation: 'download' | 'upload' | 'thumbnail', filename?: string): string {
+    if (operation === 'thumbnail' && filename) {
+      return `/api/storage/thumbnails/${fileId}/${filename}`
+    }
     // This would typically be handled by the API server
     return `/api/storage/${operation}/${fileId}`
   }
@@ -971,6 +989,104 @@ export class LocalStorageProvider implements IStorageProvider {
     
     return decrypted
   }
+
+  /**
+   * Generate thumbnails for uploaded image
+   */
+  private async generateThumbnails(
+    fileId: string,
+    request: UploadRequest,
+    originalFilePath: string
+  ): Promise<any[]> {
+    const thumbnailInfos: any[] = []
+    
+    try {
+      // Generate thumbnails using thumbnail service
+      const thumbnailOptions = {
+        sizes: request.options?.thumbnailSizes,
+        defaultSizes: !request.options?.thumbnailSizes || request.options.thumbnailSizes.length === 0
+      }
+      
+      const thumbnails = await this.thumbnailService.generateThumbnails(
+        request.file,
+        request.mimeType,
+        thumbnailOptions
+      )
+
+      // Create thumbnails directory
+      const thumbnailsDir = path.join(this.config.basePath, 'thumbnails', fileId)
+      await this.ensureDirectoryExists(thumbnailsDir)
+
+      // Save each thumbnail
+      for (let i = 0; i < thumbnails.length; i++) {
+        const thumbnail = thumbnails[i]
+        const size = request.options?.thumbnailSizes?.[i] || ThumbnailService.getDefaultSizes()[i]
+        
+        const thumbnailFilename = ThumbnailService.generateThumbnailFilename(
+          request.filename,
+          size,
+          fileId
+        )
+        
+        const thumbnailPath = path.join(thumbnailsDir, thumbnailFilename)
+        
+        // Write thumbnail file
+        await fs.writeFile(thumbnailPath, thumbnail.buffer)
+        await fs.chmod(thumbnailPath, this.config.permissions)
+        
+        // Generate thumbnail URL
+        const thumbnailUrl = this.generateLocalUrl(fileId, 'thumbnail', thumbnailFilename)
+        
+        // Create thumbnail info
+        const thumbnailInfo = {
+          url: thumbnailUrl,
+          width: thumbnail.width,
+          height: thumbnail.height,
+          size: thumbnail.size,
+          format: thumbnail.format
+        }
+        
+        thumbnailInfos.push(thumbnailInfo)
+        
+        // Save thumbnail metadata
+        const thumbnailMetadata = {
+          originalFileId: fileId,
+          filename: thumbnailFilename,
+          width: thumbnail.width,
+          height: thumbnail.height,
+          size: thumbnail.size,
+          format: thumbnail.format,
+          path: path.relative(this.config.basePath, thumbnailPath)
+        }
+        
+        await this.saveThumbnailMetadata(fileId, thumbnailFilename, thumbnailMetadata)
+      }
+      
+    } catch (error) {
+      console.error(`Thumbnail generation failed for ${fileId}:`, error)
+      throw error
+    }
+
+    return thumbnailInfos
+  }
+
+  /**
+   * Save thumbnail metadata
+   */
+  private async saveThumbnailMetadata(
+    fileId: string,
+    thumbnailFilename: string,
+    metadata: any
+  ): Promise<void> {
+    const metadataPath = path.join(
+      this.config.basePath,
+      '.metadata',
+      `${fileId}_${thumbnailFilename}.json`
+    )
+    
+    await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2))
+  }
+
 
   private async validateFile(request: UploadRequest): Promise<FileValidationResult> {
     const errors: any[] = []

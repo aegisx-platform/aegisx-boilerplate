@@ -217,8 +217,8 @@ const storagePlugin: FastifyPluginAsync<StoragePluginOptions> = async (
           totalFiles: storageStats.reduce((sum: number, s: any) => sum + (s.storage?.totalFiles || 0), 0),
           totalSize: storageStats.reduce((sum: number, s: any) => sum + (s.storage?.totalSize || 0), 0),
           totalOperations: storageStats.reduce((sum: number, s: any) => sum + (s.operations?.uploads || 0) + (s.operations?.downloads || 0) + (s.operations?.deletes || 0), 0),
-          averageUploadTime: storageStats.reduce((sum: number, s: any) => sum + (s.performance?.averageUploadTime || 0), 0) / Math.max(storageStats.length, 1),
-          averageDownloadTime: storageStats.reduce((sum: number, s: any) => sum + (s.performance?.averageDownloadTime || 0), 0) / Math.max(storageStats.length, 1)
+          averageUploadTime: (storageStats.reduce((sum: number, s: any) => sum + (s.performance?.averageUploadTime || 0), 0) as number) / Math.max(storageStats.length, 1),
+          averageDownloadTime: (storageStats.reduce((sum: number, s: any) => sum + (s.performance?.averageDownloadTime || 0), 0) as number) / Math.max(storageStats.length, 1)
         }
 
         reply.send(metrics)

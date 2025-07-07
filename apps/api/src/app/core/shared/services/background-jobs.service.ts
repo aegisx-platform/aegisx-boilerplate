@@ -106,7 +106,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
     // Add to respective queues
     const allJobs: Job[] = []
     
-    for (const [queueName, queueJobs] of jobsByQueue.entries()) {
+    for (const [queueName, queueJobs] of Array.from(jobsByQueue.entries())) {
       const queue = this.getQueue(queueName)
       const jobs = await queue.addBulk(queueJobs.map(job => ({
         name: job.name,
@@ -132,7 +132,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
    */
   async getJob(jobId: string): Promise<Job | null> {
     // Search across all queues
-    for (const queue of this.queues.values()) {
+    for (const queue of Array.from(this.queues.values())) {
       const job = await queue.getJob(jobId)
       if (job) {
         return job
@@ -147,7 +147,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
    */
   async removeJob(jobId: string): Promise<boolean> {
     // Search across all queues
-    for (const queue of this.queues.values()) {
+    for (const queue of Array.from(this.queues.values())) {
       const removed = await queue.removeJob(jobId)
       if (removed) {
         this.emit('job.removed', { jobId })
@@ -201,7 +201,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
   async getJobs(status?: JobStatus, limit: number = 100): Promise<Job[]> {
     const allJobs: Job[] = []
     
-    for (const queue of this.queues.values()) {
+    for (const queue of Array.from(this.queues.values())) {
       const jobs = await queue.getJobs(status, limit)
       allJobs.push(...jobs)
     }
@@ -227,7 +227,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
       total: 0
     }
 
-    for (const queue of this.queues.values()) {
+    for (const queue of Array.from(this.queues.values())) {
       const stats = await queue.getStats()
       totalCounts.waiting += stats.jobs.waiting
       totalCounts.active += stats.jobs.active
@@ -252,7 +252,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
       this.emit('queue.paused', { queueName })
     } else {
       // Pause all queues
-      for (const [name, queue] of this.queues.entries()) {
+      for (const [name, queue] of Array.from(this.queues.entries())) {
         await queue.pause()
         this.emit('queue.paused', { queueName: name })
       }
@@ -269,7 +269,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
       this.emit('queue.resumed', { queueName })
     } else {
       // Resume all queues
-      for (const [name, queue] of this.queues.entries()) {
+      for (const [name, queue] of Array.from(this.queues.entries())) {
         await queue.resume()
         this.emit('queue.resumed', { queueName: name })
       }
@@ -286,7 +286,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
       this.emit('queue.emptied', { queueName })
     } else {
       // Empty all queues
-      for (const [name, queue] of this.queues.entries()) {
+      for (const [name, queue] of Array.from(this.queues.entries())) {
         await queue.empty()
         this.emit('queue.emptied', { queueName: name })
       }
@@ -361,7 +361,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
    */
   processWithConcurrency(name: string, concurrency: number, handler: JobHandler): void {
     // Register handler with all workers that process this queue
-    for (const workers of this.workers.values()) {
+    for (const workers of Array.from(this.workers.values())) {
       for (const worker of workers) {
         if (worker instanceof JobWorker) {
           worker.registerHandler(name, handler)
@@ -379,7 +379,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
     const queues: QueueHealth['queues'] = {}
     let overallStatus: 'healthy' | 'degraded' | 'unhealthy' = 'healthy'
 
-    for (const [queueName, queue] of this.queues.entries()) {
+    for (const [queueName, queue] of Array.from(this.queues.entries())) {
       const stats = await queue.getStats()
       
       // Determine queue health
@@ -430,7 +430,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
 
     // Get worker stats
     const workers: WorkerStats[] = []
-    for (const workerList of this.workers.values()) {
+    for (const workerList of Array.from(this.workers.values())) {
       for (const worker of workerList) {
         workers.push(worker.getStats())
       }
@@ -451,7 +451,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
   async getWorkerStats(): Promise<WorkerStats[]> {
     const stats: WorkerStats[] = []
     
-    for (const workerList of this.workers.values()) {
+    for (const workerList of Array.from(this.workers.values())) {
       for (const worker of workerList) {
         stats.push(worker.getStats())
       }
@@ -524,7 +524,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
     await this.stop()
 
     // Shutdown queues
-    for (const queue of this.queues.values()) {
+    for (const queue of Array.from(this.queues.values())) {
       await queue.shutdown()
     }
 
@@ -624,7 +624,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
    * Stop all workers
    */
   private async stopWorkers(): Promise<void> {
-    for (const workerList of this.workers.values()) {
+    for (const workerList of Array.from(this.workers.values())) {
       await Promise.all(workerList.map(worker => worker.stop()))
     }
   }
@@ -652,7 +652,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
   private async runCleanup(): Promise<void> {
     let totalCleaned = 0
 
-    for (const queue of this.queues.values()) {
+    for (const queue of Array.from(this.queues.values())) {
       if (queue instanceof MemoryJobAdapter) {
         const cleaned = await queue.cleanup()
         totalCleaned += cleaned

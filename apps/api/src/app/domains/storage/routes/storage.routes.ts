@@ -138,6 +138,15 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
             type: 'string',
             enum: ['false', 'true'],
             description: 'Overwrite if file exists (default: false)'
+          },
+          generateThumbnail: {
+            type: 'string',
+            enum: ['false', 'true'],
+            description: 'Generate thumbnails for image files (default: false)'
+          },
+          thumbnailSizes: {
+            type: 'string',
+            description: 'JSON array of thumbnail sizes (e.g., [{"width":150,"height":150,"fit":"cover"}]). If not provided, uses default sizes.'
           }
         },
         required: ['file']
@@ -173,6 +182,37 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
     }
   }, async (request, reply) => {
     return controller.download(request as any, reply)
+  })
+
+  // Download thumbnail
+  fastify.get('/thumbnails/:fileId/:filename', {
+    preHandler: [
+      (fastify as any).authenticate,
+      (fastify as any).checkFileAccess('read')
+    ],
+    schema: {
+      description: 'Download a thumbnail image',
+      tags: ['Storage'],
+      params: {
+        type: 'object',
+        properties: {
+          fileId: { type: 'string', format: 'uuid' },
+          filename: { type: 'string' }
+        },
+        required: ['fileId', 'filename']
+      },
+      response: {
+        200: {
+          type: 'string',
+          format: 'binary',
+          description: 'Thumbnail image content'
+        },
+        404: ErrorResponseSchema,
+        500: ErrorResponseSchema
+      }
+    }
+  }, async (request, reply) => {
+    return controller.downloadThumbnail(request as any, reply)
   })
 
   // Get file information

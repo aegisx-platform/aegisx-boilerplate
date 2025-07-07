@@ -99,6 +99,25 @@ export class StorageController {
     const userEncryptChoice = fields.encrypt ? fields.encrypt === 'true' : undefined
     const shouldEncrypt = this.shouldEncryptFile(userEncryptChoice)
 
+    // Parse thumbnail sizes if provided
+    let thumbnailSizes: any[] | undefined
+    if (fields.thumbnailSizes) {
+      try {
+        thumbnailSizes = JSON.parse(fields.thumbnailSizes)
+        if (!Array.isArray(thumbnailSizes)) {
+          throw new Error('Thumbnail sizes must be an array')
+        }
+        // Validate each thumbnail size
+        thumbnailSizes.forEach((size: any) => {
+          if (!size.width || !size.height || typeof size.width !== 'number' || typeof size.height !== 'number') {
+            throw new Error('Each thumbnail size must have width and height as numbers')
+          }
+        })
+      } catch (error) {
+        throw new Error('Invalid thumbnailSizes format. Must be a valid JSON array of size objects')
+      }
+    }
+
     return {
       filename: file.filename,
       mimeType: file.mimetype,
@@ -107,7 +126,9 @@ export class StorageController {
       customMetadata,
       path: fields.path,
       encrypt: shouldEncrypt,
-      overwrite: fields.overwrite === 'true'
+      overwrite: fields.overwrite === 'true',
+      generateThumbnail: fields.generateThumbnail === 'true',
+      thumbnailSizes
     }
   }
 
@@ -185,7 +206,9 @@ export class StorageController {
         options: {
           path: uploadMetadata.path,
           encrypt: uploadMetadata.encrypt,
-          overwrite: uploadMetadata.overwrite
+          overwrite: uploadMetadata.overwrite,
+          generateThumbnail: uploadMetadata.generateThumbnail,
+          thumbnailSizes: uploadMetadata.thumbnailSizes
         }
       }
 
@@ -223,7 +246,8 @@ export class StorageController {
           createdAt: result.metadata.createdAt.toISOString(),
           updatedAt: result.metadata.updatedAt.toISOString(),
           createdBy: result.metadata.createdBy
-        }
+        },
+        thumbnails: result.thumbnails
       }
 
       return reply.code(201).send(response)
@@ -298,6 +322,107 @@ export class StorageController {
         error: {
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Internal server error during download'
+        }
+      })
+    }
+  }
+
+  /**
+   * Download thumbnail
+   * GET /storage/thumbnails/:fileId/:filename
+   */
+  async downloadThumbnail(request: FastifyRequest<{ Params: { fileId: string; filename: string } }>, reply: FastifyReply) {
+    try {
+      const { fileId, filename } = request.params
+
+      // Check file exists and user has permission (this is handled by middleware)
+      
+      // Download thumbnail from storage provider
+      const fs = require('fs').promises
+      const path = require('path')
+      
+      // Get storage provider to handle thumbnail download
+      const provider = this.storageService.getCurrentProvider()
+      
+      if (provider === 'local') {
+        // Local file system handling
+        const basePath = process.env.STORAGE_LOCAL_BASE_PATH || './storage'
+        const thumbnailPath = path.join(basePath, 'thumbnails', fileId, filename)
+        
+        // Check if thumbnail file exists
+        try {
+          await fs.access(thumbnailPath)
+        } catch {
+          return reply.code(404).send({
+            error: {
+              code: 'THUMBNAIL_NOT_FOUND',
+              message: 'Thumbnail not found'
+            }
+          })
+        }
+
+        // Read and serve thumbnail
+        const thumbnailData = await fs.readFile(thumbnailPath)
+        
+        // Determine MIME type from file extension
+        const ext = path.extname(filename).toLowerCase()
+        const mimeTypeMap: Record<string, string> = {
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.png': 'image/png',
+          '.webp': 'image/webp'
+        }
+        const mimeType = mimeTypeMap[ext] || 'image/jpeg'
+
+        return reply
+          .type(mimeType)
+          .send(thumbnailData)
+
+      } else if (provider === 'minio') {
+        // MinIO handling - use the storage service to download
+        try {
+          const result = await this.storageService.downloadThumbnail(fileId, filename)
+          
+          if (!result.success) {
+            return reply.code(404).send({
+              error: {
+                code: 'THUMBNAIL_NOT_FOUND',
+                message: 'Thumbnail not found'
+              }
+            })
+          }
+
+          return reply
+            .type(result.mimeType)
+            .send(result.data)
+
+        } catch (error: any) {
+          if (error.code === 'FILE_NOT_FOUND') {
+            return reply.code(404).send({
+              error: {
+                code: 'THUMBNAIL_NOT_FOUND',
+                message: 'Thumbnail not found'
+              }
+            })
+          }
+          throw error
+        }
+        
+      } else {
+        return reply.code(501).send({
+          error: {
+            code: 'NOT_IMPLEMENTED',
+            message: `Thumbnail download not implemented for ${provider} storage provider`
+          }
+        })
+      }
+
+    } catch (error) {
+      request.log.error('Thumbnail download failed:', error)
+      return reply.code(500).send({
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Internal server error during thumbnail download'
         }
       })
     }

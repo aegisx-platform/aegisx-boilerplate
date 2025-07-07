@@ -76,5 +76,8 @@
         "command": "docker build -f apps/api/Dockerfile . -t aegisx-boilerplate-api"
       }
     }
+  },
+  "dependencies": {
+    "sharp": "^0.34.2"
   }
 }

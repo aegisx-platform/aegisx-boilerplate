@@ -1,7 +1,8 @@
 import { EventHandler, PublishOptions, HealthStatus, EventBusStats } from '../interfaces'
 import { BaseEventBusAdapter } from './base-adapter'
 import { EventFactory } from '../utils'
-import amqp, { Message, ConfirmChannel } from 'amqplib'
+import * as amqp from 'amqplib'
+import { Message, ConfirmChannel } from 'amqplib'
 
 export interface RabbitMQAdapterConfig {
   url?: string

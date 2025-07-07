@@ -10,6 +10,7 @@ import crypto from 'crypto'
 import { v4 as uuidv4 } from 'uuid'
 import zlib from 'zlib'
 import { promisify } from 'util'
+import { ThumbnailService } from '../thumbnail.service'
 import {
   IStorageProvider,
   StorageConfig,
@@ -30,7 +31,8 @@ import {
   CleanupResult,
   StorageError,
   FileValidationResult,
-  DataClassification
+  DataClassification,
+  ThumbnailInfo
 } from '../../types/storage.types'
 
 const gzip = promisify(zlib.gzip)
@@ -40,6 +42,7 @@ export class MinIOStorageProvider implements IStorageProvider {
   private client: MinioClient
   private externalClient?: MinioClient // Client for external presigned URLs
   private connected = false
+  private thumbnailService = new ThumbnailService()
   private stats = {
     uploads: 0,
     downloads: 0,
@@ -213,6 +216,16 @@ export class MinIOStorageProvider implements IStorageProvider {
         }
       }
 
+      // Generate thumbnails if requested
+      let thumbnailInfo: ThumbnailInfo[] = []
+      if (request.options?.generateThumbnail && ThumbnailService.canGenerateThumbnail(request.mimeType)) {
+        try {
+          thumbnailInfo = await this.generateThumbnails(fileId, request, objectName)
+        } catch (thumbnailError) {
+          console.warn(`Failed to generate thumbnails for ${fileId}:`, thumbnailError)
+        }
+      }
+
       // Save metadata as a separate object
       await this.saveMetadata(fileId, metadata)
 
@@ -240,7 +253,8 @@ export class MinIOStorageProvider implements IStorageProvider {
         metadata,
         url: downloadUrl.url,
         presignedUrl: downloadUrl.url,
-        expiresAt: downloadUrl.expiresAt
+        expiresAt: downloadUrl.expiresAt,
+        thumbnails: thumbnailInfo
       }
 
     } catch (error) {
@@ -1273,6 +1287,133 @@ export class MinIOStorageProvider implements IStorageProvider {
       return Math.max(...files.files.map(f => f.size), 0)
     } catch {
       return 0
+    }
+  }
+
+  // Thumbnail generation methods for MinIO
+
+  private async generateThumbnails(fileId: string, request: UploadRequest, objectName: string): Promise<ThumbnailInfo[]> {
+    const thumbnailResults = await this.thumbnailService.generateThumbnails(
+      request.file,
+      request.mimeType,
+      {
+        sizes: request.options?.thumbnailSizes,
+        outputPath: `thumbnails/${fileId}`,
+        quality: 85
+      }
+    )
+
+    const thumbnailInfos: ThumbnailInfo[] = []
+
+    for (const result of thumbnailResults) {
+      try {
+        // Upload thumbnail to MinIO
+        const thumbnailObjectName = `thumbnails/${fileId}/${result.filename}`
+        
+        await this.client.putObject(
+          this.config.bucket,
+          thumbnailObjectName,
+          result.buffer,
+          result.buffer.length,
+          {
+            'Content-Type': `image/${result.format}`,
+            'file-id': fileId,
+            'thumbnail-size': `${result.width}x${result.height}`,
+            'thumbnail-format': result.format
+          }
+        )
+
+        // Note: Presigned URL generation removed as we serve thumbnails via API endpoint
+
+        thumbnailInfos.push({
+          url: `/storage/thumbnails/${fileId}/${result.filename}`,
+          width: result.width,
+          height: result.height,
+          size: result.buffer.length,
+          format: result.format
+        })
+      } catch (error) {
+        console.warn(`Failed to upload thumbnail ${result.filename}:`, error)
+      }
+    }
+
+    return thumbnailInfos
+  }
+
+  async downloadThumbnail(fileId: string, filename: string): Promise<DownloadResult> {
+    if (!this.connected) {
+      throw new StorageError(
+        'MinIO storage provider not connected',
+        'PROVIDER_UNAVAILABLE',
+        'minio'
+      )
+    }
+
+    try {
+      const thumbnailObjectName = `thumbnails/${fileId}/${filename}`
+      
+      // Check if thumbnail exists
+      if (!await this.objectExists(thumbnailObjectName)) {
+        throw new StorageError(
+          `Thumbnail not found: ${filename}`,
+          'FILE_NOT_FOUND',
+          'minio',
+          fileId,
+          thumbnailObjectName
+        )
+      }
+
+      // Download thumbnail from MinIO
+      const stream = await this.client.getObject(this.config.bucket, thumbnailObjectName)
+      const thumbnailData = await this.streamToBuffer(stream)
+
+      // Get thumbnail metadata
+      const stat = await this.client.statObject(this.config.bucket, thumbnailObjectName)
+      const mimeType = stat.metaData?.['content-type'] || 'image/jpeg'
+
+      return {
+        success: true,
+        fileId: fileId,
+        filename: filename,
+        mimeType: mimeType,
+        size: thumbnailData.length,
+        data: thumbnailData,
+        metadata: {
+          filename: filename,
+          originalName: filename,
+          mimeType: mimeType,
+          size: thumbnailData.length,
+          checksum: this.calculateChecksum(thumbnailData),
+          checksumAlgorithm: 'sha256',
+          createdAt: new Date(stat.lastModified),
+          updatedAt: new Date(stat.lastModified),
+          tags: [],
+          customMetadata: {},
+          encrypted: false,
+          dataClassification: 'internal',
+          provider: 'minio',
+          providerPath: thumbnailObjectName,
+          providerMetadata: {
+            etag: stat.etag,
+            bucket: this.config.bucket
+          }
+        },
+        cached: false
+      }
+
+    } catch (error) {
+      if (error instanceof StorageError) {
+        throw error
+      }
+
+      throw new StorageError(
+        `Thumbnail download failed: ${(error as Error).message}`,
+        'UNKNOWN_ERROR',
+        'minio',
+        fileId,
+        undefined,
+        error as Error
+      )
     }
   }
 }

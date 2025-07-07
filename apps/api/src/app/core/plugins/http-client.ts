@@ -193,8 +193,8 @@ const httpClientPlugin: FastifyPluginAsync<HttpClientPluginOptions> = async (
         totalSuccesses: Object.values(metrics.clients).reduce((sum: number, client: any) => sum + client.totalSuccesses, 0),
         totalFailures: Object.values(metrics.clients).reduce((sum: number, client: any) => sum + client.totalFailures, 0),
         totalRetries: Object.values(metrics.clients).reduce((sum: number, client: any) => sum + client.totalRetries, 0),
-        averageResponseTime: Object.values(metrics.clients).reduce((sum: number, client: any) => sum + client.averageResponseTime, 0) / Object.keys(metrics.clients).length,
-        averageCacheHitRate: Object.values(metrics.clients).reduce((sum: number, client: any) => sum + client.cacheHitRate, 0) / Object.keys(metrics.clients).length
+        averageResponseTime: (Object.values(metrics.clients).reduce((sum: number, client: any) => sum + (client.averageResponseTime || 0), 0) as number) / Object.keys(metrics.clients).length,
+        averageCacheHitRate: (Object.values(metrics.clients).reduce((sum: number, client: any) => sum + (client.cacheHitRate || 0), 0) as number) / Object.keys(metrics.clients).length
       }
 
       reply.send(metrics)

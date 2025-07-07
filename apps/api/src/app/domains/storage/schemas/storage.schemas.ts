@@ -36,6 +36,15 @@ export const UploadRequestSchema = Type.Object({
   overwrite: Type.Optional(Type.Boolean({ description: 'Whether to overwrite existing file' }))
 })
 
+// Thumbnail Info Schema
+export const ThumbnailInfoSchema = Type.Object({
+  url: Type.String({ description: 'Thumbnail URL' }),
+  width: Type.Number({ description: 'Thumbnail width in pixels' }),
+  height: Type.Number({ description: 'Thumbnail height in pixels' }),
+  size: Type.Number({ description: 'Thumbnail file size in bytes' }),
+  format: Type.String({ description: 'Thumbnail image format' })
+})
+
 // Upload Response Schema
 export const UploadResponseSchema = Type.Object({
   success: Type.Boolean(),
@@ -45,6 +54,7 @@ export const UploadResponseSchema = Type.Object({
   mimeType: Type.String(),
   checksum: Type.String(),
   url: Type.Optional(Type.String({ description: 'Access URL for the file' })),
+  thumbnails: Type.Optional(Type.Array(ThumbnailInfoSchema, { description: 'Generated thumbnails (for images)' })),
   metadata: Type.Object({
     filename: Type.String(),
     originalName: Type.String(),

@@ -210,6 +210,7 @@ Healthcare features in `/features/` directory:
 - `docs/storage-database.md` - **📁 Storage database integration guide** (comprehensive storage persistence)
 - `docs/storage-shared-files.md` - **🤝 Shared Files Management documentation** (collaborative file sharing with permissions)
 - `docs/file-access-control-plugin.md` - **🔐 File Access Control Plugin documentation** (security middleware for file operations)
+- `docs/thumbnail-generation.md` - **🖼️ Thumbnail Generation Service documentation** (automatic image thumbnail creation with Sharp)
 
 ### Configuration Files
 - `knexfile.ts` / `knexfile.prod.js` - Database configuration
@@ -278,7 +279,9 @@ Complete suite of 15 production-ready services with healthcare compliance featur
   - DB/Redis connection optimization with real-time monitoring
 - **Storage Service**: `apps/api/src/app/core/shared/services/storage.service.ts`
   - Multi-provider file storage (Local, MinIO) with HIPAA compliance and encryption
+  - **Thumbnail Generation**: Automatic image thumbnail creation with Sharp library
   - **Documentation**: `docs/storage-service.md`
+  - **Thumbnail Documentation**: `docs/thumbnail-generation.md`
   - **Providers**: Local File System, MinIO (S3-compatible)
 
 #### Business Features
@@ -496,6 +499,11 @@ This is designed for healthcare applications requiring:
 - Scalable architecture for enterprise healthcare systems
 
 ## Recent Development Focus
+- **✅ Thumbnail Generation Service**: Complete image thumbnail generation with Sharp library
+  - **✅ Optional Generation**: User can choose whether to generate thumbnails
+  - **✅ Custom Sizes**: Support for custom thumbnail sizes and configurations
+  - **✅ API Integration**: Full integration with Storage API and multipart uploads
+  - **✅ Documentation**: Comprehensive usage guide with examples
 - **✅ API Key Authentication**: Enterprise API key management with dual expiration strategy (cron + Redis TTL), comprehensive security features, and full infrastructure integration
   - **✅ RBAC Integration**: Added API key permissions to RBAC seed data
   - **✅ Permission Fix**: Resolved missing `api_keys:create:own` permission issue
@@ -609,3 +617,101 @@ docs/
 - ✅ Healthcare Compliance features (ถ้ามี)
 - ✅ Troubleshooting
 - ✅ Best Practices
+
+---
+
+## 🚨 **Critical Development Rules & Lessons Learned**
+
+### ❌ **NEVER Touch These Nx Configurations:**
+```json
+// ❌ NEVER CHANGE - Nx uses workspace-relative paths
+"main": "apps/api/src/main.ts",           // ✅ Correct
+"tsConfig": "apps/api/tsconfig.app.json", // ✅ Correct  
+"outputPath": "apps/api/dist",            // ✅ Correct
+
+// ❌ WRONG - Breaking Nx conventions
+"main": "src/main.ts",        // ❌ Don't use relative paths
+"tsConfig": "tsconfig.app.json", // ❌ Missing workspace context
+"outputPath": "dist",            // ❌ Wrong output location
+```
+
+### 🔧 **TypeScript Build Issues - Root Causes & Solutions:**
+
+#### **Nx + TypeScript Common Issues:**
+1. **Iterator Downlevel Compilation:**
+   ```typescript
+   // ❌ Problem: Map/Set iterators don't work with strict TS config
+   for (const item of map.values()) // Causes TS2802 error
+   
+   // ✅ Solution: Use Array.from() wrapper
+   for (const item of Array.from(map.values()))
+   ```
+
+2. **Module Import Compatibility:**
+   ```typescript
+   // ❌ Problem: Mixed CommonJS/ES modules
+   import winston from 'winston'      // Fails with nodenext
+   import Transport from 'winston-transport'
+   
+   // ✅ Solution: Use compatible imports
+   import * as winston from 'winston'
+   const Transport = require('winston-transport')
+   ```
+
+3. **TypeScript Configuration for Nx:**
+   ```json
+   // ✅ Required in tsconfig.base.json for Node.js projects
+   {
+     "esModuleInterop": true,
+     "allowSyntheticDefaultImports": true,
+     "downlevelIteration": true,    // Critical for Map/Set iteration
+     "skipLibCheck": true          // Skip problematic node_modules types
+   }
+   ```
+
+### 📋 **Development Process Checklist:**
+
+#### **Before Making Build Configuration Changes:**
+- [ ] ❓ **Ask:** "Am I breaking Nx conventions?"
+- [ ] ❓ **Ask:** "Do I understand why the build is failing?"
+- [ ] ❓ **Ask:** "Is this a TypeScript issue, not a path issue?"
+- [ ] 🔍 **Check:** Review error messages carefully
+- [ ] 🔍 **Check:** Test with minimal changes first
+
+#### **When Build Fails:**
+1. 🎯 **Identify Root Cause:** TypeScript compilation vs path resolution
+2. 🔧 **Fix TypeScript Issues First:** Before touching Nx config
+3. 🚫 **Never Assume:** Path issues when seeing compilation errors
+4. ✅ **Test Incrementally:** One fix at a time
+
+### 🎓 **Key Lessons from Thumbnail Feature Development:**
+
+#### **What Went Right:**
+- ✅ Thumbnail generation implementation was correct
+- ✅ API integration working perfectly
+- ✅ TypeScript types properly defined
+- ✅ Sharp library integration successful
+
+#### **What Went Wrong & Why:**
+- ❌ **Misdiagnosed build errors** as path issues instead of TypeScript compilation
+- ❌ **Broke Nx conventions** by changing workspace-relative paths
+- ❌ **Created new problems** while trying to fix unrelated issues
+- ❌ **Didn't verify root cause** before making configuration changes
+
+### 💡 **Future Prevention Strategies:**
+1. **Always backup configurations** before making changes
+2. **Test TypeScript compilation separately** from build process
+3. **Read Nx documentation** before changing project structure
+4. **Ask user for confirmation** before touching core configurations
+5. **Document all changes** and their reasoning
+
+### 🔄 **Emergency Recovery Process:**
+```bash
+# If Nx builds break due to configuration changes:
+1. Revert apps/*/package.json to workspace-relative paths
+2. Check tsconfig.base.json has proper Node.js compatibility flags  
+3. Fix TypeScript compilation errors in code
+4. Test incrementally with nx build <project>
+```
+
+**Remember: Nx conventions exist for a reason. Don't fight the framework!** 🏗️

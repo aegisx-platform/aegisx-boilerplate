@@ -1073,6 +1073,92 @@ export class StorageService implements IStorageService {
   }
 
   /**
+   * Download thumbnail for a file
+   */
+  async downloadThumbnail(fileId: string, filename: string): Promise<DownloadResult> {
+    return this.executeOperation(async () => {
+      // Check provider type
+      if (this.config.provider === 'minio') {
+        // Use MinIO provider's downloadThumbnail method
+        const minioProvider = this.provider as any
+        if (typeof minioProvider.downloadThumbnail === 'function') {
+          return await minioProvider.downloadThumbnail(fileId, filename)
+        } else {
+          throw new StorageError(
+            'Thumbnail download not supported by MinIO provider',
+            'NOT_IMPLEMENTED',
+            'minio',
+            fileId
+          )
+        }
+      } else if (this.config.provider === 'local') {
+        // For local provider, construct path and read file
+        const fs = require('fs').promises
+        const path = require('path')
+        
+        const basePath = process.env.STORAGE_LOCAL_BASE_PATH || './storage'
+        const thumbnailPath = path.join(basePath, 'thumbnails', fileId, filename)
+        
+        try {
+          const thumbnailData = await fs.readFile(thumbnailPath)
+          
+          // Determine MIME type
+          const ext = path.extname(filename).toLowerCase()
+          const mimeTypeMap: Record<string, string> = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.webp': 'image/webp'
+          }
+          const mimeType = mimeTypeMap[ext] || 'image/jpeg'
+          
+          return {
+            success: true,
+            fileId: fileId,
+            filename: filename,
+            mimeType: mimeType,
+            size: thumbnailData.length,
+            data: thumbnailData,
+            metadata: {
+              filename: filename,
+              originalName: filename,
+              mimeType: mimeType,
+              size: thumbnailData.length,
+              checksum: '',
+              checksumAlgorithm: 'sha256',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              tags: [],
+              customMetadata: {},
+              encrypted: false,
+              dataClassification: 'internal',
+              provider: 'local',
+              providerPath: thumbnailPath
+            },
+            cached: false
+          }
+        } catch (error) {
+          throw new StorageError(
+            `Thumbnail not found: ${filename}`,
+            'FILE_NOT_FOUND',
+            'local',
+            fileId,
+            thumbnailPath,
+            error as Error
+          )
+        }
+      } else {
+        throw new StorageError(
+          `Thumbnail download not implemented for ${this.config.provider} provider`,
+          'NOT_IMPLEMENTED',
+          this.config.provider,
+          fileId
+        )
+      }
+    }, 'downloadThumbnail')
+  }
+
+  /**
    * Get current storage provider type
    */
   getCurrentProvider(): string {

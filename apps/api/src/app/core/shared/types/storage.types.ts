@@ -58,11 +58,30 @@ export interface UploadOptions {
   compress?: boolean
   overwrite?: boolean
   generateThumbnail?: boolean
+  thumbnailSizes?: ThumbnailSize[]
   virus_scan?: boolean
   dataClassification?: DataClassification
   tags?: string[]
   customMetadata?: Record<string, any>
   // Healthcare data removed
+}
+
+// Thumbnail configuration
+export interface ThumbnailSize {
+  width: number
+  height: number
+  fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside'
+  quality?: number
+  format?: 'jpeg' | 'png' | 'webp'
+}
+
+// Thumbnail info
+export interface ThumbnailInfo {
+  url: string
+  width: number
+  height: number
+  size: number
+  format: string
 }
 
 // Download request interface
@@ -94,6 +113,7 @@ export interface StorageResult {
   url?: string
   presignedUrl?: string
   expiresAt?: Date
+  thumbnails?: ThumbnailInfo[]
   error?: StorageError
 }
 
@@ -125,6 +145,7 @@ export interface FileInfo {
     thumbnail?: string
     preview?: string
   }
+  thumbnails?: ThumbnailInfo[]
   permissions: FilePermissions
   // Healthcare metadata removed
 }
@@ -561,6 +582,7 @@ export type StorageErrorCode =
   | 'CONFIGURATION_ERROR'
   | 'OPERATION_TIMEOUT'
   | 'QUOTA_EXCEEDED'
+  | 'NOT_IMPLEMENTED'
   | 'UNKNOWN_ERROR'
 
 // File validation result

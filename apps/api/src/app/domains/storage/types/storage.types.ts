@@ -4,6 +4,8 @@
  * TypeScript interfaces for storage domain business logic
  */
 
+import { ThumbnailInfo, ThumbnailSize } from '../../../core/shared/types/storage.types'
+
 export interface StorageFileMetadata {
   id: string
   fileId: string
@@ -175,6 +177,8 @@ export interface ApiUploadRequest {
   path?: string
   encrypt?: boolean
   overwrite?: boolean
+  generateThumbnail?: boolean
+  thumbnailSizes?: ThumbnailSize[]
 }
 
 export interface ApiUploadResponse {
@@ -185,6 +189,7 @@ export interface ApiUploadResponse {
   mimeType: string
   checksum: string
   url?: string
+  thumbnails?: ThumbnailInfo[]
   metadata: {
     filename: string
     originalName: string

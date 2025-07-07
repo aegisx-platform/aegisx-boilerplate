@@ -43,6 +43,7 @@
     "@sinclair/typebox": "^0.34.35",
     "@types/amqplib": "^0.10.7",
     "@types/bcrypt": "^5.0.2",
+    "@types/sharp": "^0.31.1",
     "@types/uuid": "^10.0.0",
     "amqplib": "^0.10.8",
     "axios": "^1.6.0",
@@ -56,6 +57,7 @@
     "minio": "^8.0.5",
     "pg": "^8.16.0",
     "pino-pretty": "^13.0.0",
+    "sharp": "^0.34.2",
     "uuid": "^11.1.0",
     "winston": "^3.17.0"
   },

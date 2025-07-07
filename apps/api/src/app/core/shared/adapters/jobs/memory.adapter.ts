@@ -363,7 +363,7 @@ export class MemoryJobAdapter implements IJobQueue {
       total: this.jobs.size
     }
 
-    for (const job of this.jobs.values()) {
+    for (const job of Array.from(this.jobs.values())) {
       counts[job.status]++
     }
 
@@ -476,7 +476,7 @@ export class MemoryJobAdapter implements IJobQueue {
     let removedCount = 0
     const now = Date.now()
     
-    for (const [jobId, job] of this.jobs.entries()) {
+    for (const [jobId, job] of Array.from(this.jobs.entries())) {
       let shouldRemove = false
       
       // Remove completed jobs if configured

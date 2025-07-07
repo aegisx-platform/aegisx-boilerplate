@@ -10,7 +10,7 @@ import {
   CacheOperationEvent,
   CacheHealthChangedEvent
 } from '../events/types/service-events.types'
-import zlib from 'zlib'
+import * as zlib from 'zlib'
 import { promisify } from 'util'
 import {
   ICacheManager,
