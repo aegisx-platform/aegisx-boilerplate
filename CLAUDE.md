@@ -20,7 +20,7 @@ AegisX Boilerplate is a production-ready Fastify API boilerplate designed for He
 
 ## Project Structure
 
-**Following 4-Layer Architecture** (see `docs/FOLDER_STRUCTURE_GUIDE.md` for detailed guide)
+**Following 4-Layer Architecture** (see `docs/folder_structure_guide.md` for detailed guide)
 
 ### 🏗️ Layer 1: Core Layer - "Infrastructure Foundation"
 ```
@@ -204,7 +204,7 @@ Healthcare features in `/features/` directory:
 
 ### Project Structure & Guides
 - `docs/feature-summary.md` - **📋 Complete feature overview and summary** (must read!)
-- `docs/FOLDER_STRUCTURE_GUIDE.md` - **📖 Complete folder structure guide** (must read!)
+- `docs/folder_structure_guide.md` - **📖 Complete folder structure guide** (must read!)
 - `docs/BOILERPLATE_ROADMAP.md` - **🚀 Development roadmap and feature status** (must read!)
 - `tools/cli/README.md` - **🛠️ CLI scaffolding tool documentation** (must read!)
 - `docs/api-key-authentication.md` - **🔑 API Key Authentication documentation** (enterprise API key management with dual expiration strategy)
@@ -304,7 +304,7 @@ Complete suite of 15 production-ready services with healthcare compliance featur
 
 ## Code Conventions
 
-**Following standards from `docs/FOLDER_STRUCTURE_GUIDE.md`**
+**Following standards from `docs/folder_structure_guide.md`**
 
 ### File Naming
 - **TypeScript Files**: `*-controller.ts`, `*-service.ts`, `*-repository.ts`, `*-schemas.ts`

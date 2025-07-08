@@ -22,13 +22,13 @@ AegisX Boilerplate documentation has been completely reorganized for better deve
 
 ```
 📁 docs/
-├── 📄 README.md                      # 🎯 START HERE - Complete navigation hub
-├── 📄 ARCHITECTURE_OVERVIEW.md       # System architecture overview
-├── 📄 FOLDER_STRUCTURE_GUIDE.md      # Project organization guide
+├── 📄 readme.md                      # 🎯 START HERE - Complete navigation hub
+├── 📄 architecture_overview.md       # System architecture overview
+├── 📄 folder_structure_guide.md      # Project organization guide
 ├── 📄 feature-summary.md             # Complete feature overview
-├── 📄 CORE_DEVELOPMENT_ROADMAP.md    # Development priorities
-├── 📄 AEGISX_CORE_FEATURES.md        # Core features summary
-├── 📄 EVENT_BUS_GUIDE.md             # Event bus documentation
+├── 📄 core_development_roadmap.md    # Development priorities
+├── 📄 aegisx_core_features.md        # Core features summary
+├── 📄 event_bus_guide.md             # Event bus documentation
 │
 ├── 📁 setup/                         # 🚀 Quick Start & Deployment
 │   ├── database-quickstart.md        # PostgreSQL setup

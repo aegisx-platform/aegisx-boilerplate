@@ -23,10 +23,10 @@
 ### 🏗️ **Architecture & Design**
 | Document | Description | Audience |
 |----------|-------------|----------|
-| [**🏗️ Complete Architecture Guide**](./ARCHITECTURE_OVERVIEW.md) | 4-layer architecture overview | All Developers |
-| [**📂 Folder Structure Guide**](./FOLDER_STRUCTURE_GUIDE.md) | Project organization patterns | All Developers |
+| [**🏗️ Complete Architecture Guide**](./architecture_overview.md) | 4-layer architecture overview | All Developers |
+| [**📂 Folder Structure Guide**](./folder_structure_guide.md) | Project organization patterns | All Developers |
 | [**📋 Feature Summary**](./feature-summary.md) | Complete feature overview | All Developers |
-| [**🗺️ Development Roadmap**](./CORE_DEVELOPMENT_ROADMAP.md) | Project development priorities | Team Leads |
+| [**🗺️ Development Roadmap**](./core_development_roadmap.md) | Project development priorities | Team Leads |
 
 ### 🔧 **Core Systems**
 | Document | Description | Audience |
@@ -84,10 +84,10 @@
 ├── 📁 features/       # Feature-specific guides
 ├── 📁 infrastructure/ # Infrastructure services
 ├── 📁 monitoring/     # Logging & monitoring setup
-├── 📄 ARCHITECTURE_OVERVIEW.md    # System architecture
-├── 📄 FOLDER_STRUCTURE_GUIDE.md   # Project structure
+├── 📄 architecture_overview.md    # System architecture
+├── 📄 folder_structure_guide.md   # Project structure
 ├── 📄 feature-summary.md          # Complete feature list
-└── 📄 CORE_DEVELOPMENT_ROADMAP.md # Development priorities
+└── 📄 core_development_roadmap.md # Development priorities
 ```
 
 ---
@@ -96,8 +96,8 @@
 
 #### **🟢 Beginner (New to Project)**
 1. [Quick Start Guide](../README.md#-quick-start)
-2. [Architecture Overview](./ARCHITECTURE_OVERVIEW.md)
-3. [Folder Structure Guide](./FOLDER_STRUCTURE_GUIDE.md)
+2. [Architecture Overview](./architecture_overview.md)
+3. [Folder Structure Guide](./folder_structure_guide.md)
 4. [Database Quickstart](./setup/database-quickstart.md)
 
 #### **🟡 Intermediate (Building Features)**
@@ -141,7 +141,7 @@
 1. README.md (Quick Start)
 2. setup/database-quickstart.md
 3. setup/docker-quickstart.md
-4. FOLDER_STRUCTURE_GUIDE.md
+4. folder_structure_guide.md
 ```
 
 ### **Implementing Authentication**
@@ -156,7 +156,7 @@
 ### **Building Healthcare Features**
 ```bash
 # Healthcare feature development:
-1. ARCHITECTURE_OVERVIEW.md
+1. architecture_overview.md
 2. features/storage-service.md
 3. features/file-access-control-plugin.md
 4. features/report-builder.md
@@ -179,8 +179,8 @@
 - **PostgreSQL**: `core/database.md`, `setup/database-quickstart.md`
 - **Redis**: `monitoring/logging-system.md`, `infrastructure/circuit-breaker-service.md`
 - **Docker**: `core/docker.md`, `setup/docker-quickstart.md`
-- **TypeScript**: `FOLDER_STRUCTURE_GUIDE.md`, `core/api-key-authentication.md`
-- **Fastify**: `ARCHITECTURE_OVERVIEW.md`, `features/websocket-service.md`
+- **TypeScript**: `folder_structure_guide.md`, `core/api-key-authentication.md`
+- **Fastify**: `architecture_overview.md`, `features/websocket-service.md`
 
 ### **🔍 Search by Feature**
 - **Authentication**: `core/api-key-authentication.md`, `core/rbac-system.md`

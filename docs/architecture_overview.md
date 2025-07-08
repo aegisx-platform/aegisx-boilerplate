@@ -662,12 +662,12 @@ npm run docker:logs       # View container logs
 ## 📚 Documentation Index
 
 ### **Technical Documentation**
-- 📖 [Architecture Overview](./ARCHITECTURE_OVERVIEW.md) - This document
-- 🏗️ [Folder Structure Guide](./FOLDER_STRUCTURE_GUIDE.md) - Project organization
+- 📖 [Architecture Overview](./architecture_overview.md) - This document
+- 🏗️ [Folder Structure Guide](./folder_structure_guide.md) - Project organization
 - 📝 [Structured Logging System](./STRUCTURED_LOGGING_SYSTEM.md) - Logging architecture
 - 💡 [How to Use Logging](./HOW_TO_USE_LOGGING.md) - Developer guide
 - 🪶 [Lightweight Log Monitoring](./LIGHTWEIGHT_LOG_MONITORING.md) - Monitoring options
-- 🚀 [Core Development Roadmap](./CORE_DEVELOPMENT_ROADMAP.md) - Development plan
+- 🚀 [Core Development Roadmap](./core_development_roadmap.md) - Development plan
 
 ### **Getting Started**
 - 🚀 [Quick Start Guide](../README.md) - Setup instructions

@@ -371,7 +371,7 @@ docker-compose -f docker-compose.loki.yml up -d # Start Grafana + Loki
 
 ### **Technical Documentation**
 - `docs/feature-summary.md` - **📋 Complete feature overview** (this document)
-- `docs/FOLDER_STRUCTURE_GUIDE.md` - **📖 Architecture and folder structure**
+- `docs/folder_structure_guide.md` - **📖 Architecture and folder structure**
 - `docs/BOILERPLATE_ROADMAP.md` - **🚀 Development roadmap and status**
 - `docs/websocket-service.md` - **🌐 WebSocket real-time communication**
 - `docs/report-builder.md` - **📊 Report builder system**

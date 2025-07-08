@@ -54,7 +54,7 @@ AegisX Boilerplate is a **production-ready** Fastify API boilerplate designed sp
 - Cross-domain communication
 - Middleware support
 - Event replay capabilities
-- **Documentation**: [`EVENT_BUS_GUIDE.md`](./EVENT_BUS_GUIDE.md)
+- **Documentation**: [`event_bus_guide.md`](./event_bus_guide.md)
 
 ### 3. **Background Jobs Service**
 `apps/api/src/app/core/shared/services/background-jobs.service.ts`
@@ -515,12 +515,12 @@ docker-compose -f docker-compose.seq.yml up -d
 ## 📚 Documentation References
 
 ### Architecture & Design
-- [`ARCHITECTURE_OVERVIEW.md`](./ARCHITECTURE_OVERVIEW.md) - System architecture
-- [`FOLDER_STRUCTURE_GUIDE.md`](./FOLDER_STRUCTURE_GUIDE.md) - Project structure
-- [`CORE_DEVELOPMENT_ROADMAP.md`](./CORE_DEVELOPMENT_ROADMAP.md) - Future development
+- [`architecture_overview.md`](./architecture_overview.md) - System architecture
+- [`folder_structure_guide.md`](./folder_structure_guide.md) - Project structure
+- [`core_development_roadmap.md`](./core_development_roadmap.md) - Future development
 
 ### Core Systems
-- [`EVENT_BUS_GUIDE.md`](./EVENT_BUS_GUIDE.md) - Event-driven architecture
+- [`event_bus_guide.md`](./event_bus_guide.md) - Event-driven architecture
 - [`AUDIT_SYSTEM.md`](./AUDIT_SYSTEM.md) - Audit logging system
 - [`STRUCTURED_LOGGING_SYSTEM.md`](./STRUCTURED_LOGGING_SYSTEM.md) - Logging architecture
 
