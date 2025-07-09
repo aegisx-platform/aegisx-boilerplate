@@ -15,6 +15,7 @@ import {
   NotificationError,
   NotificationEventData,
 } from '../types/notification.types';
+import { BackgroundJobsService } from './background-jobs.service';
 
 export class NotificationService extends EventEmitter {
   private fastify: FastifyInstance;
@@ -26,6 +27,7 @@ export class NotificationService extends EventEmitter {
   private processing = false;
   private processingInterval?: NodeJS.Timeout;
   private rateLimitCounts: Map<string, { count: number; window: Date }> = new Map();
+  private backgroundJobs?: BackgroundJobsService;
 
   constructor(fastify: FastifyInstance, config?: Partial<NotificationConfig>) {
     super();
@@ -33,6 +35,7 @@ export class NotificationService extends EventEmitter {
     this.config = this.buildConfig(config);
     this.statistics = this.initializeStatistics();
     this.initializeQueues();
+    this.setupBackgroundJobs();
     this.startProcessing();
   }
 
@@ -225,15 +228,170 @@ export class NotificationService extends EventEmitter {
     });
   }
 
+  private setupBackgroundJobs(): void {
+    try {
+      // Use Redis background jobs if enabled
+      const useRedis = process.env.JOBS_ADAPTER_TYPE === 'redis';
+      const redisConfig = useRedis ? {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD,
+        db: parseInt(process.env.JOBS_REDIS_DB || '2'),
+        keyPrefix: process.env.JOBS_REDIS_PREFIX || 'jobs:',
+        maxJobs: parseInt(process.env.JOBS_MAX_JOBS || '10000'),
+        jobTTL: parseInt(process.env.JOBS_TTL || '86400000'), // 24 hours
+        enableEncryption: process.env.JOBS_ENABLE_ENCRYPTION === 'true',
+        healthCheckInterval: parseInt(process.env.JOBS_HEALTH_CHECK_INTERVAL || '30000'),
+        retryAttempts: parseInt(process.env.JOBS_RETRY_ATTEMPTS || '3'),
+        retryDelay: parseInt(process.env.JOBS_RETRY_DELAY || '1000')
+      } : {};
+
+      this.backgroundJobs = new BackgroundJobsService({
+        defaultQueue: 'notifications',
+        queues: {
+          notifications: {
+            adapter: {
+              type: useRedis ? 'redis' : 'memory',
+              options: useRedis ? redisConfig : { maxJobs: 10000 }
+            },
+            workers: parseInt(process.env.NOTIFICATION_WORKERS || '2'),
+            concurrency: parseInt(process.env.NOTIFICATION_CONCURRENCY || '10')
+          }
+        },
+        settings: {
+          maxConcurrency: parseInt(process.env.NOTIFICATION_MAX_CONCURRENCY || '50'),
+          defaultJobTimeout: parseInt(process.env.NOTIFICATION_JOB_TIMEOUT || '300000'), // 5 minutes
+          defaultJobTTL: parseInt(process.env.NOTIFICATION_JOB_TTL || '86400000'), // 24 hours
+          defaultMaxAttempts: parseInt(process.env.NOTIFICATION_MAX_ATTEMPTS || '3'),
+          cleanupInterval: parseInt(process.env.NOTIFICATION_CLEANUP_INTERVAL || '3600000'), // 1 hour
+          stalledInterval: parseInt(process.env.NOTIFICATION_STALLED_INTERVAL || '30000'), // 30 seconds
+          maxStalledCount: parseInt(process.env.NOTIFICATION_MAX_STALLED || '1')
+        },
+        monitoring: {
+          enabled: process.env.NOTIFICATION_MONITORING_ENABLED !== 'false',
+          metricsInterval: parseInt(process.env.NOTIFICATION_METRICS_INTERVAL || '60000'), // 1 minute
+          healthCheckInterval: parseInt(process.env.NOTIFICATION_HEALTH_CHECK_INTERVAL || '30000') // 30 seconds
+        },
+        healthcare: {
+          auditJobs: process.env.NOTIFICATION_AUDIT_JOBS !== 'false',
+          encryptSensitiveData: process.env.NOTIFICATION_ENCRYPT_SENSITIVE === 'true',
+          retentionPeriod: parseInt(process.env.NOTIFICATION_RETENTION_PERIOD || '2592000000'), // 30 days
+          complianceMode: process.env.NOTIFICATION_HIPAA_COMPLIANCE === 'true'
+        }
+      });
+
+      // Set up notification processing job handler
+      this.backgroundJobs.process('process-notification', async (job) => {
+        const { notificationId } = job.data;
+        const notification = this.notifications.get(notificationId);
+        
+        if (!notification) {
+          throw new Error(`Notification ${notificationId} not found`);
+        }
+
+        await this.processNotification(notification);
+        return { success: true, notificationId };
+      });
+
+      // Set up automatic queue processing
+      if (process.env.NOTIFICATION_AUTO_PROCESS_ENABLED === 'true') {
+        const processInterval = process.env.NOTIFICATION_PROCESS_INTERVAL || '30s';
+        this.backgroundJobs.schedule('process-notification-queue', processInterval, {}, {
+          priority: 'high',
+          attempts: 1
+        });
+
+        this.backgroundJobs.process('process-notification-queue', async () => {
+          await this.processNotificationQueue();
+          return { success: true, processed: true };
+        });
+      }
+
+      this.fastify.log.info('Background jobs setup completed', {
+        adapter: useRedis ? 'redis' : 'memory',
+        autoProcess: process.env.NOTIFICATION_AUTO_PROCESS_ENABLED === 'true'
+      });
+
+    } catch (error) {
+      this.fastify.log.error('Failed to setup background jobs:', error);
+      // Fallback to in-memory processing if background jobs fail
+      this.backgroundJobs = undefined;
+    }
+  }
+
+  private async processNotificationQueue(): Promise<void> {
+    try {
+      const pendingNotifications = Array.from(this.notifications.values())
+        .filter(n => n.status === 'queued')
+        .sort((a, b) => {
+          // Sort by priority first, then by created date
+          const priorityOrder = { critical: 1, urgent: 2, high: 3, normal: 4, low: 5 };
+          const aPriority = priorityOrder[a.priority] || 5;
+          const bPriority = priorityOrder[b.priority] || 5;
+          
+          if (aPriority !== bPriority) {
+            return aPriority - bPriority;
+          }
+          
+          const aTime = a.scheduledAt || new Date();
+          const bTime = b.scheduledAt || new Date();
+          return aTime.getTime() - bTime.getTime();
+        });
+
+      const batchSize = parseInt(process.env.NOTIFICATION_BATCH_SIZE || '50');
+      const batch = pendingNotifications.slice(0, batchSize);
+
+      for (const notification of batch) {
+        if (this.backgroundJobs) {
+          await this.backgroundJobs.add('process-notification', {
+            notificationId: notification.id
+          }, {
+            priority: notification.priority as any, // Map notification priority to job priority
+            attempts: this.config.retryAttempts,
+            delay: notification.scheduledAt ? 
+              Math.max(0, notification.scheduledAt.getTime() - Date.now()) : 0
+          });
+        } else {
+          // Fallback to direct processing
+          await this.processNotification(notification);
+        }
+      }
+
+      this.fastify.log.info('Processed notification queue', {
+        totalPending: pendingNotifications.length,
+        batchSize: batch.length,
+        useBackgroundJobs: !!this.backgroundJobs
+      });
+
+    } catch (error) {
+      this.fastify.log.error('Error processing notification queue:', error);
+    }
+  }
+
   private startProcessing(): void {
     if (!this.config.queueEnabled || this.processing) return;
 
     this.processing = true;
+
+    // Start background jobs service if available
+    if (this.backgroundJobs) {
+      this.backgroundJobs.start().then(() => {
+        this.fastify.log.info('Background jobs notification processing started');
+      }).catch(error => {
+        this.fastify.log.error('Failed to start background jobs:', error);
+        this.fallbackToIntervalProcessing();
+      });
+    } else {
+      this.fallbackToIntervalProcessing();
+    }
+  }
+
+  private fallbackToIntervalProcessing(): void {
     this.processingInterval = setInterval(async () => {
       await this.processQueues();
     }, 1000); // Process every second
 
-    this.fastify.log.info('Notification processing started');
+    this.fastify.log.info('Notification processing started (fallback mode)');
   }
 
   private async processQueues(): Promise<void> {
@@ -282,7 +440,7 @@ export class NotificationService extends EventEmitter {
   private async processNotification(notification: Notification): Promise<void> {
     try {
       // Check rate limits
-      if (!this.checkRateLimit(notification)) {
+      if (!(await this.checkRateLimit(notification))) {
         this.fastify.log.warn('Rate limit exceeded for notification', {
           notificationId: notification.id,
           channel: notification.channel,
@@ -433,9 +591,122 @@ export class NotificationService extends EventEmitter {
     return true;
   }
 
-  private checkRateLimit(notification: Notification): boolean {
+  private async checkRateLimit(notification: Notification): Promise<boolean> {
     if (!this.config.rateLimiting.enabled) return true;
 
+    const useRedis = process.env.NOTIFICATION_REDIS_RATE_LIMIT === 'true';
+    
+    if (useRedis) {
+      return await this.checkRedisRateLimit(notification);
+    } else {
+      return this.checkInMemoryRateLimit(notification);
+    }
+  }
+
+  private async checkRedisRateLimit(notification: Notification): Promise<boolean> {
+    try {
+      const redis = this.fastify.redis;
+      if (!redis) {
+        this.fastify.log.warn('Redis not available for rate limiting, falling back to in-memory');
+        return this.checkInMemoryRateLimit(notification);
+      }
+
+      const key = `${notification.channel}_${notification.recipient.id || 'anonymous'}`;
+      const now = Date.now();
+      const windows = {
+        minute: {
+          duration: 60000,
+          limit: this.config.rateLimiting.maxPerMinute,
+          key: `rate_limit:minute:${key}`
+        },
+        hour: {
+          duration: 3600000,
+          limit: this.config.rateLimiting.maxPerHour,
+          key: `rate_limit:hour:${key}`
+        },
+        day: {
+          duration: 86400000,
+          limit: this.config.rateLimiting.maxPerDay,
+          key: `rate_limit:day:${key}`
+        }
+      };
+
+      // Check and update rate limits for each window
+      for (const [windowType, window] of Object.entries(windows)) {
+        const windowStart = now - window.duration;
+        
+        // Use Redis pipeline for atomic operations
+        const pipeline = redis.pipeline();
+        
+        // Remove expired entries
+        pipeline.zremrangebyscore(window.key, 0, windowStart);
+        
+        // Count current entries
+        pipeline.zcard(window.key);
+        
+        // Add current request
+        pipeline.zadd(window.key, now, `${now}_${Math.random()}`);
+        
+        // Set expiration
+        pipeline.expire(window.key, Math.ceil(window.duration / 1000));
+        
+        const results = await pipeline.exec();
+        
+        if (!results) {
+          this.fastify.log.error('Redis pipeline failed for rate limiting');
+          return false;
+        }
+        
+        const currentCount = (results[1][1] as number) || 0;
+        
+        if (currentCount >= window.limit) {
+          this.fastify.log.warn('Rate limit exceeded', {
+            notificationId: notification.id,
+            channel: notification.channel,
+            recipient: notification.recipient.id || 'anonymous',
+            windowType,
+            currentCount,
+            limit: window.limit
+          });
+          
+          // Remove the request we just added since it's over the limit
+          await redis.zrem(window.key, `${now}_${Math.random()}`);
+          return false;
+        }
+      }
+
+      // Check burst limit (short-term spike protection)
+      const burstKey = `rate_limit:burst:${key}`;
+      const burstWindow = 10000; // 10 seconds
+      const burstStart = now - burstWindow;
+      
+      await redis.zremrangebyscore(burstKey, 0, burstStart);
+      const burstCount = await redis.zcard(burstKey);
+      
+      if (burstCount >= this.config.rateLimiting.burst) {
+        this.fastify.log.warn('Burst rate limit exceeded', {
+          notificationId: notification.id,
+          channel: notification.channel,
+          recipient: notification.recipient.id || 'anonymous',
+          burstCount,
+          burstLimit: this.config.rateLimiting.burst
+        });
+        return false;
+      }
+      
+      // Add to burst tracking
+      await redis.zadd(burstKey, now, `${now}_${Math.random()}`);
+      await redis.expire(burstKey, Math.ceil(burstWindow / 1000));
+
+      return true;
+
+    } catch (error) {
+      this.fastify.log.error('Error in Redis rate limiting, falling back to in-memory:', error);
+      return this.checkInMemoryRateLimit(notification);
+    }
+  }
+
+  private checkInMemoryRateLimit(notification: Notification): boolean {
     const key = `${notification.channel}_${notification.recipient.id || 'anonymous'}`;
     const now = new Date();
     const limit = this.rateLimitCounts.get(key);
@@ -723,11 +994,21 @@ export class NotificationService extends EventEmitter {
     };
   }
 
-  shutdown(): void {
+  async shutdown(): Promise<void> {
     this.processing = false;
     
     if (this.processingInterval) {
       clearInterval(this.processingInterval);
+    }
+
+    // Shutdown background jobs service if available
+    if (this.backgroundJobs) {
+      try {
+        await this.backgroundJobs.shutdown();
+        this.fastify.log.info('Background jobs service shutdown completed');
+      } catch (error) {
+        this.fastify.log.error('Error shutting down background jobs:', error);
+      }
     }
 
     this.removeAllListeners();

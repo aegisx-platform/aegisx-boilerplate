@@ -230,11 +230,19 @@ export interface MemoryAdapterConfig {
 }
 
 export interface RedisAdapterConfig {
-  host?: string
-  port?: number
+  host: string
+  port: number
+  password?: string
   db?: number
   keyPrefix?: string
   maxRetriesPerRequest?: number
+  maxJobs?: number
+  jobTTL?: number
+  enableCompression?: boolean
+  enableEncryption?: boolean
+  healthCheckInterval?: number
+  retryAttempts?: number
+  retryDelay?: number
 }
 
 export interface RabbitMQAdapterConfig {

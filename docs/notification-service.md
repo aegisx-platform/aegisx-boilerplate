@@ -403,6 +403,50 @@ SLACK_DEFAULT_CHANNEL=#general
 # Real-time WebSocket
 NOTIFICATION_WEBSOCKET_ENABLED=true
 NOTIFICATION_WEBSOCKET_CHANNEL=notifications
+
+# Redis-based Background Jobs Configuration
+JOBS_ADAPTER_TYPE=redis                       # Enable Redis job queue
+JOBS_REDIS_HOST=localhost                     # Redis host
+JOBS_REDIS_PORT=6379                          # Redis port
+JOBS_REDIS_PASSWORD=                          # Redis password (optional)
+JOBS_REDIS_DB=2                               # Redis database for jobs
+JOBS_REDIS_PREFIX=jobs:                       # Redis key prefix
+JOBS_MAX_JOBS=10000                           # Maximum jobs per queue
+JOBS_TTL=86400000                             # 24 hours - Job data TTL
+JOBS_ENABLE_ENCRYPTION=false                  # Enable job data encryption
+JOBS_HEALTH_CHECK_INTERVAL=30000              # 30 seconds - Health check interval
+JOBS_RETRY_ATTEMPTS=3                         # Redis operation retry attempts
+JOBS_RETRY_DELAY=1000                         # 1 second - Retry delay
+
+# Automatic Notification Processing
+NOTIFICATION_AUTO_PROCESS_ENABLED=true        # Enable automatic notification processing
+NOTIFICATION_PROCESS_INTERVAL=30s             # Process notifications every 30 seconds
+NOTIFICATION_BATCH_SIZE=50                    # Process 50 notifications at once
+NOTIFICATION_WORKERS=2                        # Number of notification workers
+NOTIFICATION_CONCURRENCY=10                   # Concurrent notifications per worker
+NOTIFICATION_MAX_CONCURRENCY=50               # Global max concurrent notifications
+NOTIFICATION_JOB_TIMEOUT=300000               # 5 minutes - Notification job timeout
+NOTIFICATION_JOB_TTL=86400000                 # 24 hours - Notification job TTL
+NOTIFICATION_MAX_ATTEMPTS=3                   # Maximum retry attempts for failed notifications
+NOTIFICATION_CLEANUP_INTERVAL=3600000         # 1 hour - Cleanup interval for old notifications
+NOTIFICATION_STALLED_INTERVAL=30000           # 30 seconds - Stalled notification check interval
+NOTIFICATION_MAX_STALLED=1                    # Max stalled count before failure
+
+# Notification Monitoring
+NOTIFICATION_MONITORING_ENABLED=true          # Enable notification monitoring
+NOTIFICATION_METRICS_INTERVAL=60000           # 1 minute - Metrics collection interval
+NOTIFICATION_HEALTH_CHECK_INTERVAL=30000      # 30 seconds - Health check interval
+
+# Notification Healthcare/Compliance
+NOTIFICATION_AUDIT_JOBS=true                  # Enable notification job auditing
+NOTIFICATION_ENCRYPT_SENSITIVE=false          # Encrypt sensitive notification data
+NOTIFICATION_RETENTION_PERIOD=2592000000      # 30 days - Notification retention period
+NOTIFICATION_HIPAA_COMPLIANCE=true            # Enable HIPAA compliance mode
+
+# Redis-based Rate Limiting for Notifications
+NOTIFICATION_REDIS_RATE_LIMIT=true            # Use Redis for distributed rate limiting
+NOTIFICATION_RATE_LIMIT_WINDOW=60000          # 1 minute rate limit window
+NOTIFICATION_RATE_LIMIT_MAX=100               # Max notifications per window
 ```
 
 ## 📈 Monitoring & Analytics
@@ -446,6 +490,223 @@ fastify.eventBus.subscribe('user.password_reset_requested', async (event) => {
 fastify.eventBus.subscribe('security.suspicious_activity', async (event) => {
   await notificationService.createNotification('security-alert', 'email', ...);
 });
+```
+
+## 🔄 Redis Automatic Processing
+
+### **Overview**
+The notification system now supports Redis-based automatic processing, providing:
+- **Persistent queues** that survive server restarts
+- **Distributed processing** across multiple service instances
+- **Automatic retry logic** with exponential backoff
+- **Redis-based rate limiting** for scalable deployments
+- **Scheduled processing** with configurable intervals
+
+### **Setup Redis Automatic Processing**
+
+#### **1. Enable Redis Background Jobs**
+```bash
+# Set environment variables
+JOBS_ADAPTER_TYPE=redis
+JOBS_REDIS_HOST=localhost
+JOBS_REDIS_PORT=6379
+JOBS_REDIS_DB=2
+NOTIFICATION_AUTO_PROCESS_ENABLED=true
+NOTIFICATION_PROCESS_INTERVAL=30s
+NOTIFICATION_REDIS_RATE_LIMIT=true
+```
+
+#### **2. Start Redis Server**
+```bash
+# Using Docker
+docker run -d --name redis-notifications -p 6379:6379 redis:7-alpine
+
+# Or use existing Redis from docker-compose
+docker-compose up -d aegisx-redis
+```
+
+#### **3. Test Automatic Processing**
+```bash
+# Create notification - it will be automatically processed
+curl -X POST "http://localhost:3000/api/v1/notifications" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "recipient": {"email": "test@example.com"},
+    "type": "custom",
+    "channel": "email",
+    "content": {
+      "text": "This notification will be automatically processed by Redis queue!"
+    },
+    "priority": "high"
+  }'
+```
+
+#### **4. Monitor Redis Queue**
+```bash
+# Check Redis keys for notification jobs
+redis-cli -p 6379 -n 2 KEYS "jobs:notifications:*"
+
+# Check waiting jobs
+redis-cli -p 6379 -n 2 ZRANGE "jobs:notifications:waiting" 0 -1
+
+# Check job status
+redis-cli -p 6379 -n 2 SMEMBERS "jobs:notifications:status:waiting"
+```
+
+### **Configuration Examples**
+
+#### **High-Throughput Setup**
+```bash
+# For high-volume notification processing
+NOTIFICATION_WORKERS=5
+NOTIFICATION_CONCURRENCY=20
+NOTIFICATION_MAX_CONCURRENCY=100
+NOTIFICATION_BATCH_SIZE=100
+NOTIFICATION_PROCESS_INTERVAL=10s
+```
+
+#### **Healthcare Compliance Setup**
+```bash
+# HIPAA-compliant notification processing
+NOTIFICATION_HIPAA_COMPLIANCE=true
+NOTIFICATION_AUDIT_JOBS=true
+NOTIFICATION_ENCRYPT_SENSITIVE=true
+JOBS_ENABLE_ENCRYPTION=true
+NOTIFICATION_RETENTION_PERIOD=2592000000  # 30 days
+```
+
+#### **Development Setup**
+```bash
+# Faster processing for development
+NOTIFICATION_PROCESS_INTERVAL=5s
+NOTIFICATION_BATCH_SIZE=10
+NOTIFICATION_WORKERS=1
+NOTIFICATION_CONCURRENCY=5
+```
+
+### **Advanced Features**
+
+#### **Scheduled Notifications**
+```bash
+# Create notification scheduled for future processing
+curl -X POST "http://localhost:3000/api/v1/notifications" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "recipient": {"email": "patient@hospital.com"},
+    "type": "appointment-reminder",
+    "channel": "email",
+    "content": {
+      "text": "Reminder: Your appointment is tomorrow at 2:00 PM"
+    },
+    "priority": "high",
+    "scheduledAt": "2024-01-15T13:00:00Z"
+  }'
+```
+
+#### **Priority-Based Processing**
+```bash
+# Critical notifications are processed first
+curl -X POST "http://localhost:3000/api/v1/notifications" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "recipient": {"email": "doctor@hospital.com"},
+    "type": "emergency",
+    "channel": "email",
+    "content": {
+      "text": "CRITICAL: Patient emergency in Room 205"
+    },
+    "priority": "critical"
+  }'
+```
+
+#### **Batch Processing with Redis**
+```bash
+# Create multiple notifications - all processed automatically
+for i in {1..10}; do
+  curl -X POST "http://localhost:3000/api/v1/notifications" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"recipient\": {\"email\": \"user$i@example.com\"},
+      \"type\": \"welcome\",
+      \"channel\": \"email\",
+      \"content\": {\"text\": \"Welcome to AegisX Healthcare System!\"},
+      \"priority\": \"normal\"
+    }"
+done
+
+# All notifications will be automatically processed by Redis workers
+```
+
+### **Redis Rate Limiting**
+
+#### **Distributed Rate Limiting**
+```bash
+# Redis-based rate limiting works across multiple service instances
+NOTIFICATION_REDIS_RATE_LIMIT=true
+NOTIFICATION_RATE_LIMIT_PER_MINUTE=100
+NOTIFICATION_RATE_LIMIT_PER_HOUR=1000
+NOTIFICATION_RATE_LIMIT_PER_DAY=10000
+```
+
+#### **Test Rate Limiting**
+```bash
+# Send rapid notifications to test rate limiting
+for i in {1..150}; do
+  curl -X POST "http://localhost:3000/api/v1/notifications" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"recipient\": {\"email\": \"test@example.com\"},
+      \"type\": \"custom\",
+      \"channel\": \"email\",
+      \"content\": {\"text\": \"Rate limit test $i\"},
+      \"priority\": \"normal\"
+    }"
+done
+
+# Check logs for rate limiting messages
+```
+
+### **Monitoring Redis Processing**
+
+#### **Check Queue Health**
+```bash
+# Get queue statistics
+curl -X GET "http://localhost:3000/api/v1/notifications/analytics"
+```
+
+#### **Monitor Redis Directly**
+```bash
+# Check Redis memory usage
+redis-cli -p 6379 INFO memory
+
+# Check active jobs
+redis-cli -p 6379 -n 2 ZCARD "jobs:notifications:waiting"
+
+# Check processing stats
+redis-cli -p 6379 -n 2 GET "jobs:notifications:stats:processed"
+```
+
+### **Troubleshooting**
+
+#### **Common Issues**
+1. **Redis Connection Failed**: Check Redis server is running and accessible
+2. **Jobs Not Processing**: Verify `NOTIFICATION_AUTO_PROCESS_ENABLED=true`
+3. **Rate Limiting Issues**: Check Redis rate limiting keys and configuration
+4. **Memory Issues**: Monitor Redis memory usage and set appropriate limits
+
+#### **Debug Commands**
+```bash
+# Check background jobs status
+curl -X GET "http://localhost:3000/health"
+
+# Check Redis connectivity
+redis-cli -p 6379 ping
+
+# Check notification queue
+curl -X GET "http://localhost:3000/api/v1/notifications/queue/pending"
+
+# Check scheduled notifications
+curl -X GET "http://localhost:3000/api/v1/notifications/queue/scheduled"
 ```
 
 ## 🧪 Testing Examples

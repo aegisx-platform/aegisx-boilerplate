@@ -23,6 +23,7 @@ import {
   WorkerStats,
   BackgroundJobsConfig,
   QueueAdapterConfig,
+  RedisAdapterConfig,
   BackgroundJobsError,
   JobNotFoundError,
   QueueNotFoundError,
@@ -31,6 +32,7 @@ import {
 import { JobScheduler } from '../utils/job-scheduler'
 import { JobWorker, LoggingMiddleware, MetricsMiddleware } from '../workers/job-worker'
 import { MemoryJobAdapter } from '../adapters/jobs/memory.adapter'
+import { RedisJobAdapter } from '../adapters/jobs/redis.adapter'
 
 export class BackgroundJobsService extends EventEmitter implements IJobManager {
   private config: BackgroundJobsConfig
@@ -568,8 +570,7 @@ export class BackgroundJobsService extends EventEmitter implements IJobManager {
         return new MemoryJobAdapter(queueName, config.options)
 
       case 'redis':
-        // Would create Redis adapter
-        throw new BackgroundJobsError('Redis adapter not implemented yet', 'ADAPTER_NOT_IMPLEMENTED')
+        return new RedisJobAdapter(queueName, config.options as RedisAdapterConfig)
 
       case 'rabbitmq':
         // Would create RabbitMQ adapter

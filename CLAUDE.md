@@ -97,11 +97,11 @@ domain-name/
 - Security middleware (Helmet, Rate Limiting, CORS)
 - API documentation with Swagger
 - Docker setup with health checks
-- **✅ Notification System** - Complete multi-channel notification service with Gmail SMTP support
+- **✅ Notification System** - Complete multi-channel notification service with Gmail SMTP support and Redis automatic processing
 - **Enterprise Infrastructure Services** (Complete - 16 Services):
   - **HTTP Client Service** - Retry, timeout, circuit breaker integration
   - **Secrets Manager Service** - Secure API keys and tokens handling
-  - **Background Jobs System** - Async task processing
+  - **Background Jobs System** - Async task processing with Redis queue support
   - **Circuit Breaker Service** - Prevent cascade failures
   - **Error Tracker Service** - Centralized error handling and reporting
   - **Event Bus System** - Cross-service communication with multi-adapter support
@@ -305,6 +305,9 @@ Complete suite of 16 production-ready services with healthcare compliance featur
   - **Database Schema**: 8-table comprehensive notification system
   - **Email Service**: Production-ready Gmail SMTP with App Password support
   - **Queue Processing**: Automatic retry logic and failure handling
+  - **Redis Integration**: Automatic processing with Redis job queues
+  - **Background Jobs**: Redis-based automatic processing every 30 seconds
+  - **Rate Limiting**: Distributed Redis-based rate limiting across service instances
 
 ## Code Conventions
 
@@ -365,7 +368,7 @@ fastify.log.info('User registration completed', {
 
 #### Service Integration
 ```typescript
-// ✅ DO: Use existing infrastructure services (15 available)
+// ✅ DO: Use existing infrastructure services (16 available)
 await fastify.notification.send('email', recipient, template, data);
 await fastify.metrics.recordEvent('user_registration', metadata);
 await fastify.retry.execute(operationFunction);
@@ -544,10 +547,19 @@ This is designed for healthcare applications requiring:
 - **✅ Storage Database Integration**: Complete database persistence layer for storage service with 5-table schema
 - **✅ Shared Files Management**: Complete collaborative file sharing with granular permissions, user management, and revocation
 - **✅ File Access Control Plugin**: Security middleware with ownership & permission validation, caching, and audit integration
-- **Enterprise Infrastructure Foundation**: Complete suite of 15 production-ready services
+- **Enterprise Infrastructure Foundation**: Complete suite of 16 production-ready services
 - **Event-Driven Architecture**: Multi-adapter Event Bus (Memory, Redis, RabbitMQ) with middleware support
 - **Comprehensive Audit System**: Multi-adapter audit logging (Direct DB, Redis Pub/Sub, RabbitMQ)
-- **Notification Service**: Multi-channel notifications with HIPAA compliance and template system
+- **✅ Redis Automatic Notification Processing**: Complete Redis-based automatic notification processing with background jobs
+  - **✅ Redis Job Queue Adapter**: Production-ready Redis adapter with priority queues and persistence
+  - **✅ Background Jobs Integration**: Seamless integration with notification service for automatic processing
+  - **✅ Automatic Processing**: Configurable interval processing (default 30 seconds) with scheduled jobs
+  - **✅ Redis Rate Limiting**: Distributed rate limiting across service instances with multi-window support
+  - **✅ Healthcare Compliance**: HIPAA-compliant job processing with audit logging and encryption
+  - **✅ Environment Configuration**: 25+ configuration options for fine-tuning Redis queue behavior
+  - **✅ Comprehensive Documentation**: Complete setup guide with Redis monitoring and troubleshooting
+  - **✅ Production Ready**: TypeScript build successful, fully tested and working implementation
+- **Notification Service**: Multi-channel notifications with HIPAA compliance, Gmail SMTP, and Redis automatic processing
 - **Infrastructure Services**: Connection Pool, Config Validator, Health Check, Retry, Metrics, Template Engine
 - **Healthcare Compliance**: HIPAA-compliant audit trails, encryption, and data sanitization
 - **Database Schema**: 13-table system (8 notification + 5 storage) with comprehensive relationships
@@ -617,6 +629,17 @@ This is designed for healthcare applications requiring:
 4. **เพิ่ม Integration Points** → อัพเดท "Key Integration Points"
 5. **เพิ่ม Environment Variables** → อัพเดท "Environment Configuration"
 6. **เพิ่ม Documentation** → อัพเดท "Important Files"
+
+### 🚀 **Latest Updates - Redis Automatic Notification Processing**
+**Added comprehensive Redis-based automatic notification processing:**
+- **Redis Job Queue Adapter**: Production-ready with priority queues and persistence
+- **Background Jobs Integration**: Seamless notification service integration
+- **Automatic Processing**: Configurable interval processing (default 30 seconds)
+- **Redis Rate Limiting**: Distributed rate limiting across service instances
+- **Healthcare Compliance**: HIPAA-compliant job processing with audit logging
+- **Environment Configuration**: 25+ configuration options for fine-tuning
+- **Complete Documentation**: Setup guide with Redis monitoring and troubleshooting
+- **Production Ready**: Successfully built and tested TypeScript implementation
 
 ### 📋 **Documentation Checklist**
 เมื่อสร้าง feature ใหม่:
