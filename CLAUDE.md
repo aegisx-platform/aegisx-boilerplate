@@ -39,10 +39,11 @@ apps/api/src/app/domains/
 ├── 📁 rbac/             # ✅ Role-Based Access Control  
 ├── 📁 user-management/  # ✅ User Profile Management
 ├── 📁 audit-log/        # ✅ Audit Log Management
-└── 📁 storage/          # ✅ File Storage & Sharing Management
+├── 📁 storage/          # ✅ File Storage & Sharing Management
+└── 📁 notification/     # ✅ Multi-Channel Notification System
 ```
 **Purpose**: Core business domains that every application needs
-**When to use**: Authentication, user management, permissions, audit, file storage
+**When to use**: Authentication, user management, permissions, audit, file storage, notifications
 
 ### 🏥 Layer 3: Features Layer - "Healthcare Features" 🚧
 ```
@@ -96,6 +97,7 @@ domain-name/
 - Security middleware (Helmet, Rate Limiting, CORS)
 - API documentation with Swagger
 - Docker setup with health checks
+- **✅ Notification System** - Complete multi-channel notification service with Gmail SMTP support
 - **Enterprise Infrastructure Services** (Complete - 16 Services):
   - **HTTP Client Service** - Retry, timeout, circuit breaker integration
   - **Secrets Manager Service** - Secure API keys and tokens handling
@@ -254,7 +256,7 @@ Healthcare features in `/features/` directory:
 ## Core Infrastructure Components
 
 ### Enterprise Infrastructure Services
-Complete suite of 15 production-ready services with healthcare compliance features:
+Complete suite of 16 production-ready services with healthcare compliance features:
 
 #### Core Communication & Processing
 - **HTTP Client Service**: `apps/api/src/app/core/shared/services/http-client.service.ts`
@@ -297,10 +299,12 @@ Complete suite of 15 production-ready services with healthcare compliance featur
   - Email and document templates with healthcare helpers and caching
 - **Custom Metrics Service**: `apps/api/src/app/core/shared/services/custom-metrics.service.ts`
   - Business, performance, and healthcare-specific metrics with alerting
-- **Notification Service**: `apps/api/src/app/core/shared/services/notification.service.ts`
-  - Multi-channel notifications (email, SMS, push) with HIPAA compliance
+- **Notification Service**: `apps/api/src/app/domains/notification/`
+  - Multi-channel notifications (email, SMS, push) with HIPAA compliance and Gmail SMTP
   - **Documentation**: `docs/notification-service.md`
-  - **Database Schema**: `docs/notification-database-schema.md`
+  - **Database Schema**: 8-table comprehensive notification system
+  - **Email Service**: Production-ready Gmail SMTP with App Password support
+  - **Queue Processing**: Automatic retry logic and failure handling
 
 ## Code Conventions
 

@@ -41,6 +41,9 @@ The AegisX Notification Service is a comprehensive, production-ready notificatio
 - ✅ **Batch Operations**: Group notifications for efficient processing
 - ✅ **Error Tracking**: Detailed error logging and recovery
 - ✅ **Analytics & Statistics**: Comprehensive reporting and metrics
+- ✅ **Gmail SMTP Integration**: Production-ready email sending with App Password support
+- ✅ **Queue Processing**: Automatic retry and failure handling
+- ✅ **Comprehensive API**: Full REST API with OpenAPI documentation
 
 ### **✅ Healthcare Features**
 - ✅ **HIPAA Compliance**: Audit trails, encryption, data sanitization
@@ -48,6 +51,14 @@ The AegisX Notification Service is a comprehensive, production-ready notificatio
 - ✅ **Emergency Notifications**: Critical alert system with escalation
 - ✅ **Appointment Reminders**: Automated patient appointment notifications
 - ✅ **Lab Results**: Secure lab result delivery with urgency flags
+
+### **✅ Email Service Features**
+- ✅ **Gmail SMTP Support**: Production-ready with App Password authentication
+- ✅ **Connection Verification**: SMTP connection testing and validation
+- ✅ **HTML Email Support**: Rich email formatting with templates
+- ✅ **Error Handling**: Comprehensive error tracking and retry logic
+- ✅ **Environment Configuration**: Easy SMTP provider switching
+- ✅ **Mock Email Mode**: Development testing without actual email sending
 - ✅ **Prescription Notifications**: Pharmacy pickup alerts
 - ✅ **Audit Integration**: Full audit logging for compliance
 
@@ -435,6 +446,150 @@ fastify.eventBus.subscribe('user.password_reset_requested', async (event) => {
 fastify.eventBus.subscribe('security.suspicious_activity', async (event) => {
   await notificationService.createNotification('security-alert', 'email', ...);
 });
+```
+
+## 🧪 Testing Examples
+
+### **1. Basic Email Notification Test**
+```bash
+# Create a simple email notification
+curl -X POST "http://localhost:3000/api/v1/notifications" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "recipient": {
+      "email": "user@example.com"
+    },
+    "type": "custom",
+    "channel": "email",
+    "content": {
+      "text": "Hello from AegisX Healthcare System!",
+      "html": "<h2>Welcome!</h2><p>Your account has been created successfully.</p>"
+    },
+    "priority": "high",
+    "metadata": {
+      "source": "manual_test"
+    }
+  }'
+```
+
+### **2. Process Notification Queue**
+```bash
+# Process all pending notifications
+curl -X POST "http://localhost:3000/api/v1/notifications/queue/process" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+### **3. Check Notification Status**
+```bash
+# Get notification details
+curl -X GET "http://localhost:3000/api/v1/notifications/NOTIFICATION_ID"
+```
+
+### **4. List Notifications with Filters**
+```bash
+# Get all high priority email notifications
+curl -X GET "http://localhost:3000/api/v1/notifications?priority=high&channel=email&limit=10"
+```
+
+### **5. Healthcare-Specific Notification**
+```bash
+# Create appointment reminder
+curl -X POST "http://localhost:3000/api/v1/notifications" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "recipient": {
+      "email": "patient@example.com"
+    },
+    "type": "appointment-reminder",
+    "channel": "email",
+    "content": {
+      "text": "Reminder: You have an appointment with Dr. Smith tomorrow at 2:00 PM",
+      "html": "<div><strong>Appointment Reminder</strong><br>Doctor: Dr. Smith<br>Date: Tomorrow<br>Time: 2:00 PM</div>"
+    },
+    "priority": "high",
+    "metadata": {
+      "healthcare": {
+        "patientId": "P123456",
+        "providerId": "DR_SMITH",
+        "appointmentId": "APT789",
+        "facilityId": "CLINIC_001"
+      }
+    }
+  }'
+```
+
+### **6. Batch Processing Test**
+```bash
+# Create multiple notifications
+for i in {1..5}; do
+  curl -X POST "http://localhost:3000/api/v1/notifications" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"recipient\": {\"email\": \"test$i@example.com\"},
+      \"type\": \"custom\",
+      \"channel\": \"email\",
+      \"content\": {\"text\": \"Test message $i\"},
+      \"priority\": \"normal\"
+    }"
+done
+
+# Process all at once
+curl -X POST "http://localhost:3000/api/v1/notifications/queue/process" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+### **7. Error Handling Test**
+```bash
+# Test with invalid email
+curl -X POST "http://localhost:3000/api/v1/notifications" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "recipient": {
+      "email": "invalid-email"
+    },
+    "type": "custom",
+    "channel": "email",
+    "content": {
+      "text": "This should fail validation"
+    },
+    "priority": "normal"
+  }'
+```
+
+### **8. Gmail SMTP Configuration Test**
+```bash
+# Test SMTP connection (requires proper Gmail App Password in .env)
+curl -X POST "http://localhost:3000/api/v1/notifications" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "recipient": {
+      "email": "your-email@gmail.com"
+    },
+    "type": "custom",
+    "channel": "email",
+    "content": {
+      "text": "Testing Gmail SMTP integration",
+      "html": "<p><strong>Success!</strong> Gmail SMTP is working correctly.</p>"
+    },
+    "priority": "high",
+    "metadata": {
+      "test": "gmail_smtp"
+    }
+  }'
+```
+
+### **9. Queue Status Check**
+```bash
+# Get queue statistics
+curl -X GET "http://localhost:3000/api/v1/notifications/queue/pending?limit=50"
+```
+
+### **10. Notification Analytics**
+```bash
+# Get notification statistics
+curl -X GET "http://localhost:3000/api/v1/notifications/analytics"
 ```
 
 ### **Template Engine Integration**
