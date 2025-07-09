@@ -119,6 +119,8 @@ export interface NotificationRecipient {
 }
 
 export interface NotificationPreferences {
+  id?: number;
+  userId: string;
   channels: NotificationChannel[];
   quietHours?: {
     start: string; // HH:mm format
@@ -130,10 +132,16 @@ export interface NotificationPreferences {
     digest: boolean;
     digestInterval: 'hourly' | 'daily' | 'weekly';
   };
+  typePreferences?: Record<string, {
+    enabled: boolean;
+    channels: NotificationChannel[];
+  }>;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface NotificationContent {
-  text: string;
+  text?: string;
   html?: string;
   template?: string;
   templateData?: Record<string, any>;
@@ -165,6 +173,7 @@ export interface NotificationMetadata {
   correlationId?: string;
   context?: Record<string, any>;
   healthcare?: HealthcareNotificationMetadata;
+  [key: string]: any; // Allow additional properties
 }
 
 export interface HealthcareNotificationMetadata {
@@ -239,6 +248,7 @@ export interface QueueMetrics {
 
 export interface NotificationBatch {
   id: string;
+  name?: string;
   notifications: string[]; // notification IDs
   status: 'pending' | 'processing' | 'completed' | 'failed';
   createdAt: Date;

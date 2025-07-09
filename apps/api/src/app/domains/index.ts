@@ -13,6 +13,8 @@ const domainsPlugin: FastifyPluginAsync = async (fastify) => {
   await fastify.register(rbacDomain);
   await fastify.register(userManagementDomain);
   await fastify.register(auditLogDomain);
+  
+  // Notification domain is now registered at API layer for proper versioning
 
   fastify.log.info('✅ Domain modules loaded successfully');
 };

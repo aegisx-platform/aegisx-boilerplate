@@ -24,7 +24,7 @@ import configValidator from './config-validator';
 import retryService from './retry-service';
 import templateEngine from './template-engine';
 import customMetrics from './custom-metrics';
-import notification from './notification';
+// import notification from './notification'; // Disabled: Using domain-based notification instead
 import fileAccessControl from './security/file-access-control';
 import websocket from './websocket';
 
@@ -41,7 +41,7 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
   await fastify.register(retryService);
   await fastify.register(templateEngine);
   await fastify.register(customMetrics);
-  await fastify.register(notification);
+  // await fastify.register(notification); // Disabled: Using domain-based notification instead
   await fastify.register(httpClient);
   await fastify.register(secretsManager);
   await fastify.register(jwt);

@@ -30,7 +30,7 @@ export default fp<TemplateEnginePluginOptions>(
         enableCaching: true,
         cacheTimeout: 300000, // 5 minutes
         maxCacheSize: 100,
-        templatesDirectory: './templates',
+        templatesDirectory: './api/templates',
         enableMinification: true,
         autoEscape: true,
       },
@@ -80,7 +80,7 @@ export default fp<TemplateEnginePluginOptions>(
     // Add management routes if enabled
     if (pluginOptions.enableRoutes) {
       // Get all templates
-      fastify.get('/templates', async (request, reply) => {
+      fastify.get('/api/templates', async (request, reply) => {
         try {
           const templates = templateEngine.getTemplateNames();
           return reply.send({
@@ -105,7 +105,7 @@ export default fp<TemplateEnginePluginOptions>(
       });
 
       // Get specific template details
-      fastify.get('/templates/:name', async (request, reply) => {
+      fastify.get('/api/templates/:name', async (request, reply) => {
         try {
           const { name } = request.params as { name: string };
           const template = templateEngine.getTemplate(name);
@@ -128,7 +128,7 @@ export default fp<TemplateEnginePluginOptions>(
       });
 
       // Render template
-      fastify.post('/templates/:name/render', async (request, reply) => {
+      fastify.post('/api/templates/:name/render', async (request, reply) => {
         try {
           const { name } = request.params as { name: string };
           const { data, options = {} } = request.body as {
@@ -155,7 +155,7 @@ export default fp<TemplateEnginePluginOptions>(
       });
 
       // Render email template
-      fastify.post('/templates/:name/render-email', async (request, reply) => {
+      fastify.post('/api/templates/:name/render-email', async (request, reply) => {
         try {
           const { name } = request.params as { name: string };
           const { data, options = {} } = request.body as {
@@ -179,7 +179,7 @@ export default fp<TemplateEnginePluginOptions>(
       });
 
       // Render document template
-      fastify.post('/templates/:name/render-document', async (request, reply) => {
+      fastify.post('/api/templates/:name/render-document', async (request, reply) => {
         try {
           const { name } = request.params as { name: string };
           const { data, format = 'html', options = {} } = request.body as {
@@ -208,7 +208,7 @@ export default fp<TemplateEnginePluginOptions>(
       });
 
       // Get template metrics
-      fastify.get('/templates/metrics', async (request, reply) => {
+      fastify.get('/api/templates/metrics', async (request, reply) => {
         try {
           const metrics = templateEngine.getMetrics();
           return reply.send({ metrics });
@@ -222,7 +222,7 @@ export default fp<TemplateEnginePluginOptions>(
       });
 
       // Get cache statistics
-      fastify.get('/templates/cache/stats', async (request, reply) => {
+      fastify.get('/api/templates/cache/stats', async (request, reply) => {
         try {
           const stats = templateEngine.getCacheStats();
           return reply.send({ cache: stats });
@@ -236,7 +236,7 @@ export default fp<TemplateEnginePluginOptions>(
       });
 
       // Clear template cache
-      fastify.delete('/templates/cache', async (request, reply) => {
+      fastify.delete('/api/templates/cache', async (request, reply) => {
         try {
           const query = request.query as any;
           const templateName = query?.template;
@@ -258,7 +258,7 @@ export default fp<TemplateEnginePluginOptions>(
       });
 
       // Clear metrics
-      fastify.delete('/templates/metrics', async (request, reply) => {
+      fastify.delete('/api/templates/metrics', async (request, reply) => {
         try {
           templateEngine.clearMetrics();
           return reply.send({ message: 'Template metrics cleared' });
@@ -272,7 +272,7 @@ export default fp<TemplateEnginePluginOptions>(
       });
 
       // Register new template
-      fastify.post('/templates', async (request, reply) => {
+      fastify.post('/api/templates', async (request, reply) => {
         try {
           const template = request.body as any;
           
@@ -299,7 +299,7 @@ export default fp<TemplateEnginePluginOptions>(
       });
 
       // Delete template
-      fastify.delete('/templates/:name', async (request, reply) => {
+      fastify.delete('/api/templates/:name', async (request, reply) => {
         try {
           const { name } = request.params as { name: string };
           const removed = templateEngine.removeTemplate(name);
