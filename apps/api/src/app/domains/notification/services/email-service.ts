@@ -90,11 +90,11 @@ export class EmailService {
           notificationId: notification.id,
           to: notification.recipient.email,
         });
-        
+
         // Skip connection verification for now and try to send directly
         // to get more specific error information
         this.fastify.log.info('Attempting to send email directly to get detailed error information');
-        
+
         await this.sendEmailWithNodemailer(notification);
       } else {
         // Fall back to mock for development
@@ -104,7 +104,7 @@ export class EmailService {
         });
         await this.mockSendEmail(notification);
       }
-      
+
       this.fastify.log.info('Email sent successfully', {
         notificationId: notification.id,
         recipient: notification.recipient.email,
@@ -125,7 +125,7 @@ export class EmailService {
   private async mockSendEmail(notification: Notification): Promise<void> {
     // Simulate email sending delay
     await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-    
+
     // Simulate occasional failures (5% failure rate)
     if (Math.random() < 0.05) {
       throw new Error('SMTP connection failed');
@@ -212,14 +212,3 @@ export const defaultEmailConfig: EmailConfig = {
     directory: './templates/email',
   },
 };
-
-// Debug: Log email config on startup
-console.log('Email Config Environment:', {
-  SMTP_HOST: process.env.SMTP_HOST,
-  SMTP_PORT: process.env.SMTP_PORT,
-  SMTP_SECURE: process.env.SMTP_SECURE,
-  SMTP_USER: process.env.SMTP_USER ? '***' : undefined,
-  SMTP_PASS: process.env.SMTP_PASS ? '***' : undefined,
-  EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME,
-  EMAIL_FROM_ADDRESS: process.env.EMAIL_FROM_ADDRESS,
-});
