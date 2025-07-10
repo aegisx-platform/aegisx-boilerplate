@@ -427,6 +427,154 @@ const schema = {
       type: 'string',
       default: ''
     },
+    
+    // ===================================================
+    // Bull + RabbitMQ Queue System Configuration
+    // ===================================================
+    QUEUE_BROKER: {
+      type: 'string',
+      enum: ['redis', 'rabbitmq'],
+      default: 'redis'
+    },
+    
+    // Redis Queue Configuration (Bull)
+    QUEUE_REDIS_DB: {
+      type: 'string',
+      default: '1'
+    },
+    QUEUE_PREFIX: {
+      type: 'string',
+      default: 'bull'
+    },
+    QUEUE_DEFAULT_ATTEMPTS: {
+      type: 'string',
+      default: '3'
+    },
+    QUEUE_BACKOFF_TYPE: {
+      type: 'string',
+      enum: ['fixed', 'exponential', 'linear'],
+      default: 'exponential'
+    },
+    QUEUE_BACKOFF_DELAY: {
+      type: 'string',
+      default: '2000'
+    },
+    QUEUE_REMOVE_ON_COMPLETE: {
+      type: 'string',
+      default: 'true'
+    },
+    QUEUE_REMOVE_ON_FAIL: {
+      type: 'string',
+      default: 'false'
+    },
+    QUEUE_METRICS_INTERVAL: {
+      type: 'string',
+      default: '60000'
+    },
+    
+    // RabbitMQ Configuration
+    RABBITMQ_HOST: {
+      type: 'string',
+      default: 'localhost'
+    },
+    RABBITMQ_PORT: {
+      type: 'string',
+      default: '5672'
+    },
+    RABBITMQ_USER: {
+      type: 'string',
+      default: 'guest'
+    },
+    RABBITMQ_PASS: {
+      type: 'string',
+      default: 'guest'
+    },
+    RABBITMQ_VHOST: {
+      type: 'string',
+      default: '/'
+    },
+    RABBITMQ_PROTOCOL: {
+      type: 'string',
+      enum: ['amqp', 'amqps'],
+      default: 'amqp'
+    },
+    RABBITMQ_EXCHANGE: {
+      type: 'string',
+      default: 'notifications'
+    },
+    RABBITMQ_EXCHANGE_TYPE: {
+      type: 'string',
+      enum: ['direct', 'topic', 'fanout', 'headers'],
+      default: 'topic'
+    },
+    RABBITMQ_EXCHANGE_DURABLE: {
+      type: 'string',
+      default: 'true'
+    },
+    RABBITMQ_QUEUE_DURABLE: {
+      type: 'string',
+      default: 'true'
+    },
+    RABBITMQ_QUEUE_EXCLUSIVE: {
+      type: 'string',
+      default: 'false'
+    },
+    RABBITMQ_QUEUE_AUTO_DELETE: {
+      type: 'string',
+      default: 'false'
+    },
+    RABBITMQ_PREFETCH: {
+      type: 'string',
+      default: '10'
+    },
+    RABBITMQ_RECONNECT_INTERVAL: {
+      type: 'string',
+      default: '5000'
+    },
+    
+    // Queue Monitoring & Management
+    QUEUE_MONITORING_ENABLED: {
+      type: 'string',
+      default: 'true'
+    },
+    QUEUE_MONITORING_INTERVAL: {
+      type: 'string',
+      default: '30000'
+    },
+    
+    // ===================================================
+    // Notification Queue Settings (Bull/RabbitMQ Integration)
+    // ===================================================
+    NOTIFICATION_REDIS_DB: {
+      type: 'string',
+      default: '1'
+    },
+    NOTIFICATION_AUTO_PROCESS_ENABLED: {
+      type: 'string',
+      default: 'true'
+    },
+    NOTIFICATION_PROCESS_INTERVAL: {
+      type: 'string',
+      default: '30s'
+    },
+    
+    // Redis-based Rate Limiting for Notifications
+    NOTIFICATION_REDIS_RATE_LIMIT: {
+      type: 'string',
+      default: 'true'
+    },
+    NOTIFICATION_RATE_LIMIT_WINDOW: {
+      type: 'string',
+      default: '60000'
+    },
+    NOTIFICATION_RATE_LIMIT_MAX: {
+      type: 'string',
+      default: '100'
+    },
+    NOTIFICATION_RETRY_ATTEMPTS: {
+      type: 'string',
+      default: '3'
+    },
 
     // Event Bus Configuration
     EVENT_BUS_ENABLED: {
@@ -683,6 +831,42 @@ declare module 'fastify' {
       JOBS_MEMORY_MAX: string;
       JOBS_MEMORY_PERSIST: string;
       JOBS_MEMORY_FILE: string;
+      
+      // Bull + RabbitMQ Queue System Configuration
+      QUEUE_BROKER: string;
+      QUEUE_REDIS_DB: string;
+      QUEUE_PREFIX: string;
+      QUEUE_DEFAULT_ATTEMPTS: string;
+      QUEUE_BACKOFF_TYPE: string;
+      QUEUE_BACKOFF_DELAY: string;
+      QUEUE_REMOVE_ON_COMPLETE: string;
+      QUEUE_REMOVE_ON_FAIL: string;
+      QUEUE_METRICS_INTERVAL: string;
+      RABBITMQ_HOST: string;
+      RABBITMQ_PORT: string;
+      RABBITMQ_USER: string;
+      RABBITMQ_PASS: string;
+      RABBITMQ_VHOST: string;
+      RABBITMQ_PROTOCOL: string;
+      RABBITMQ_EXCHANGE: string;
+      RABBITMQ_EXCHANGE_TYPE: string;
+      RABBITMQ_EXCHANGE_DURABLE: string;
+      RABBITMQ_QUEUE_DURABLE: string;
+      RABBITMQ_QUEUE_EXCLUSIVE: string;
+      RABBITMQ_QUEUE_AUTO_DELETE: string;
+      RABBITMQ_PREFETCH: string;
+      RABBITMQ_RECONNECT_INTERVAL: string;
+      QUEUE_MONITORING_ENABLED: string;
+      QUEUE_MONITORING_INTERVAL: string;
+      
+      // Notification Queue Settings
+      NOTIFICATION_REDIS_DB: string;
+      NOTIFICATION_AUTO_PROCESS_ENABLED: string;
+      NOTIFICATION_PROCESS_INTERVAL: string;
+      NOTIFICATION_REDIS_RATE_LIMIT: string;
+      NOTIFICATION_RATE_LIMIT_WINDOW: string;
+      NOTIFICATION_RATE_LIMIT_MAX: string;
+      NOTIFICATION_RETRY_ATTEMPTS: string;
     };
   }
 }

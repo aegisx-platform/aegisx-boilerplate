@@ -9,6 +9,7 @@ export { DatabaseNotificationController } from './controllers/notification-contr
 
 // Services
 export { DatabaseNotificationService } from './services/notification-database-service';
+export { QueueNotificationService } from './services/queue-notification-service';
 
 // Repositories
 export { KnexNotificationRepository } from './repositories/notification-repository';
@@ -34,5 +35,6 @@ import { DatabaseNotificationService } from './services/notification-database-se
 
 export * from './repositories/notification-repository';
 export * from './services/notification-database-service';
+export * from './services/queue-notification-service';
 export * from './controllers/notification-controller';
 export * from './routes/notification-routes';

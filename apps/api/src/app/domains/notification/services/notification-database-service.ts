@@ -126,8 +126,8 @@ export class DatabaseNotificationService implements NotificationDatabaseService 
   private emailService: EmailService;
 
   constructor(
-    private fastify: FastifyInstance,
-    private repository: NotificationRepository
+    protected fastify: FastifyInstance,
+    protected repository: NotificationRepository
   ) {
     this.emailService = new EmailService(fastify, defaultEmailConfig);
   }
