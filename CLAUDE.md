@@ -83,6 +83,56 @@ domain-name/
 └── 📄 index.ts          # 🚪 Module Entry Point
 ```
 
+### 🏢 Enterprise Domain Examples
+
+#### **📨 Notification Domain** (Complete Implementation)
+```
+notification/
+├── controllers/
+│   ├── notification-controller.ts   # Core notification operations
+│   └── batch-controller.ts          # ⚡ Batch processing operations
+├── routes/
+│   ├── notification-routes.ts       # Core notification API
+│   └── batch.routes.ts              # ⚡ Batch processing API
+├── schemas/
+│   ├── notification.schemas.ts      # TypeBox validation
+│   └── batch.schemas.ts             # ⚡ Batch validation schemas
+├── types/
+│   ├── notification-domain.types.ts # Core TypeScript interfaces
+│   └── batch.types.ts               # ⚡ Batch TypeScript interfaces
+├── services/
+│   ├── notification-database-service.ts # Core service
+│   ├── queue-notification-service.ts    # Queue processing
+│   └── batch-worker.service.ts          # ⚡ Batch processing (800+ lines)
+└── repositories/
+    └── notification-repository.ts       # Data access
+```
+
+#### **🔑 Auth Domain** (Reference Implementation)
+```
+auth/
+├── controllers/
+│   ├── auth-controller.ts           # Authentication operations
+│   └── api-key-controller.ts        # API key management
+├── routes/
+│   ├── auth-routes.ts               # Auth API routes
+│   └── api-key.routes.ts            # API key routes
+├── schemas/
+│   ├── auth-schemas.ts              # Auth validation
+│   └── api-key.schemas.ts           # API key validation
+└── types/
+    ├── auth-types.ts                # Auth TypeScript interfaces
+    └── api-key.types.ts             # API key interfaces
+```
+
+### ✨ **Benefits of This Architecture**
+- **✅ Single Responsibility**: Each component has one clear purpose
+- **✅ Maintainable**: Easy to locate and modify specific functionality
+- **✅ Scalable**: Simple to extend domains with new features (like batch processing)
+- **✅ Type-Safe**: Complete TypeScript coverage with proper interface separation
+- **✅ Testable**: Clean separation enables focused unit testing
+- **✅ Consistent**: Every domain follows the same proven patterns
+
 ## Current Implementation Status
 
 ### ✅ Implemented & Ready
@@ -162,18 +212,22 @@ Healthcare features in `/features/` directory:
 - **Monitoring**: Admin dashboard, metrics collection, health checks, Prometheus export
 - **Integration**: Powers QueueNotificationService for automatic processing and rate limiting
 
-### Notification System (Enhanced with Queue Integration)
+### Notification System (Enterprise Domain Architecture)
+- **Domain Structure**: Standard enterprise domain pattern with separated concerns
 - **Primary Service**: `QueueNotificationService` with automatic processing every 30 seconds
 - **Features**: Multi-channel support, priority-based processing, automatic retry with exponential backoff
 - **Queue Integration**: Bull + RabbitMQ for reliable message delivery
 - **Healthcare Compliance**: HIPAA audit trails, encryption, data sanitization
 - **Gmail SMTP**: Production-ready email delivery with App Password support
-- **⚡ Batch Processing**: `BatchWorkerService` for high-volume bulk operations with 4 batch types
-  - **Automatic Collection**: Collects notifications every 60 seconds for optimal bulk processing
-  - **Channel Optimization**: Email(10), SMS(5), Push(15), Slack(3) concurrent processing per channel
-  - **Priority Batching**: Fast-track for critical/urgent notifications
-  - **User-Aware Batching**: Respects user quiet hours and notification preferences
-  - **Comprehensive API**: 10 REST endpoints with full Swagger documentation
+- **⚡ Batch Processing Architecture**: Clean separation with dedicated components
+  - **BatchController**: `batch-controller.ts` - Dedicated controller for batch operations
+  - **Batch Routes**: `batch.routes.ts` - Separated API routes with comprehensive Swagger
+  - **Batch Schemas**: `batch.schemas.ts` - TypeBox validation schemas
+  - **Batch Types**: `batch.types.ts` - Complete TypeScript interfaces
+  - **BatchWorkerService**: `batch-worker.service.ts` - Enterprise batch processing (800+ lines)
+  - **4 Batch Types**: bulk_notification, user_batch, scheduled_batch, priority_batch
+  - **Channel Optimization**: Email(10), SMS(5), Push(15), Slack(3) concurrent processing
+  - **Standard Architecture**: Follows same patterns as auth, storage, rbac domains
 
 ### Database Schema
 **Core Tables**: users, refresh_tokens, roles, permissions, user_roles, role_permissions, audit_logs
@@ -263,8 +317,16 @@ Healthcare features in `/features/` directory:
 - `apps/api/src/app/core/shared/services/bull-queue.service.ts` - **Bull Queue Service (Redis) with enterprise features**
 - `apps/api/src/app/core/shared/services/rabbitmq-queue.service.ts` - **RabbitMQ Queue Service with advanced routing**
 - `apps/api/src/app/core/shared/services/queue-monitoring.service.ts` - **Unified queue monitoring with metrics and health checks**
-- `apps/api/src/app/domains/notification/services/batch-worker.service.ts` - **⚡ BatchWorkerService for high-volume bulk notification processing**
-- `apps/api/src/app/domains/notification/routes/batch.routes.ts` - **⚡ Batch Processing API routes with comprehensive Swagger documentation**
+- `apps/api/src/app/domains/notification/` - **📨 Notification domain with standard architecture**
+  - `controllers/notification-controller.ts` - Core notification operations controller
+  - `controllers/batch-controller.ts` - **⚡ Dedicated batch processing controller**
+  - `routes/notification-routes.ts` - Core notification API routes
+  - `routes/batch.routes.ts` - **⚡ Batch processing API routes**
+  - `schemas/notification.schemas.ts` - TypeBox schemas for notifications
+  - `schemas/batch.schemas.ts` - **⚡ TypeBox schemas for batch operations**
+  - `services/batch-worker.service.ts` - **⚡ Enterprise batch processing service**
+  - `types/notification-domain.types.ts` - Core notification TypeScript types
+  - `types/batch.types.ts` - **⚡ Batch processing TypeScript types**
 - `apps/api/src/app/core/shared/factories/queue.factory.ts` - **Queue factory for creating Bull/RabbitMQ instances**
 - `apps/api/src/app/core/shared/interfaces/queue.interface.ts` - **Common queue interface for unified API**
 - `apps/api/src/app/core/shared/routes/queue-admin.routes.ts` - **Admin API routes for queue management**
@@ -585,6 +647,15 @@ This is designed for healthcare applications requiring:
 - Scalable architecture for enterprise healthcare systems
 
 ## Recent Development Focus
+- **✅ Notification Domain Architecture Refactoring**: Enterprise-standard domain structure
+  - **✅ Domain Separation**: Clean separation of batch processing from core notifications
+  - **✅ Standard Structure**: Controllers, routes, schemas, types following domain patterns
+  - **✅ BatchController**: Dedicated `batch-controller.ts` separated from notification controller
+  - **✅ Batch Schemas**: Complete TypeBox validation schemas in `batch.schemas.ts`
+  - **✅ Batch Types**: Full TypeScript interfaces in `batch.types.ts`
+  - **✅ Clean Architecture**: Single responsibility principle with maintainable code structure
+  - **✅ Type Safety**: Complete TypeScript coverage with proper interface separation
+  - **✅ Consistent Patterns**: Matches auth, storage, rbac domain architecture standards
 - **✅ Notification Batch Processing System**: High-volume bulk notification processing
   - **✅ BatchWorkerService**: Dedicated enterprise-grade batch processing service (800+ lines)
   - **✅ 4 Batch Types**: bulk_notification, user_batch, scheduled_batch, priority_batch

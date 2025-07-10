@@ -32,10 +32,20 @@ The AegisX Notification Service is a comprehensive, production-ready notificatio
 - **User-Aware Batching**: Respects user quiet hours and notification preferences
 - **Comprehensive API**: 10 REST endpoints for batch management with Swagger documentation
 
-#### **2. Domain Layer**
+#### **2. Domain Layer - Standard Architecture**
+
+**Core Notification Components:**
 - **Controller**: `apps/api/src/app/domains/notification/controllers/notification-controller.ts`
 - **Routes**: `apps/api/src/app/domains/notification/routes/notification-routes.ts`
+- **Schemas**: `apps/api/src/app/domains/notification/schemas/notification.schemas.ts`
 - **Types**: `apps/api/src/app/domains/notification/types/notification-domain.types.ts`
+
+**Batch Processing Components:**
+- **Batch Controller**: `apps/api/src/app/domains/notification/controllers/batch-controller.ts`
+- **Batch Routes**: `apps/api/src/app/domains/notification/routes/batch.routes.ts`
+- **Batch Schemas**: `apps/api/src/app/domains/notification/schemas/batch.schemas.ts`
+- **Batch Types**: `apps/api/src/app/domains/notification/types/batch.types.ts`
+- **Batch Service**: `apps/api/src/app/domains/notification/services/batch-worker.service.ts`
 
 #### **3. Plugin Integration**
 - **Notification Plugin**: `apps/api/src/app/core/plugins/notification.ts`
@@ -60,7 +70,10 @@ The AegisX Notification Service is a comprehensive, production-ready notificatio
 - ✅ **User Preferences**: Channel preferences, quiet hours, digest settings
 - ✅ **🆕 Batch Processing System**: Dedicated high-volume bulk processing with 4 batch types
 
-### **⚡ Batch Processing Features**
+### **⚡ Batch Processing Features (Enterprise Architecture)**
+- ✅ **Standard Domain Structure**: Separated controller, routes, schemas, types following domain patterns
+- ✅ **Clean Separation**: Batch operations isolated from core notification controller
+- ✅ **Type-Safe Implementation**: Complete TypeScript interfaces and schema validation
 - ✅ **Automatic Batch Collection**: Collects notifications every 60 seconds for optimal processing
 - ✅ **Channel-Optimized Concurrency**: Different processing rates per channel type
 - ✅ **Priority Batch Processing**: Fast-track for critical/urgent notifications
@@ -101,6 +114,48 @@ The AegisX Notification Service is a comprehensive, production-ready notificatio
 - ✅ **Caching**: Performance optimization with Redis integration
 - ✅ **Monitoring**: Health checks and performance metrics
 - ✅ **Structured Logging**: Correlation ID tracking and audit trails
+
+## 🏢 Domain Architecture
+
+### **📚 Standard Domain Structure**
+
+**Notification domain follows enterprise domain pattern:**
+
+```
+notification/
+├── controllers/
+│   ├── notification-controller.ts   # Core notification operations
+│   └── batch-controller.ts          # Batch processing operations
+├── routes/
+│   ├── notification-routes.ts       # Core notification routes
+│   └── batch.routes.ts              # Batch processing routes
+├── schemas/
+│   ├── notification.schemas.ts      # TypeBox schemas for notifications
+│   └── batch.schemas.ts             # TypeBox schemas for batch operations
+├── services/
+│   ├── notification-database-service.ts  # Core notification service
+│   ├── queue-notification-service.ts     # Queue-based processing
+│   └── batch-worker.service.ts           # Batch processing service
+├── types/
+│   ├── notification-domain.types.ts # Core notification types
+│   └── batch.types.ts               # Batch processing types
+└── repositories/
+    └── notification-repository.ts   # Data access layer
+```
+
+### **✨ Benefits of This Structure**
+- **✅ Single Responsibility**: Each component has a clear, focused purpose
+- **✅ Maintainable**: Easy to locate and modify specific functionality
+- **✅ Scalable**: Simple to extend with new features
+- **✅ Type-Safe**: Complete TypeScript coverage with proper interfaces
+- **✅ Testable**: Clean separation enables focused unit testing
+- **✅ Consistent**: Follows same pattern as other domains (auth, storage, rbac)
+
+### **🔄 Clean Architecture Principles**
+- **Separation of Concerns**: Batch operations completely isolated from core notifications
+- **Dependency Inversion**: Controllers depend on services, not implementations
+- **Interface Segregation**: Each component exposes only necessary interfaces
+- **Open/Closed Principle**: Easy to extend without modifying existing code
 
 ## 📊 Database Schema
 

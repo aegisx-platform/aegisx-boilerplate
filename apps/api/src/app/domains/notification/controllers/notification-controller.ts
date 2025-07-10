@@ -7,7 +7,6 @@ import {
   NotificationContent,
 } from '../../../core/shared/types/notification.types';
 import { NotificationDatabaseService } from '../services/notification-database-service';
-import { BatchWorkerService } from '../services/batch-worker.service';
 import { NotificationFilters } from '../repositories/notification-repository';
 import {
   CreateNotificationRequest,
@@ -61,28 +60,10 @@ export interface NotificationController {
 
   // Error tracking
   getNotificationErrors(request: FastifyRequest, reply: FastifyReply): Promise<void>;
-
-  // Batch worker operations
-  createBulkBatch(notifications: string[], options?: any): Promise<string>;
-  getBatchStatus(batchId: string): Promise<any>;
-  listBatchJobs(filters: any): Promise<any>;
-  getBatchMetrics(): Promise<any>;
-  pauseBatchProcessing(): Promise<void>;
-  resumeBatchProcessing(): Promise<void>;
-  retryBatch(batchId: string): Promise<string | null>;
-  cancelBatch(batchId: string): Promise<boolean>;
-  getBatchHealth(): Promise<any>;
 }
 
 export class DatabaseNotificationController implements NotificationController {
-  private batchWorkerService?: BatchWorkerService;
-
   constructor(private notificationService: NotificationDatabaseService) {}
-
-  // Initialize batch worker service
-  setBatchWorkerService(batchWorkerService: BatchWorkerService): void {
-    this.batchWorkerService = batchWorkerService;
-  }
 
   // Core notification operations
   async createNotification(request: FastifyRequest, reply: FastifyReply): Promise<void> {
@@ -1188,180 +1169,4 @@ export class DatabaseNotificationController implements NotificationController {
     }
   }
 
-  // Batch worker operations
-  async createBulkBatch(notifications: string[], options: any = {}): Promise<string> {
-    if (!this.batchWorkerService) {
-      throw new Error('Batch worker service not initialized');
-    }
-    return await this.batchWorkerService.createBulkNotificationBatch(notifications, options);
-  }
-
-  async getBatchStatus(batchId: string): Promise<any> {
-    if (!this.batchWorkerService) {
-      throw new Error('Batch worker service not initialized');
-    }
-    return await this.batchWorkerService.getBatchStatus(batchId);
-  }
-
-  async listBatchJobs(filters: {
-    status?: string;
-    limit?: number;
-    offset?: number;
-  }): Promise<{ items: any[]; total: number }> {
-    if (!this.batchWorkerService) {
-      throw new Error('Batch worker service not initialized');
-    }
-
-    const metrics = await this.batchWorkerService.getBatchMetrics();
-    if (!metrics) {
-      return { items: [], total: 0 };
-    }
-
-    // This is a simplified implementation
-    // In a real implementation, you'd get actual job lists from the queue
-    const mockJobs = [
-      {
-        id: 'batch_1',
-        status: 'completed',
-        progress: 100,
-        attempts: 1,
-        data: { type: 'bulk_notification', notifications: ['n1', 'n2'] },
-        processedOn: Date.now() - 3600000,
-        finishedOn: Date.now() - 3500000
-      },
-      {
-        id: 'batch_2', 
-        status: 'active',
-        progress: 45,
-        attempts: 1,
-        data: { type: 'user_batch', notifications: ['n3', 'n4'] },
-        processedOn: Date.now() - 300000
-      },
-      {
-        id: 'batch_3',
-        status: 'waiting',
-        progress: 0,
-        attempts: 0,
-        data: { type: 'scheduled_batch', notifications: ['n5', 'n6'] }
-      }
-    ];
-
-    const filteredJobs = filters.status 
-      ? mockJobs.filter(job => job.status === filters.status)
-      : mockJobs;
-
-    const start = filters.offset || 0;
-    const end = start + (filters.limit || 20);
-    
-    return {
-      items: filteredJobs.slice(start, end),
-      total: filteredJobs.length
-    };
-  }
-
-  async getBatchMetrics(): Promise<any> {
-    if (!this.batchWorkerService) {
-      throw new Error('Batch worker service not initialized');
-    }
-    return await this.batchWorkerService.getBatchMetrics();
-  }
-
-  async pauseBatchProcessing(): Promise<void> {
-    if (!this.batchWorkerService) {
-      throw new Error('Batch worker service not initialized');
-    }
-    await this.batchWorkerService.pauseBatchProcessing();
-  }
-
-  async resumeBatchProcessing(): Promise<void> {
-    if (!this.batchWorkerService) {
-      throw new Error('Batch worker service not initialized');
-    }
-    await this.batchWorkerService.resumeBatchProcessing();
-  }
-
-  async retryBatch(batchId: string): Promise<string | null> {
-    if (!this.batchWorkerService) {
-      throw new Error('Batch worker service not initialized');
-    }
-
-    // Get current batch status
-    const currentBatch = await this.batchWorkerService.getBatchStatus(batchId);
-    if (!currentBatch || currentBatch.status !== 'failed') {
-      return null;
-    }
-
-    // Create new batch with same notifications
-    if (currentBatch.data?.notifications) {
-      return await this.batchWorkerService.createBulkNotificationBatch(
-        currentBatch.data.notifications,
-        {
-          channel: currentBatch.data.channel,
-          priority: currentBatch.data.priority,
-          delayBetweenItems: 100,
-          maxConcurrency: 5
-        }
-      );
-    }
-
-    return null;
-  }
-
-  async cancelBatch(batchId: string): Promise<boolean> {
-    if (!this.batchWorkerService) {
-      throw new Error('Batch worker service not initialized');
-    }
-
-    // Get current batch status
-    const currentBatch = await this.batchWorkerService.getBatchStatus(batchId);
-    if (!currentBatch) {
-      return false;
-    }
-
-    // Only allow cancellation of waiting or delayed batches
-    if (currentBatch.status === 'waiting' || currentBatch.status === 'delayed') {
-      // In a real implementation, you'd remove the job from the queue
-      // For now, we'll just return true to indicate it would be cancelled
-      return true;
-    }
-
-    return false;
-  }
-
-  async getBatchHealth(): Promise<any> {
-    if (!this.batchWorkerService) {
-      return {
-        status: 'unhealthy',
-        batchQueue: { connected: false, broker: 'unknown', queueDepth: 0 },
-        workers: { active: 0, total: 0 },
-        lastActivity: null
-      };
-    }
-
-    const metrics = await this.batchWorkerService.getBatchMetrics();
-    
-    // Determine health status based on metrics
-    let status = 'healthy';
-    if (!metrics) {
-      status = 'unhealthy';
-    } else if (metrics.failed > metrics.completed / 2) {
-      status = 'degraded';
-    } else if (metrics.waiting > 1000) {
-      status = 'degraded';
-    }
-
-    return {
-      status,
-      batchQueue: {
-        connected: !!metrics,
-        broker: metrics?.broker || 'unknown',
-        queueDepth: metrics?.waiting || 0
-      },
-      workers: {
-        active: metrics?.active || 0,
-        total: 5 // Configurable worker count
-      },
-      lastActivity: metrics?.lastActivity || null
-    };
-  }
 }
