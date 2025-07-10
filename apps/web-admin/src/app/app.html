@@ -1,0 +1,118 @@
+<!-- Healthcare Admin Dashboard -->
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <header class="bg-white shadow-sm border-b border-gray-200">
+    <div class="px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <i class="pi pi-heart-fill text-2xl text-blue-600"></i>
+          <h1 class="text-2xl font-bold text-gray-900">Healthcare Admin</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+          <p-button label="Settings" icon="pi pi-cog" severity="secondary" [outlined]="true">
+          </p-button>
+          <p-button label="Logout" icon="pi pi-sign-out" severity="danger" [outlined]="true">
+          </p-button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="p-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Patient Count Card -->
+      <div class="healthcare-card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Patients</p>
+            <p class="text-3xl font-bold text-gray-900">1,234</p>
+          </div>
+          <div class="p-3 bg-blue-100 rounded-full">
+            <i class="pi pi-users text-blue-600 text-xl"></i>
+          </div>
+        </div>
+        <div class="mt-4">
+          <span class="status-stable"></span>
+          <span class="ml-2 text-sm text-green-600">+5.2% from last month</span>
+        </div>
+      </div>
+
+      <!-- Appointments Card -->
+      <div class="healthcare-card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Today's Appointments</p>
+            <p class="text-3xl font-bold text-gray-900">47</p>
+          </div>
+          <div class="p-3 bg-green-100 rounded-full">
+            <i class="pi pi-calendar text-green-600 text-xl"></i>
+          </div>
+        </div>
+        <div class="mt-4">
+          <span class="status-monitoring"></span>
+          <span class="ml-2 text-sm text-blue-600">12 pending confirmations</span>
+        </div>
+      </div>
+
+      <!-- Critical Alerts Card -->
+      <div class="healthcare-card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Critical Alerts</p>
+            <p class="text-3xl font-bold text-red-600">3</p>
+          </div>
+          <div class="p-3 bg-red-100 rounded-full">
+            <i class="pi pi-exclamation-triangle text-red-600 text-xl"></i>
+          </div>
+        </div>
+        <div class="mt-4">
+          <span class="status-critical"></span>
+          <span class="ml-2 text-sm text-red-600">Requires immediate attention</span>
+        </div>
+      </div>
+
+      <!-- Revenue Card -->
+      <div class="healthcare-card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Monthly Revenue</p>
+            <p class="text-3xl font-bold text-gray-900">$89,250</p>
+          </div>
+          <div class="p-3 bg-yellow-100 rounded-full">
+            <i class="pi pi-dollar text-yellow-600 text-xl"></i>
+          </div>
+        </div>
+        <div class="mt-4">
+          <span class="status-warning"></span>
+          <span class="ml-2 text-sm text-yellow-600">-2.1% from last month</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="healthcare-card p-6 mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+      <div class="flex flex-wrap gap-4">
+        <p-button label="Add Patient" icon="pi pi-plus" severity="success">
+        </p-button>
+        <p-button label="Schedule Appointment" icon="pi pi-calendar-plus" severity="info">
+        </p-button>
+        <p-button label="View Reports" icon="pi pi-chart-bar" severity="secondary" [outlined]="true">
+        </p-button>
+        <p-button label="Emergency Protocol" icon="pi pi-phone" severity="danger" [outlined]="true">
+        </p-button>
+      </div>
+    </div>
+
+    <!-- Status Message -->
+    <div class="healthcare-card p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">System Status</h2>
+      <p-message severity="success"
+        text="All systems operational. PrimeNG v19 + Tailwind CSS + Healthcare theme successfully integrated.">
+      </p-message>
+    </div>
+  </main>
+</div>
+
+<router-outlet></router-outlet>
