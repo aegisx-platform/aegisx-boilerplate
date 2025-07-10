@@ -576,6 +576,85 @@ const schema = {
       default: '3'
     },
 
+    // ===================================================
+    // Batch Worker Configuration
+    // ===================================================
+    BATCH_WORKER_ENABLED: {
+      type: 'string',
+      default: 'true'
+    },
+    BATCH_WORKER_CONCURRENCY: {
+      type: 'string',
+      default: '5'
+    },
+    BATCH_SIZE: {
+      type: 'string',
+      default: '50'
+    },
+    BATCH_PROCESSING_INTERVAL: {
+      type: 'string',
+      default: '60s'
+    },
+    BATCH_QUEUE_BROKER: {
+      type: 'string',
+      enum: ['redis', 'rabbitmq'],
+      default: 'redis'
+    },
+    BATCH_REDIS_DB: {
+      type: 'string',
+      default: '2'
+    },
+    BATCH_MAX_RETRY_ATTEMPTS: {
+      type: 'string',
+      default: '3'
+    },
+    
+    // Channel-specific concurrency settings
+    BATCH_EMAIL_CONCURRENCY: {
+      type: 'string',
+      default: '10'
+    },
+    BATCH_SMS_CONCURRENCY: {
+      type: 'string',
+      default: '5'
+    },
+    BATCH_PUSH_CONCURRENCY: {
+      type: 'string',
+      default: '15'
+    },
+    BATCH_SLACK_CONCURRENCY: {
+      type: 'string',
+      default: '3'
+    },
+
+    // Batch monitoring and health
+    BATCH_MONITORING_ENABLED: {
+      type: 'string',
+      default: 'true'
+    },
+    BATCH_HEALTH_CHECK_INTERVAL: {
+      type: 'string',
+      default: '30000'
+    },
+    BATCH_METRICS_INTERVAL: {
+      type: 'string',
+      default: '60000'
+    },
+
+    // Batch optimization settings
+    BATCH_AUTO_COLLECTION_ENABLED: {
+      type: 'string',
+      default: 'true'
+    },
+    BATCH_USER_BATCH_MIN_SIZE: {
+      type: 'string',
+      default: '3'
+    },
+    BATCH_PRIORITY_THRESHOLD: {
+      type: 'string',
+      default: '100'
+    },
+
     // Event Bus Configuration
     EVENT_BUS_ENABLED: {
       type: 'string',
@@ -867,6 +946,25 @@ declare module 'fastify' {
       NOTIFICATION_RATE_LIMIT_WINDOW: string;
       NOTIFICATION_RATE_LIMIT_MAX: string;
       NOTIFICATION_RETRY_ATTEMPTS: string;
+
+      // Batch Worker Configuration
+      BATCH_WORKER_ENABLED: string;
+      BATCH_WORKER_CONCURRENCY: string;
+      BATCH_SIZE: string;
+      BATCH_PROCESSING_INTERVAL: string;
+      BATCH_QUEUE_BROKER: string;
+      BATCH_REDIS_DB: string;
+      BATCH_MAX_RETRY_ATTEMPTS: string;
+      BATCH_EMAIL_CONCURRENCY: string;
+      BATCH_SMS_CONCURRENCY: string;
+      BATCH_PUSH_CONCURRENCY: string;
+      BATCH_SLACK_CONCURRENCY: string;
+      BATCH_MONITORING_ENABLED: string;
+      BATCH_HEALTH_CHECK_INTERVAL: string;
+      BATCH_METRICS_INTERVAL: string;
+      BATCH_AUTO_COLLECTION_ENABLED: string;
+      BATCH_USER_BATCH_MIN_SIZE: string;
+      BATCH_PRIORITY_THRESHOLD: string;
     };
   }
 }

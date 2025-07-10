@@ -16,6 +16,9 @@ export async function notificationRoutes(
   controller: DatabaseNotificationController
 ): Promise<void> {
   
+  // Register batch routes (will be registered separately)
+  // await fastify.register(batchRoutes, { prefix: '/batch' });
+  
   // Core notification operations
   fastify.post('/', {
     schema: {

@@ -21,6 +21,16 @@ The AegisX Notification Service is a comprehensive, production-ready notificatio
 - **Retry Logic**: Exponential backoff with smart failure handling
 - **Queue Monitoring**: Real-time metrics and health checks
 - **Graceful Shutdown**: Proper resource cleanup and job completion
+- **🆕 Batch Processing**: Dedicated BatchWorkerService for high-volume bulk operations
+
+#### **⚡ BatchWorkerService - High-Volume Processing**
+- **Dedicated Batch Queue**: Separate Redis DB (DB=2) for batch operations
+- **4 Batch Types**: bulk_notification, user_batch, scheduled_batch, priority_batch
+- **Automatic Collection**: Collects notifications every 60 seconds for bulk processing
+- **Channel Optimization**: Email(10), SMS(5), Push(15), Slack(3) concurrent processing
+- **Priority Batching**: High-priority notifications get dedicated fast-track processing
+- **User-Aware Batching**: Respects user quiet hours and notification preferences
+- **Comprehensive API**: 10 REST endpoints for batch management with Swagger documentation
 
 #### **2. Domain Layer**
 - **Controller**: `apps/api/src/app/domains/notification/controllers/notification-controller.ts`
@@ -48,6 +58,17 @@ The AegisX Notification Service is a comprehensive, production-ready notificatio
 - ✅ **Real-Time WebSocket Integration**: Live notification delivery
 - ✅ **Event Bus Integration**: Cross-domain communication
 - ✅ **User Preferences**: Channel preferences, quiet hours, digest settings
+- ✅ **🆕 Batch Processing System**: Dedicated high-volume bulk processing with 4 batch types
+
+### **⚡ Batch Processing Features**
+- ✅ **Automatic Batch Collection**: Collects notifications every 60 seconds for optimal processing
+- ✅ **Channel-Optimized Concurrency**: Different processing rates per channel type
+- ✅ **Priority Batch Processing**: Fast-track for critical/urgent notifications
+- ✅ **User-Specific Batches**: Respects individual user preferences and quiet hours
+- ✅ **Scheduled Batch Processing**: Handles time-based notification delivery
+- ✅ **Comprehensive Batch API**: 10 REST endpoints with full Swagger documentation
+- ✅ **Batch Monitoring**: Real-time metrics, health checks, and performance monitoring
+- ✅ **Graceful Error Handling**: Retry logic, dead letter queue, and failure recovery
 - ✅ **Batch Operations**: Group notifications for efficient processing
 - ✅ **Error Tracking**: Detailed error logging and recovery
 - ✅ **Analytics & Statistics**: Comprehensive reporting and metrics
@@ -187,13 +208,26 @@ POST   /api/v1/notifications/preferences/:userId    # Set user preferences
 PATCH  /api/v1/notifications/preferences/:userId    # Update user preferences
 ```
 
-### **Batch Operations**
+### **Batch Operations (Traditional)**
 ```
 POST   /api/v1/notifications/batches             # Create batch
 POST   /api/v1/notifications/batches/:id/notifications  # Add notifications to batch
 POST   /api/v1/notifications/batches/:id/process  # Process batch
 GET    /api/v1/notifications/batches/:id         # Get batch details
 GET    /api/v1/notifications/batches/:id/notifications  # Get batch notifications
+```
+
+### **⚡ Batch Processing (High-Volume)**
+```
+POST   /api/v1/notifications/batch/bulk          # Create bulk notification batch
+GET    /api/v1/notifications/batch/:batchId/status  # Get batch status
+GET    /api/v1/notifications/batch/              # List batch jobs
+GET    /api/v1/notifications/batch/metrics       # Get batch metrics
+POST   /api/v1/notifications/batch/pause         # Pause batch processing
+POST   /api/v1/notifications/batch/resume        # Resume batch processing
+POST   /api/v1/notifications/batch/:batchId/retry  # Retry failed batch
+DELETE /api/v1/notifications/batch/:batchId     # Cancel batch
+GET    /api/v1/notifications/batch/health        # Batch health check
 ```
 
 ### **Analytics & Statistics**
@@ -420,6 +454,53 @@ RABBITMQ_EXCHANGE_TYPE=topic
 RABBITMQ_PREFETCH=10
 RABBITMQ_RECONNECT_INTERVAL=5000
 ```
+
+### **⚡ Batch Processing Configuration**
+
+The BatchWorkerService provides dedicated high-volume bulk processing:
+
+#### **Core Batch Settings**
+```bash
+# Enable dedicated batch processing workers
+BATCH_WORKER_ENABLED=true
+BATCH_WORKER_CONCURRENCY=5
+BATCH_SIZE=50
+BATCH_PROCESSING_INTERVAL=60s
+BATCH_QUEUE_BROKER=redis
+BATCH_REDIS_DB=2
+BATCH_MAX_RETRY_ATTEMPTS=3
+```
+
+#### **Channel-Specific Concurrency**
+```bash
+# Optimize processing rates per notification channel
+BATCH_EMAIL_CONCURRENCY=10         # Concurrent email notifications per batch
+BATCH_SMS_CONCURRENCY=5             # Concurrent SMS notifications per batch  
+BATCH_PUSH_CONCURRENCY=15           # Concurrent push notifications per batch
+BATCH_SLACK_CONCURRENCY=3           # Concurrent Slack notifications per batch
+```
+
+#### **Batch Monitoring & Health**
+```bash
+# Enable batch processing monitoring
+BATCH_MONITORING_ENABLED=true
+BATCH_HEALTH_CHECK_INTERVAL=30000   # Health check interval (30 seconds)
+BATCH_METRICS_INTERVAL=60000        # Metrics collection interval (1 minute)
+```
+
+#### **Batch Optimization**
+```bash
+# Automatic batch collection and optimization
+BATCH_AUTO_COLLECTION_ENABLED=true     # Automatically collect and batch notifications
+BATCH_USER_BATCH_MIN_SIZE=3            # Minimum notifications to create user-specific batch
+BATCH_PRIORITY_THRESHOLD=100           # Queue depth threshold for priority batch processing
+```
+
+#### **4 Batch Types Processing**
+- **bulk_notification**: Channel-optimized bulk processing (50 notifications per batch)
+- **user_batch**: User-specific batches with quiet hours respect (3+ notifications per user)
+- **scheduled_batch**: Time-based batch processing for scheduled notifications
+- **priority_batch**: Fast-track processing for critical/urgent notifications (100+ queue depth trigger)
 
 ### **Required Environment Variables**
 ```bash
