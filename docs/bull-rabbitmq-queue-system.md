@@ -568,20 +568,54 @@ QUEUE_REDIS_DB=1
 
 ```typescript
 // Old way
-import { NotificationService } from './notification.service'
+import { DatabaseNotificationService } from './notification-database-service'
+const service = new DatabaseNotificationService(fastify, repository)
 
-// New way
-import { NotificationServiceV2 } from './notification.service.v2'
+// New way - with automatic queue processing
+import { QueueNotificationService } from './queue-notification-service'
 
-// Initialize
-const notificationService = new NotificationServiceV2(fastify, config)
-await notificationService.initialize()
+// Initialize with queue configuration
+const queueConfig = {
+  autoProcessEnabled: true,
+  processInterval: '30s',
+  queueBroker: 'redis' as 'redis' | 'rabbitmq',
+  redisDb: 1,
+  processingConcurrency: 5,
+  maxRetryAttempts: 3
+}
+
+const notificationService = new QueueNotificationService(fastify, repository, queueConfig)
+
+// Service will automatically:
+// - Process notifications every 30 seconds
+// - Retry failed notifications up to 3 times
+// - Handle priority-based processing
+// - Support both Redis and RabbitMQ brokers
 ```
 
 ### Step 4: Update Routes
 
+The notification routes automatically use QueueNotificationService when configured:
+
 ```typescript
-// Register admin routes
+// In your main app.ts or notification routes
+import { NotificationRepository } from './domains/notification/repositories/notification-repository'
+import { QueueNotificationService } from './domains/notification/services/queue-notification-service'
+
+// Initialize notification service with queue support
+const repository = new NotificationRepository(fastify.knex)
+const queueConfig = {
+  autoProcessEnabled: fastify.config.NOTIFICATION_AUTO_PROCESS_ENABLED === 'true',
+  processInterval: fastify.config.NOTIFICATION_PROCESS_INTERVAL || '30s',
+  queueBroker: (fastify.config.QUEUE_BROKER || 'redis') as 'redis' | 'rabbitmq',
+}
+
+const notificationService = new QueueNotificationService(fastify, repository, queueConfig)
+
+// Register notification routes
+await fastify.register(notificationRoutes, { prefix: '/api/v1/notifications' })
+
+// Register queue admin routes for monitoring
 await fastify.register(queueAdminRoutes, { prefix: '/api/v1/admin/queues' })
 ```
 
@@ -624,31 +658,76 @@ For issues and questions:
 
 ```typescript
 import { IQueueService, Job } from '@/core/shared/interfaces/queue.interface'
+import { QueueNotificationService } from '@/domains/notification/services/queue-notification-service'
 
+// Example: Custom notification processors with QueueNotificationService
+class NotificationJobProcessor {
+  constructor(
+    private queue: IQueueService,
+    private notificationService: QueueNotificationService
+  ) {}
+  
+  async setupProcessors() {
+    // Email notification processor
+    this.queue.process('send-email', 10, this.processEmailNotification.bind(this))
+    
+    // SMS notification processor  
+    this.queue.process('send-sms', 5, this.processSMSNotification.bind(this))
+    
+    // Emergency notification processor (highest priority)
+    this.queue.process('emergency-alert', 1, this.processEmergencyNotification.bind(this))
+    
+    // Batch notification processor
+    this.queue.process('batch-notifications', 3, this.processBatchNotifications.bind(this))
+  }
+  
+  private async processEmailNotification(job: Job) {
+    const { notificationId } = job.data
+    return await this.notificationService.processNotification(notificationId)
+  }
+  
+  private async processSMSNotification(job: Job) {
+    const { notificationId } = job.data
+    return await this.notificationService.processNotification(notificationId)
+  }
+  
+  private async processEmergencyNotification(job: Job) {
+    const { notificationId } = job.data
+    // Emergency notifications bypass normal processing delays
+    return await this.notificationService.processNotification(notificationId)
+  }
+  
+  private async processBatchNotifications(job: Job) {
+    const { batchId } = job.data
+    return await this.notificationService.processBatch(batchId)
+  }
+}
+
+// Example: General purpose job processor
 class CustomJobProcessor {
   constructor(private queue: IQueueService) {}
   
   async setupProcessors() {
-    // Email processor
-    this.queue.process('send-email', 10, this.processEmail.bind(this))
+    // File processing
+    this.queue.process('process-file', 5, this.processFile.bind(this))
     
-    // SMS processor  
-    this.queue.process('send-sms', 5, this.processSMS.bind(this))
-    
-    // Report processor
+    // Report generation
     this.queue.process('generate-report', 1, this.processReport.bind(this))
+    
+    // Data cleanup
+    this.queue.process('cleanup-data', 2, this.processCleanup.bind(this))
   }
   
-  private async processEmail(job: Job) {
-    // Email processing logic
-  }
-  
-  private async processSMS(job: Job) {
-    // SMS processing logic
+  private async processFile(job: Job) {
+    // File processing logic
   }
   
   private async processReport(job: Job) {
-    // Report processing logic
+    // Report generation logic
+  }
+  
+  private async processCleanup(job: Job) {
+    // Data cleanup logic
   }
 }
 ```
@@ -657,9 +736,12 @@ class CustomJobProcessor {
 
 ```typescript
 import { QueueFactory } from '@/core/shared/factories/queue.factory'
+import { QueueNotificationService } from '@/domains/notification/services/queue-notification-service'
+import { NotificationRepository } from '@/domains/notification/repositories/notification-repository'
 
 class QueueManager {
   private queues: Map<string, IQueueService> = new Map()
+  private notificationServices: Map<string, QueueNotificationService> = new Map()
   
   async createQueue(name: string, config: any): Promise<IQueueService> {
     if (this.queues.has(name)) {
@@ -674,6 +756,49 @@ class QueueManager {
     
     this.queues.set(name, queue)
     return queue
+  }
+  
+  async createNotificationService(
+    name: string, 
+    fastify: any, 
+    repository: NotificationRepository,
+    config: any
+  ): Promise<QueueNotificationService> {
+    if (this.notificationServices.has(name)) {
+      return this.notificationServices.get(name)!
+    }
+    
+    const queueConfig = {
+      autoProcessEnabled: config.autoProcessEnabled || true,
+      processInterval: config.processInterval || '30s',
+      queueBroker: config.queueBroker || 'redis',
+      redisDb: config.redisDb || 1,
+      processingConcurrency: config.processingConcurrency || 5,
+      maxRetryAttempts: config.maxRetryAttempts || 3
+    }
+    
+    const service = new QueueNotificationService(fastify, repository, queueConfig)
+    this.notificationServices.set(name, service)
+    return service
+  }
+  
+  async getNotificationService(name: string): Promise<QueueNotificationService | undefined> {
+    return this.notificationServices.get(name)
+  }
+  
+  async shutdownAll(): Promise<void> {
+    // Shutdown all notification services
+    for (const service of this.notificationServices.values()) {
+      await service.shutdown()
+    }
+    
+    // Close all queues
+    for (const queue of this.queues.values()) {
+      await queue.close()
+    }
+    
+    this.queues.clear()
+    this.notificationServices.clear()
   }
 }
 ```

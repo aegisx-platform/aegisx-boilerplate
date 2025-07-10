@@ -160,7 +160,14 @@ Healthcare features in `/features/` directory:
 - **Features**: Unified interface, job scheduling, priority queues, dead letter queues, monitoring
 - **Configuration**: Environment-based broker selection (`QUEUE_BROKER=redis` or `rabbitmq`)
 - **Monitoring**: Admin dashboard, metrics collection, health checks, Prometheus export
-- **Integration**: Used by Notification Service for automatic processing and rate limiting
+- **Integration**: Powers QueueNotificationService for automatic processing and rate limiting
+
+### Notification System (Enhanced with Queue Integration)
+- **Primary Service**: `QueueNotificationService` with automatic processing every 30 seconds
+- **Features**: Multi-channel support, priority-based processing, automatic retry with exponential backoff
+- **Queue Integration**: Bull + RabbitMQ for reliable message delivery
+- **Healthcare Compliance**: HIPAA audit trails, encryption, data sanitization
+- **Gmail SMTP**: Production-ready email delivery with App Password support
 
 ### Database Schema
 **Core Tables**: users, refresh_tokens, roles, permissions, user_roles, role_permissions, audit_logs
@@ -271,7 +278,7 @@ Healthcare features in `/features/` directory:
 ## Core Infrastructure Components
 
 ### Enterprise Infrastructure Services
-Complete suite of 16 production-ready services with healthcare compliance features:
+Complete suite of 17 production-ready services with healthcare compliance features:
 
 #### Core Communication & Processing
 - **HTTP Client Service**: `apps/api/src/app/core/shared/services/http-client.service.ts`
@@ -318,15 +325,18 @@ Complete suite of 16 production-ready services with healthcare compliance featur
   - Email and document templates with healthcare helpers and caching
 - **Custom Metrics Service**: `apps/api/src/app/core/shared/services/custom-metrics.service.ts`
   - Business, performance, and healthcare-specific metrics with alerting
-- **Notification Service**: `apps/api/src/app/domains/notification/`
-  - Multi-channel notifications (email, SMS, push) with HIPAA compliance and Gmail SMTP
+- **Queue Notification Service**: `apps/api/src/app/domains/notification/services/queue-notification-service.ts`
+  - Enterprise notification system with Bull + RabbitMQ queue integration
   - **Documentation**: `docs/notification-service.md`
-  - **Database Schema**: 8-table comprehensive notification system
-  - **Email Service**: Production-ready Gmail SMTP with App Password support
-  - **Queue Processing**: Automatic retry logic and failure handling
-  - **Redis Integration**: Automatic processing with Redis job queues
-  - **Background Jobs**: Redis-based automatic processing every 30 seconds
+  - **Automatic Processing**: Processes notifications every 30 seconds with priority-based delays
+  - **Multi-Channel Support**: Email, SMS, push, webhook, Slack, in-app
+  - **Queue Integration**: Bull (Redis) or RabbitMQ broker selection
+  - **Priority Processing**: Critical → Urgent → High → Normal → Low
+  - **Retry Logic**: Exponential backoff with configurable attempts
+  - **Gmail SMTP**: Production-ready email delivery with App Password support
   - **Rate Limiting**: Distributed Redis-based rate limiting across service instances
+  - **Database Schema**: 8-table comprehensive notification system
+  - **Healthcare Compliance**: HIPAA audit trails, encryption, data sanitization
 
 ## Code Conventions
 
@@ -494,11 +504,22 @@ NOTIFICATION_RETRY_DELAY=5000
 NOTIFICATION_QUEUE_ENABLED=true
 NOTIFICATION_QUEUE_MAX_SIZE=10000
 
+# Automatic Processing Configuration
+NOTIFICATION_AUTO_PROCESS_ENABLED=true
+NOTIFICATION_PROCESS_INTERVAL=30s
+NOTIFICATION_REDIS_DB=1
+
+# Queue Broker Selection (redis or rabbitmq)
+QUEUE_BROKER=redis
+
 # Rate Limiting
 NOTIFICATION_RATE_LIMIT_ENABLED=true
 NOTIFICATION_RATE_LIMIT_PER_MINUTE=100
 NOTIFICATION_RATE_LIMIT_PER_HOUR=1000
 NOTIFICATION_RATE_LIMIT_PER_DAY=10000
+NOTIFICATION_REDIS_RATE_LIMIT=true
+NOTIFICATION_RATE_LIMIT_WINDOW=60000
+NOTIFICATION_RATE_LIMIT_MAX=100
 
 # Healthcare Settings
 NOTIFICATION_HIPAA_COMPLIANCE=true
@@ -535,13 +556,23 @@ This is designed for healthcare applications requiring:
 - Scalable architecture for enterprise healthcare systems
 
 ## Recent Development Focus
+- **✅ Queue Notification Service**: Enterprise notification system with automatic processing
+  - **✅ QueueNotificationService**: Enhanced notification service with Bull + RabbitMQ integration
+  - **✅ Automatic Processing**: Notifications processed every 30 seconds with priority-based delays
+  - **✅ Priority Queue**: Critical → Urgent → High → Normal → Low processing order
+  - **✅ Queue Integration**: Seamless integration with Bull (Redis) and RabbitMQ brokers
+  - **✅ Retry Logic**: Exponential backoff with configurable retry attempts
+  - **✅ Gmail SMTP**: Working email delivery with App Password authentication
+  - **✅ Monitoring**: Queue metrics, health checks, and processing statistics
+  - **✅ Graceful Shutdown**: Proper resource cleanup and job completion
+  - **✅ Environment Config**: Comprehensive environment variables for queue settings
+  - **✅ Documentation**: Updated notification-service.md with automatic processing guide
 - **✅ Bull + RabbitMQ Queue System**: Production-ready queue system replacing Background Jobs Service
   - **✅ Unified Interface**: Single API supporting both Bull (Redis) and RabbitMQ brokers
   - **✅ Bull Queue Service**: High-performance Redis-based queue with job scheduling and recurring jobs
   - **✅ RabbitMQ Service**: Enterprise message broker with exchanges and dead letter queues
   - **✅ Queue Monitoring**: Unified dashboard with metrics, health checks, and Prometheus export
   - **✅ Admin API**: Complete REST API for queue management, job retry, and cleanup
-  - **✅ Notification Integration**: V2 Notification Service now uses Bull/RabbitMQ for automatic processing
   - **✅ Configuration**: Environment-based broker selection (`QUEUE_BROKER=redis|rabbitmq`)
   - **✅ Documentation**: Comprehensive documentation with setup guides and usage examples
 - **✅ WebSocket Service**: Complete real-time communication system for enterprise applications

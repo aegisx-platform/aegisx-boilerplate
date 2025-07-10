@@ -9,9 +9,18 @@ The AegisX Notification Service is a comprehensive, production-ready notificatio
 ### **Implemented Components**
 
 #### **1. Core Service Layer**
-- **Location**: `apps/api/src/app/core/shared/services/notification.service.ts`
-- **Database Service**: `apps/api/src/app/domains/notification/services/notification-database-service.ts`
+- **Primary Service**: `apps/api/src/app/domains/notification/services/queue-notification-service.ts` ⭐ **Main Service**
+- **Base Service**: `apps/api/src/app/domains/notification/services/notification-database-service.ts`
+- **Legacy Service**: `apps/api/src/app/core/shared/services/notification.service.ts` (V1 - basic features)
 - **Repository**: `apps/api/src/app/domains/notification/repositories/notification-repository.ts`
+
+#### **🚀 QueueNotificationService - Enterprise Features**
+- **Automatic Processing**: Bull + RabbitMQ queue integration
+- **Priority-Based Processing**: Critical → Urgent → High → Normal → Low
+- **Configurable Intervals**: Default 30-second processing cycles
+- **Retry Logic**: Exponential backoff with smart failure handling
+- **Queue Monitoring**: Real-time metrics and health checks
+- **Graceful Shutdown**: Proper resource cleanup and job completion
 
 #### **2. Domain Layer**
 - **Controller**: `apps/api/src/app/domains/notification/controllers/notification-controller.ts`
@@ -32,6 +41,7 @@ The AegisX Notification Service is a comprehensive, production-ready notificatio
 ### **✅ Core Features**
 - ✅ **Multi-Channel Support**: email, sms, push, webhook, slack, in-app
 - ✅ **Priority-Based Queue System**: critical, urgent, high, normal, low
+- ✅ **Automatic Processing**: Bull + RabbitMQ queue-based processing every 30 seconds
 - ✅ **Database Persistence**: Full CRUD operations with 8-table schema
 - ✅ **Template System**: Database-stored templates with variable substitution
 - ✅ **Retry Logic**: Configurable retry attempts with exponential backoff
@@ -42,8 +52,9 @@ The AegisX Notification Service is a comprehensive, production-ready notificatio
 - ✅ **Error Tracking**: Detailed error logging and recovery
 - ✅ **Analytics & Statistics**: Comprehensive reporting and metrics
 - ✅ **Gmail SMTP Integration**: Production-ready email sending with App Password support
-- ✅ **Queue Processing**: Automatic retry and failure handling
+- ✅ **Queue Processing**: Automatic retry and failure handling with priority delays
 - ✅ **Comprehensive API**: Full REST API with OpenAPI documentation
+- ✅ **Broker Selection**: Support for both Redis (Bull) and RabbitMQ brokers
 
 ### **✅ Healthcare Features**
 - ✅ **HIPAA Compliance**: Audit trails, encryption, data sanitization
@@ -356,6 +367,59 @@ ws.onmessage = (event) => {
 ```
 
 ## 🔧 Environment Configuration
+
+### **🚀 Automatic Processing Configuration**
+
+The QueueNotificationService provides enterprise-grade automatic processing:
+
+#### **Queue Broker Selection**
+```bash
+# Choose between Redis (Bull) or RabbitMQ
+QUEUE_BROKER=redis                    # or 'rabbitmq'
+```
+
+#### **Automatic Processing Settings**
+```bash
+# Enable automatic processing (recommended)
+NOTIFICATION_AUTO_PROCESS_ENABLED=true
+
+# Processing interval (30s, 1m, 5m, etc.)
+NOTIFICATION_PROCESS_INTERVAL=30s
+
+# Queue configuration
+NOTIFICATION_REDIS_DB=1
+NOTIFICATION_RETRY_ATTEMPTS=3
+```
+
+#### **Priority-Based Processing**
+The system processes notifications based on priority:
+- **Critical**: Immediate processing (0ms delay)
+- **Urgent**: 100ms delay
+- **High**: 1 second delay  
+- **Normal**: 5 seconds delay
+- **Low**: 30 seconds delay
+
+#### **Bull Queue Configuration (Redis)**
+```bash
+# Redis Queue Settings
+QUEUE_REDIS_DB=1
+QUEUE_PREFIX=bull
+QUEUE_DEFAULT_ATTEMPTS=3
+QUEUE_BACKOFF_TYPE=exponential
+QUEUE_BACKOFF_DELAY=2000
+QUEUE_REMOVE_ON_COMPLETE=true
+QUEUE_REMOVE_ON_FAIL=false
+```
+
+#### **RabbitMQ Configuration**
+```bash
+# RabbitMQ Settings
+RABBITMQ_URL=amqp://guest:guest@localhost:5672
+RABBITMQ_EXCHANGE=notifications
+RABBITMQ_EXCHANGE_TYPE=topic
+RABBITMQ_PREFETCH=10
+RABBITMQ_RECONNECT_INTERVAL=5000
+```
 
 ### **Required Environment Variables**
 ```bash
@@ -710,6 +774,57 @@ curl -X GET "http://localhost:3000/api/v1/notifications/queue/scheduled"
 ```
 
 ## 🧪 Testing Examples
+
+### **🚀 Automatic Processing Testing**
+
+#### **Test Automatic Processing**
+```bash
+# Create a notification - it will be automatically processed within 30 seconds
+curl -X POST "http://localhost:3000/api/v1/notifications" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "welcome",
+    "channel": "email",
+    "recipient": {
+      "id": "test-user-123",
+      "email": "test@example.com"
+    },
+    "content": {
+      "text": "Testing automatic processing",
+      "html": "<p>This notification will be processed automatically!</p>"
+    },
+    "priority": "normal"
+  }'
+
+# Wait 30+ seconds, then check status
+# Status should change from "queued" → "sent"
+curl http://localhost:3000/api/v1/notifications/{notification-id}
+```
+
+#### **Test Priority Processing**
+```bash
+# Create high priority notification (processed faster)
+curl -X POST "http://localhost:3000/api/v1/notifications" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "security-alert",
+    "channel": "email",
+    "recipient": {"email": "urgent@example.com"},
+    "content": {"text": "High priority test"},
+    "priority": "high"
+  }'
+
+# High priority notifications are processed before normal priority
+```
+
+#### **Monitor Queue Processing**
+```bash
+# Check queue metrics
+curl http://localhost:3000/admin/queue/dashboard
+
+# Get processing statistics
+curl http://localhost:3000/api/v1/notifications/analytics/stats
+```
 
 ### **1. Basic Email Notification Test**
 ```bash
