@@ -60,7 +60,7 @@ AegisX Boilerplate documentation has been completely reorganized for better deve
 │   ├── circuit-breaker-service.md    # Resilience patterns
 │   ├── error-tracker-service.md      # Error handling
 │   ├── secrets-manager-service.md    # Credential management
-│   └── background-jobs-system.md     # Async processing
+│   └── bull-rabbitmq-queue-system.md # Async processing
 │
 └── 📁 monitoring/                   # 📊 Monitoring & Observability
     ├── logging-system.md             # Complete logging guide

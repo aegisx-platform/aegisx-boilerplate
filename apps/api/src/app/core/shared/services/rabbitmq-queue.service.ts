@@ -90,22 +90,22 @@ export class RabbitMQQueueService extends EventEmitter implements IQueueService 
     try {
       // Create connection
       const url = this.buildConnectionUrl()
-      this.connection = await amqp.connect(url)
+      this.connection = await amqp.connect(url) as any
       
       // Handle connection events
-      this.connection.on('error', this.handleConnectionError.bind(this))
-      this.connection.on('close', this.handleConnectionClose.bind(this))
+      this.connection!.on('error', this.handleConnectionError.bind(this))
+      this.connection!.on('close', this.handleConnectionClose.bind(this))
       
       // Create channel
-      this.channel = await this.connection.createChannel()
+      this.channel = await (this.connection as any).createChannel()
       
       // Set prefetch
       if (this.config.prefetch) {
-        await this.channel.prefetch(this.config.prefetch)
+        await this.channel!.prefetch(this.config.prefetch)
       }
       
       // Setup exchange
-      await this.channel.assertExchange(
+      await this.channel!.assertExchange(
         this.exchange,
         this.config.exchange?.type || 'direct',
         {
@@ -114,7 +114,7 @@ export class RabbitMQQueueService extends EventEmitter implements IQueueService 
       )
       
       // Setup dead letter exchange
-      await this.channel.assertExchange(`${this.exchange}.dlx`, 'direct', {
+      await this.channel!.assertExchange(`${this.exchange}.dlx`, 'direct', {
         durable: true
       })
       
@@ -315,7 +315,7 @@ export class RabbitMQQueueService extends EventEmitter implements IQueueService 
     }
     
     if (this.connection) {
-      await this.connection.close()
+      await (this.connection as any).close()
     }
     
     this.emit('queue:closed')
@@ -635,7 +635,7 @@ export class RabbitMQQueueService extends EventEmitter implements IQueueService 
       name: job.name,
       data: job.data,
       opts: job.opts,
-      progress: job.progress,
+      progressValue: job.progress,
       attemptsMade: job.attempts,
       timestamp: job.timestamp,
       processedOn: job.processedOn,

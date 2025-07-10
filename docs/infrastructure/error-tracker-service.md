@@ -781,16 +781,16 @@ httpClient.interceptors.response.use(
 )
 ```
 
-### 3. Background Jobs Integration
+### 3. Bull + RabbitMQ Queue System Integration
 
 ```typescript
-import { backgroundJobsService } from '@core/shared/services/background-jobs.service'
+import { queueService } from '@core/shared/services/bull-rabbitmq-queue.service'
 
-// Track job failures
-backgroundJobsService.on('job-failed', async (event) => {
+// Track queue job failures
+queueService.on('job-failed', async (event) => {
   await tracker.track({
-    name: 'BackgroundJobError',
-    message: `Background job failed: ${event.error.message}`,
+    name: 'QueueJobError',
+    message: `Queue job failed: ${event.error.message}`,
     level: 'error',
     category: 'system',
     severity: event.attempts >= 3 ? 'high' : 'medium',

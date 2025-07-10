@@ -48,7 +48,7 @@ export interface Job<T = any> {
   name: string
   data: T
   opts: JobOptions
-  progress: number
+  progressValue: number
   attemptsMade: number
   
   // Timestamps
@@ -163,7 +163,7 @@ export interface IQueueService {
 }
 
 // Helper type for creating typed queues
-export interface TypedQueue<T = any> extends IQueueService {
+export interface TypedQueue<T = any> extends Omit<IQueueService, 'add' | 'process'> {
   add(name: string, data: T, opts?: JobOptions): Promise<Job<T>>
   process<R = any>(name: string, processor: ProcessFunction<T, R>): void
 }

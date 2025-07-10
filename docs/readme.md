@@ -54,7 +54,7 @@
 | [**⚡ Circuit Breaker**](./infrastructure/circuit-breaker-service.md) | Resilience patterns | Backend Developers |
 | [**❌ Error Tracker**](./infrastructure/error-tracker-service.md) | Error handling & reporting | Backend Developers |
 | [**🔐 Secrets Manager**](./infrastructure/secrets-manager-service.md) | Secure credential management | DevOps Engineers |
-| [**🔄 Background Jobs**](./infrastructure/background-jobs-system.md) | Async task processing | Backend Developers |
+| [**🔄 Bull + RabbitMQ Queue System**](./infrastructure/bull-rabbitmq-queue-system.md) | Async task processing | Backend Developers |
 
 ### 🔧 **Specialized Guides**
 | Document | Description | Audience |
@@ -124,7 +124,7 @@
 #### **📊 Administrative Systems**
 - [Report Builder](./features/report-builder.md) - Healthcare analytics
 - [Notification Service](./features/notification-database-schema.md) - Patient alerts
-- [Background Jobs](./infrastructure/background-jobs-system.md) - Automated tasks
+- [Bull + RabbitMQ Queue System](./infrastructure/bull-rabbitmq-queue-system.md) - Automated tasks
 
 #### **🔧 Technical Integration**
 - [WebSocket Service](./features/websocket-service.md) - Real-time monitoring

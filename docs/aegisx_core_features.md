@@ -56,13 +56,13 @@ AegisX Boilerplate is a **production-ready** Fastify API boilerplate designed sp
 - Event replay capabilities
 - **Documentation**: [`event_bus_guide.md`](./event_bus_guide.md)
 
-### 3. **Background Jobs Service**
-`apps/api/src/app/core/shared/services/background-jobs.service.ts`
+### 3. **Bull + RabbitMQ Queue System**
+`apps/api/src/app/core/shared/services/bull-rabbitmq-queue.service.ts`
 - Async task processing
 - Queue management
 - Job scheduling
 - Priority handling
-- **Documentation**: [`background-jobs-system.md`](./background-jobs-system.md)
+- **Documentation**: [`bull-rabbitmq-queue-system.md`](./bull-rabbitmq-queue-system.md)
 
 ### 4. **Secrets Manager Service**
 `apps/api/src/app/core/shared/services/secrets-manager.service.ts`

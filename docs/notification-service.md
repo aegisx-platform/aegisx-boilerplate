@@ -404,7 +404,7 @@ SLACK_DEFAULT_CHANNEL=#general
 NOTIFICATION_WEBSOCKET_ENABLED=true
 NOTIFICATION_WEBSOCKET_CHANNEL=notifications
 
-# Redis-based Background Jobs Configuration
+# Bull + RabbitMQ Queue System Configuration
 JOBS_ADAPTER_TYPE=redis                       # Enable Redis job queue
 JOBS_REDIS_HOST=localhost                     # Redis host
 JOBS_REDIS_PORT=6379                          # Redis port
@@ -495,7 +495,7 @@ fastify.eventBus.subscribe('security.suspicious_activity', async (event) => {
 ## 🔄 Redis Automatic Processing
 
 ### **Overview**
-The notification system now supports Redis-based automatic processing, providing:
+The notification system now supports Bull + RabbitMQ queue system for automatic processing, providing:
 - **Persistent queues** that survive server restarts
 - **Distributed processing** across multiple service instances
 - **Automatic retry logic** with exponential backoff
@@ -504,7 +504,7 @@ The notification system now supports Redis-based automatic processing, providing
 
 ### **Setup Redis Automatic Processing**
 
-#### **1. Enable Redis Background Jobs**
+#### **1. Enable Bull + RabbitMQ Queue System**
 ```bash
 # Set environment variables
 JOBS_ADAPTER_TYPE=redis

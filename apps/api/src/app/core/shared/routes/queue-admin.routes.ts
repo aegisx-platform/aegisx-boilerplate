@@ -16,17 +16,7 @@ const QueueParamsSchema = Type.Object({
   name: Type.String()
 })
 
-const JobStatesSchema = Type.Array(
-  Type.Union([
-    Type.Literal('waiting'),
-    Type.Literal('active'),
-    Type.Literal('completed'),
-    Type.Literal('failed'),
-    Type.Literal('delayed'),
-    Type.Literal('paused'),
-    Type.Literal('stuck')
-  ])
-)
+// Removed unused JobStatesSchema
 
 const CleanJobsSchema = Type.Object({
   grace: Type.Number({ minimum: 0 }),

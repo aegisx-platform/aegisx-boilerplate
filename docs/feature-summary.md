@@ -112,8 +112,8 @@ AegisX Boilerplate เป็น production-ready Fastify API boilerplate ที�
 - **Database Health Monitoring** with connection status tracking
 - **Query Optimization** with caching and performance monitoring
 
-### ✅ **10. Background Job Processing**
-- **Multi-Adapter Job System** (Memory, Redis, RabbitMQ)
+### ✅ **10. Bull + RabbitMQ Queue System**
+- **Multi-Adapter Queue System** (Memory, Redis, RabbitMQ)
 - **Job Scheduling** with cron expressions and retry mechanisms
 - **Queue Management** with priority-based processing
 - **Error Handling** with dead letter queues and retry policies
@@ -126,7 +126,7 @@ AegisX Boilerplate เป็น production-ready Fastify API boilerplate ที�
 1. **🔄 Event Bus System** - Cross-service communication with multi-adapter support
 2. **🔗 HTTP Client Service** - External APIs with retry, circuit breaker, caching
 3. **📧 Notification Service** - Multi-channel notifications (email, SMS, push, Slack)
-4. **⚙️ Background Jobs System** - Async task processing with scheduling
+4. **⚙️ Bull + RabbitMQ Queue System** - Async task processing with scheduling
 5. **🌐 WebSocket Service** - Real-time communication with connection management
 
 ### **Security & Configuration**

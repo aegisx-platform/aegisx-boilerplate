@@ -43,14 +43,12 @@ export class BullQueueService extends EventEmitter implements IQueueService {
   public readonly broker: 'redis' | 'rabbitmq' = 'redis'
   
   private queue: Queue
-  private config: BullQueueConfig
   private metricsCollector?: NodeJS.Timeout
   private metricsData: QueueMetrics
   
   constructor(name: string, config: BullQueueConfig) {
     super()
     this.name = name
-    this.config = config
     
     // Initialize Bull queue
     this.queue = new Bull(name, {
@@ -149,7 +147,7 @@ export class BullQueueService extends EventEmitter implements IQueueService {
       completed: counts.completed || 0,
       failed: counts.failed || 0,
       delayed: counts.delayed || 0,
-      paused: counts.paused || 0,
+      paused: (counts as any).paused || 0, // Bull might not expose paused count
       stuck: 0 // Bull doesn't have stuck state
     }
   }
@@ -176,7 +174,7 @@ export class BullQueueService extends EventEmitter implements IQueueService {
       // Clean all completed and failed jobs
       const completed = await this.queue.clean(grace, 'completed', limit)
       const failed = await this.queue.clean(grace, 'failed', limit)
-      return [...completed, ...failed]
+      return [...completed.map(job => job.id.toString()), ...failed.map(job => job.id.toString())]
     }
     
     const bullStatus = this.mapJobStateToBullStatus(status)
@@ -184,7 +182,8 @@ export class BullQueueService extends EventEmitter implements IQueueService {
       return []
     }
     
-    return await this.queue.clean(grace, bullStatus, limit)
+    const cleanedJobs = await this.queue.clean(grace, bullStatus, limit)
+    return cleanedJobs.map(job => job.id.toString())
   }
   
   /**
@@ -368,10 +367,12 @@ export class BullQueueService extends EventEmitter implements IQueueService {
         priority: bullJob.opts.priority,
         attempts: bullJob.opts.attempts,
         timeout: bullJob.opts.timeout,
-        removeOnComplete: bullJob.opts.removeOnComplete,
-        removeOnFail: bullJob.opts.removeOnFail
+        removeOnComplete: typeof bullJob.opts.removeOnComplete === 'boolean' ? bullJob.opts.removeOnComplete : 
+                           typeof bullJob.opts.removeOnComplete === 'number' ? bullJob.opts.removeOnComplete : undefined,
+        removeOnFail: typeof bullJob.opts.removeOnFail === 'boolean' ? bullJob.opts.removeOnFail : 
+                      typeof bullJob.opts.removeOnFail === 'number' ? bullJob.opts.removeOnFail : undefined
       },
-      progress: bullJob.progress(),
+      progressValue: typeof bullJob.progress === 'function' ? bullJob.progress() : bullJob.progress || 0,
       attemptsMade: bullJob.attemptsMade,
       timestamp: bullJob.timestamp,
       processedOn: bullJob.processedOn || undefined,

@@ -176,12 +176,13 @@ core/shared/security/
 
 ### 🟡 **MEDIUM PRIORITY** - Enhanced Functionality
 
-#### 5. ⚡ **Background Job Processing**
+#### 5. ⚡ **Bull + RabbitMQ Queue System**
 
 **สิ่งที่ขาด:**
 ```
 core/plugins/jobs/
-├── job-queue.ts            # Bull/BullMQ integration
+├── bull-queue.ts           # Bull/BullMQ integration
+├── rabbitmq-adapter.ts     # RabbitMQ integration
 ├── scheduler.ts            # Cron job management
 ├── worker-manager.ts       # Worker process control
 ├── job-monitoring.ts       # Job status tracking
@@ -368,8 +369,8 @@ npm install joi-password helmet-csp dompurify crypto-js
 **เป้าหมาย:** เพิ่มความสามารถขั้นสูง
 
 ```bash
-# 5. Background Jobs
-npm install bull bullmq node-cron ioredis
+# 5. Bull + RabbitMQ Queue System
+npm install bull bullmq amqplib node-cron ioredis
 
 # 6. File Storage
 npm install aws-sdk @azure/storage-blob @google-cloud/storage multer sharp
@@ -379,7 +380,7 @@ npm install nodemailer twilio web-push socket.io handlebars
 ```
 
 **Deliverables:**
-- ✅ Background job processing
+- ✅ Bull + RabbitMQ queue system
 - ✅ Multi-cloud file storage
 - ✅ Multi-channel notifications
 - ✅ Real-time WebSocket notifications
@@ -540,7 +541,7 @@ APM_SERVICE_NAME: {
 - [ ] **Monitoring** - Application performance monitoring
 
 ### **Phase 2 Checklist:**
-- [ ] **Background Jobs** - Async processing capabilities
+- [ ] **Bull + RabbitMQ Queue System** - Async processing capabilities
 - [ ] **File Storage** - Multi-cloud storage system
 - [ ] **Notifications** - Multi-channel communication
 - [ ] **Real-time Features** - WebSocket integration

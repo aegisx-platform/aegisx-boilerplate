@@ -578,13 +578,13 @@ const response = await httpBreaker.execute(async () => {
 })
 ```
 
-### Background Jobs Integration
+### Bull + RabbitMQ Queue System Integration
 
 ```typescript
-import { backgroundJobsService } from '@core/shared/services/background-jobs.service'
+import { queueService } from '@core/shared/services/bull-rabbitmq-queue.service'
 
 // Add job with circuit breaker protection
-await backgroundJobsService.add('process-data', {
+await queueService.add('process-data', {
   patientId: 'PAT_001',
   dataType: 'lab-results'
 }, {

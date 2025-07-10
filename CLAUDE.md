@@ -102,7 +102,7 @@ domain-name/
 - **Enterprise Infrastructure Services** (Complete - 16 Services):
   - **HTTP Client Service** - Retry, timeout, circuit breaker integration
   - **Secrets Manager Service** - Secure API keys and tokens handling
-  - **Modern Queue System** - Bull Queue (Redis) and RabbitMQ with unified interface, monitoring, and admin API
+  - **Bull + RabbitMQ Queue System** - Production-ready queue processing with unified interface, monitoring, and admin dashboard
   - **Circuit Breaker Service** - Prevent cascade failures
   - **Error Tracker Service** - Centralized error handling and reporting
   - **Event Bus System** - Cross-service communication with multi-adapter support
@@ -154,6 +154,13 @@ Healthcare features in `/features/` directory:
   - `api_keys:delete:own` - Delete own API keys (user, manager, admin)
   - `api_keys:read:all` - View all API keys (manager, admin)
   - `api_keys:delete:all` - Delete any API keys (admin only)
+
+### Bull + RabbitMQ Queue System
+- **Brokers**: Bull Queue (Redis) for high throughput, RabbitMQ for enterprise messaging
+- **Features**: Unified interface, job scheduling, priority queues, dead letter queues, monitoring
+- **Configuration**: Environment-based broker selection (`QUEUE_BROKER=redis` or `rabbitmq`)
+- **Monitoring**: Admin dashboard, metrics collection, health checks, Prometheus export
+- **Integration**: Used by Notification Service for automatic processing and rate limiting
 
 ### Database Schema
 **Core Tables**: users, refresh_tokens, roles, permissions, user_roles, role_permissions, audit_logs
@@ -271,10 +278,12 @@ Complete suite of 16 production-ready services with healthcare compliance featur
   - Enterprise-grade HTTP client with retry, circuit breaker, caching, and monitoring
 - **Event Bus System**: `apps/api/src/app/core/shared/events/`
   - Cross-service communication with multi-adapter support (Memory, Redis, RabbitMQ)
-- **Modern Queue System**: Production-ready Bull (Redis) and RabbitMQ queue system
-  - Unified interface supporting both Redis and RabbitMQ brokers
+- **Bull + RabbitMQ Queue System**: `apps/api/src/app/core/shared/services/`
+  - Production-ready queue system with Bull (Redis) and RabbitMQ support
+  - Unified interface for consistent API across both brokers
   - Job scheduling, priorities, retry logic, and dead letter queues
-  - Comprehensive monitoring with metrics and admin dashboard
+  - Comprehensive monitoring with metrics, health checks, and admin dashboard
+  - **Documentation**: `docs/bull-rabbitmq-queue-system.md`
 
 #### Security & Configuration
 - **Secrets Manager Service**: `apps/api/src/app/core/shared/services/secrets-manager.service.ts`
@@ -384,7 +393,9 @@ await fastify.metrics.recordEvent('user_registration', metadata);
 await fastify.retry.execute(operationFunction);
 await fastify.circuitBreaker.execute('external-api', apiCall);
 await fastify.cache.get('user:123');
-await fastify.backgroundJobs.enqueue('send-email', emailData);
+// Modern Queue System (Bull + RabbitMQ)
+const queue = await QueueFactory.create({ broker: 'redis', name: 'notifications' });
+await queue.add('send-email', emailData);
 await fastify.storage.upload({ file: buffer, filename: 'document.pdf', mimeType: 'application/pdf' });
 
 // ❌ DON'T: Reinvent infrastructure wheels
@@ -524,6 +535,15 @@ This is designed for healthcare applications requiring:
 - Scalable architecture for enterprise healthcare systems
 
 ## Recent Development Focus
+- **✅ Bull + RabbitMQ Queue System**: Production-ready queue system replacing Background Jobs Service
+  - **✅ Unified Interface**: Single API supporting both Bull (Redis) and RabbitMQ brokers
+  - **✅ Bull Queue Service**: High-performance Redis-based queue with job scheduling and recurring jobs
+  - **✅ RabbitMQ Service**: Enterprise message broker with exchanges and dead letter queues
+  - **✅ Queue Monitoring**: Unified dashboard with metrics, health checks, and Prometheus export
+  - **✅ Admin API**: Complete REST API for queue management, job retry, and cleanup
+  - **✅ Notification Integration**: V2 Notification Service now uses Bull/RabbitMQ for automatic processing
+  - **✅ Configuration**: Environment-based broker selection (`QUEUE_BROKER=redis|rabbitmq`)
+  - **✅ Documentation**: Comprehensive documentation with setup guides and usage examples
 - **✅ WebSocket Service**: Complete real-time communication system for enterprise applications
   - **✅ Core Infrastructure**: Enterprise-grade WebSocket plugin with connection management and channel subscriptions
   - **✅ Report Integration**: Real-time report progress tracking, live data streaming, and system notifications
@@ -560,9 +580,9 @@ This is designed for healthcare applications requiring:
 - **Enterprise Infrastructure Foundation**: Complete suite of 16 production-ready services
 - **Event-Driven Architecture**: Multi-adapter Event Bus (Memory, Redis, RabbitMQ) with middleware support
 - **Comprehensive Audit System**: Multi-adapter audit logging (Direct DB, Redis Pub/Sub, RabbitMQ)
-- **✅ Redis Automatic Notification Processing**: Complete Redis-based automatic notification processing with background jobs
+- **✅ Redis Automatic Notification Processing**: Complete Redis-based automatic notification processing with Bull + RabbitMQ queue system
   - **✅ Redis Job Queue Adapter**: Production-ready Redis adapter with priority queues and persistence
-  - **✅ Background Jobs Integration**: Seamless integration with notification service for automatic processing
+  - **✅ Queue System Integration**: Seamless integration with notification service for automatic processing
   - **✅ Automatic Processing**: Configurable interval processing (default 30 seconds) with scheduled jobs
   - **✅ Redis Rate Limiting**: Distributed rate limiting across service instances with multi-window support
   - **✅ Healthcare Compliance**: HIPAA-compliant job processing with audit logging and encryption
@@ -607,7 +627,7 @@ This is designed for healthcare applications requiring:
 ### Communication & Processing
 - 🔗 **HTTP Client**: External APIs (`fastify.httpClient`)
 - 📧 **Notification Service**: User communications (`fastify.notification`)
-- ⚙️ **Background Jobs**: Async processing (`fastify.backgroundJobs`)
+- ⚙️ **Bull + RabbitMQ Queue System**: Async processing (`QueueFactory.create()`)
 - 🌐 **WebSocket Manager**: Real-time communication (`fastify.websocketManager`)
 
 ### Resilience & Performance
