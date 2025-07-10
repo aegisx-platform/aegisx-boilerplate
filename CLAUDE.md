@@ -97,11 +97,12 @@ domain-name/
 - Security middleware (Helmet, Rate Limiting, CORS)
 - API documentation with Swagger
 - Docker setup with health checks
-- **✅ Notification System** - Complete multi-channel notification service with Gmail SMTP support and Redis automatic processing
+- **✅ Notification System** - Complete multi-channel notification service with Gmail SMTP support and Bull/RabbitMQ queue processing
+- **✅ Bull + RabbitMQ Queue System** - Production-ready queue system with unified interface supporting both Redis (Bull) and RabbitMQ brokers
 - **Enterprise Infrastructure Services** (Complete - 16 Services):
   - **HTTP Client Service** - Retry, timeout, circuit breaker integration
   - **Secrets Manager Service** - Secure API keys and tokens handling
-  - **Background Jobs System** - Async task processing with Redis queue support
+  - **Modern Queue System** - Bull Queue (Redis) and RabbitMQ with unified interface, monitoring, and admin API
   - **Circuit Breaker Service** - Prevent cascade failures
   - **Error Tracker Service** - Centralized error handling and reporting
   - **Event Bus System** - Cross-service communication with multi-adapter support
@@ -213,6 +214,7 @@ Healthcare features in `/features/` directory:
 - `docs/api-key-testing-guide.md` - **🧪 API Key Testing Guide** (complete testing examples and troubleshooting)
 - `docs/notification-service.md` - Notification service usage guide
 - `docs/notification-database-schema.md` - Database schema documentation
+- `docs/bull-rabbitmq-queue-system.md` - **⚡ Bull + RabbitMQ Queue System documentation** (production-ready queue system with unified interface)
 - `docs/storage-database.md` - **📁 Storage database integration guide** (comprehensive storage persistence)
 - `docs/storage-shared-files.md` - **🤝 Shared Files Management documentation** (collaborative file sharing with permissions)
 - `docs/file-access-control-plugin.md` - **🔐 File Access Control Plugin documentation** (security middleware for file operations)
@@ -238,6 +240,12 @@ Healthcare features in `/features/` directory:
 - `apps/api/src/app/core/shared/services/` - Enterprise infrastructure services
 - `apps/api/src/app/core/shared/services/storage.service.ts` - **Enterprise storage service with database integration**
 - `apps/api/src/app/core/shared/services/image-processing.service.ts` - **Image Processing Service with Sharp.js integration**
+- `apps/api/src/app/core/shared/services/bull-queue.service.ts` - **Bull Queue Service (Redis) with enterprise features**
+- `apps/api/src/app/core/shared/services/rabbitmq-queue.service.ts` - **RabbitMQ Queue Service with advanced routing**
+- `apps/api/src/app/core/shared/services/queue-monitoring.service.ts` - **Unified queue monitoring with metrics and health checks**
+- `apps/api/src/app/core/shared/factories/queue.factory.ts` - **Queue factory for creating Bull/RabbitMQ instances**
+- `apps/api/src/app/core/shared/interfaces/queue.interface.ts` - **Common queue interface for unified API**
+- `apps/api/src/app/core/shared/routes/queue-admin.routes.ts` - **Admin API routes for queue management**
 - `apps/api/src/app/domains/auth/` - **Authentication domain with JWT & API key support**
 - `apps/api/src/app/domains/storage/` - **Storage domain with database persistence & shared files management**
 - `apps/api/src/app/domains/storage/controllers/storage-image-controller.ts` - **Image processing API controller**
@@ -263,8 +271,10 @@ Complete suite of 16 production-ready services with healthcare compliance featur
   - Enterprise-grade HTTP client with retry, circuit breaker, caching, and monitoring
 - **Event Bus System**: `apps/api/src/app/core/shared/events/`
   - Cross-service communication with multi-adapter support (Memory, Redis, RabbitMQ)
-- **Background Jobs System**: `apps/api/src/app/core/shared/services/background-jobs.service.ts`
-  - Async task processing with job scheduling and queue management
+- **Modern Queue System**: Production-ready Bull (Redis) and RabbitMQ queue system
+  - Unified interface supporting both Redis and RabbitMQ brokers
+  - Job scheduling, priorities, retry logic, and dead letter queues
+  - Comprehensive monitoring with metrics and admin dashboard
 
 #### Security & Configuration
 - **Secrets Manager Service**: `apps/api/src/app/core/shared/services/secrets-manager.service.ts`
@@ -630,13 +640,16 @@ This is designed for healthcare applications requiring:
 5. **เพิ่ม Environment Variables** → อัพเดท "Environment Configuration"
 6. **เพิ่ม Documentation** → อัพเดท "Important Files"
 
-### 🚀 **Latest Updates - Redis Automatic Notification Processing**
-**Added comprehensive Redis-based automatic notification processing:**
-- **Redis Job Queue Adapter**: Production-ready with priority queues and persistence
-- **Background Jobs Integration**: Seamless notification service integration
-- **Automatic Processing**: Configurable interval processing (default 30 seconds)
-- **Redis Rate Limiting**: Distributed rate limiting across service instances
-- **Healthcare Compliance**: HIPAA-compliant job processing with audit logging
+### 🚀 **Latest Updates - Bull + RabbitMQ Queue System**
+**Implemented production-ready queue system with unified interface:**
+- **Bull Queue Service**: Redis-based queue with Bull library for high performance
+- **RabbitMQ Service**: Enterprise message broker with advanced routing
+- **Unified Interface**: Same API for both Redis and RabbitMQ brokers
+- **Queue Factory**: Dynamic queue creation based on broker type
+- **Comprehensive Monitoring**: Unified dashboard with metrics and health checks
+- **Admin API**: REST endpoints for queue management and job control
+- **Automatic Processing**: Configurable notification processing with both brokers
+- **Production Ready**: Built on mature libraries (Bull, amqplib) with full TypeScript support
 - **Environment Configuration**: 25+ configuration options for fine-tuning
 - **Complete Documentation**: Setup guide with Redis monitoring and troubleshooting
 - **Production Ready**: Successfully built and tested TypeScript implementation
