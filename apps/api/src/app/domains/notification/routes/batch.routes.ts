@@ -12,7 +12,7 @@ import {
   BatchCancelResponseSchema,
   BatchHealthResponseSchema,
   BatchParamsSchema,
-  ErrorResponseSchema,
+  BatchErrorResponseSchema,
 } from '../schemas/batch.schemas';
 
 export async function batchRoutes(
@@ -30,8 +30,8 @@ export async function batchRoutes(
       body: BatchCreateSchema,
       response: {
         200: BatchCreateResponseSchema,
-        400: ErrorResponseSchema,
-        500: ErrorResponseSchema
+        400: BatchErrorResponseSchema,
+        500: BatchErrorResponseSchema
       }
     }
   }, controller.createBulkBatch.bind(controller));
@@ -45,8 +45,8 @@ export async function batchRoutes(
       params: BatchParamsSchema,
       response: {
         200: BatchStatusResponseSchema,
-        404: ErrorResponseSchema,
-        500: ErrorResponseSchema
+        404: BatchErrorResponseSchema,
+        500: BatchErrorResponseSchema
       }
     }
   }, controller.getBatchStatus.bind(controller));
@@ -60,7 +60,7 @@ export async function batchRoutes(
       querystring: BatchListQuerySchema,
       response: {
         200: BatchListResponseSchema,
-        500: ErrorResponseSchema
+        500: BatchErrorResponseSchema
       }
     }
   }, controller.listBatchJobs.bind(controller));
@@ -73,7 +73,7 @@ export async function batchRoutes(
       tags: ['Batch Processing', 'Monitoring'],
       response: {
         200: BatchMetricsResponseSchema,
-        500: ErrorResponseSchema
+        500: BatchErrorResponseSchema
       }
     }
   }, controller.getBatchMetrics.bind(controller));
@@ -86,7 +86,7 @@ export async function batchRoutes(
       tags: ['Batch Processing', 'Control'],
       response: {
         200: BatchOperationResponseSchema,
-        500: ErrorResponseSchema
+        500: BatchErrorResponseSchema
       }
     }
   }, controller.pauseBatchProcessing.bind(controller));
@@ -99,7 +99,7 @@ export async function batchRoutes(
       tags: ['Batch Processing', 'Control'],
       response: {
         200: BatchOperationResponseSchema,
-        500: ErrorResponseSchema
+        500: BatchErrorResponseSchema
       }
     }
   }, controller.resumeBatchProcessing.bind(controller));
@@ -113,8 +113,8 @@ export async function batchRoutes(
       params: BatchParamsSchema,
       response: {
         200: BatchRetryResponseSchema,
-        404: ErrorResponseSchema,
-        500: ErrorResponseSchema
+        404: BatchErrorResponseSchema,
+        500: BatchErrorResponseSchema
       }
     }
   }, controller.retryBatch.bind(controller));
@@ -128,8 +128,8 @@ export async function batchRoutes(
       params: BatchParamsSchema,
       response: {
         200: BatchCancelResponseSchema,
-        404: ErrorResponseSchema,
-        500: ErrorResponseSchema
+        404: BatchErrorResponseSchema,
+        500: BatchErrorResponseSchema
       }
     }
   }, controller.cancelBatch.bind(controller));
@@ -142,7 +142,7 @@ export async function batchRoutes(
       tags: ['Batch Processing', 'Health'],
       response: {
         200: BatchHealthResponseSchema,
-        500: ErrorResponseSchema
+        500: BatchErrorResponseSchema
       }
     }
   }, controller.getBatchHealth.bind(controller));

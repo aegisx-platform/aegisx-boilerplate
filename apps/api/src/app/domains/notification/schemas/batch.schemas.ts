@@ -176,7 +176,7 @@ export const BatchParamsSchema = Type.Object({
   batchId: Type.String({ description: 'Batch job ID' })
 });
 
-export const ErrorResponseSchema = Type.Object({
+export const BatchErrorResponseSchema = Type.Object({
   success: Type.Boolean(),
   error: Type.String(),
   message: Type.String()
