@@ -6,22 +6,27 @@
 
 // Controllers
 export { DatabaseNotificationController } from './controllers/notification-controller';
+export { DatabaseBatchController } from './controllers/batch-controller';
 
 // Services
 export { DatabaseNotificationService } from './services/notification-database-service';
 export { QueueNotificationService } from './services/queue-notification-service';
+export { BatchWorkerService } from './services/batch-worker.service';
 
 // Repositories
 export { KnexNotificationRepository } from './repositories/notification-repository';
 
 // Routes
 export { notificationRoutes } from './routes/notification-routes';
+export { batchRoutes } from './routes/batch.routes';
 
 // Schemas
 export * from './schemas/notification.schemas';
+export * from './schemas/batch.schemas';
 
 // Types
 export * from './types/notification-domain.types';
+export * from './types/batch.types';
 
 // Type augmentation for Fastify
 declare module 'fastify' {

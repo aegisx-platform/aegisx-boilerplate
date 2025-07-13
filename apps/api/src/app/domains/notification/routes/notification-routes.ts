@@ -16,9 +16,6 @@ export async function notificationRoutes(
   controller: DatabaseNotificationController
 ): Promise<void> {
   
-  // Register batch routes (will be registered separately)
-  // await fastify.register(batchRoutes, { prefix: '/batch' });
-  
   // Core notification operations
   fastify.post('/', {
     schema: {
@@ -323,85 +320,8 @@ export async function notificationRoutes(
     }
   }, controller.updateUserPreferences.bind(controller));
 
-  // Batch operations
-  fastify.post('/batches', {
-    schema: {
-      tags: ['Batch Operations'],
-      summary: 'Create a notification batch',
-      body: {
-        type: 'object',
-        properties: {
-          name: { type: 'string' }
-        }
-      }
-    }
-  }, controller.createBatch.bind(controller));
-
-  fastify.post('/batches/:batchId/notifications', {
-    schema: {
-      tags: ['Batch Operations'],
-      summary: 'Add notifications to batch',
-      params: {
-        type: 'object',
-        properties: {
-          batchId: { type: 'string' }
-        },
-        required: ['batchId']
-      },
-      body: {
-        type: 'object',
-        required: ['notificationIds'],
-        properties: {
-          notificationIds: {
-            type: 'array',
-            items: { type: 'string' }
-          }
-        }
-      }
-    }
-  }, controller.addNotificationsToBatch.bind(controller));
-
-  fastify.post('/batches/:batchId/process', {
-    schema: {
-      tags: ['Batch Operations'],
-      summary: 'Process a notification batch',
-      params: {
-        type: 'object',
-        properties: {
-          batchId: { type: 'string' }
-        },
-        required: ['batchId']
-      }
-    }
-  }, controller.processBatch.bind(controller));
-
-  fastify.get('/batches/:batchId', {
-    schema: {
-      tags: ['Batch Operations'],
-      summary: 'Get batch details',
-      params: {
-        type: 'object',
-        properties: {
-          batchId: { type: 'string' }
-        },
-        required: ['batchId']
-      }
-    }
-  }, controller.getBatch.bind(controller));
-
-  fastify.get('/batches/:batchId/notifications', {
-    schema: {
-      tags: ['Batch Operations'],
-      summary: 'Get notifications in batch',
-      params: {
-        type: 'object',
-        properties: {
-          batchId: { type: 'string' }
-        },
-        required: ['batchId']
-      }
-    }
-  }, controller.getBatchNotifications.bind(controller));
+  // Note: Batch operations have been moved to separate batch routes
+  // See batch.routes.ts for batch processing endpoints
 
   // Analytics
   fastify.get('/analytics/stats', {
