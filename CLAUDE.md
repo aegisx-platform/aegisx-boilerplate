@@ -4,14 +4,17 @@
 AegisX Boilerplate is a production-ready Fastify API boilerplate designed for Healthcare Information Systems (HIS) and ERP applications. Built with TypeScript, PostgreSQL, and enterprise-grade infrastructure.
 
 ## Technology Stack
-- **Framework**: Fastify v5.2.1 (high-performance)
-- **Language**: TypeScript with strict typing
+- **Framework**: Fastify v5.2.1 (high-performance API) + Angular 20 (frontend)
+- **Language**: TypeScript with strict typing (dual setup: Node.js + Browser)
 - **Database**: PostgreSQL + Knex.js for migrations/queries
 - **Validation**: TypeBox for schema validation
-- **Architecture**: Nx monorepo with layered architecture
+- **Architecture**: Nx monorepo with layered architecture (apps/ + libs/)
+- **Frontend**: Angular 20 with standalone components
+- **UI Framework**: PrimeNG + custom CSS utilities
+- **Shared Libraries**: Type-safe communication between frontend/backend
 - **Caching**: Redis with connection pooling
 - **Message Queue**: RabbitMQ for enterprise messaging
-- **Authentication**: JWT + Refresh tokens
+- **Authentication**: JWT + Refresh tokens + API Keys
 - **Authorization**: RBAC (Role-Based Access Control)
 - **Logging**: Winston structured logging with multiple adapters
 - **Monitoring**: Seq and Grafana + Loki support
@@ -20,7 +23,22 @@ AegisX Boilerplate is a production-ready Fastify API boilerplate designed for He
 
 ## Project Structure
 
-**Following 4-Layer Architecture** (see `docs/folder_structure_guide.md` for detailed guide)
+**Nx Monorepo with 4-Layer Architecture** (see `docs/folder_structure_guide.md` for detailed guide)
+
+### 🎯 **Nx Monorepo Structure**
+```
+workspace-root/
+├── apps/                    # 🎯 Applications (executable projects)
+│   ├── api/                # ✅ Fastify API Server (Node.js)
+│   ├── web/                # ✅ Angular 20 Frontend (Browser)
+│   └── api-e2e/            # ✅ API End-to-End Tests
+├── libs/                    # 📚 Shared Libraries (reusable code)
+│   └── shared/
+│       ├── types/          # ✅ TypeScript interfaces (@aegisx-boilerplate/types)
+│       └── api-client/     # ✅ Type-safe API client (@aegisx-boilerplate/api-client)
+├── docs/                    # 📖 Documentation
+└── tools/                   # 🛠️ Development tools
+```
 
 ### 🏗️ Layer 1: Core Layer - "Infrastructure Foundation"
 ```
@@ -147,15 +165,27 @@ auth/
 ## Current Implementation Status
 
 ### ✅ Implemented & Ready
+
+#### **🌐 Full-Stack Application**
+- **✅ Angular 20 Frontend** - Complete setup with standalone components in `apps/web/`
+- **✅ Fastify API Backend** - Production-ready API server in `apps/api/`
+- **✅ Nx Monorepo** - Proper workspace structure with apps/ and libs/
+- **✅ Shared Libraries** - Type-safe communication with `@aegisx-boilerplate/types` and `@aegisx-boilerplate/api-client`
+- **✅ TypeScript Configuration** - Dual setup for Node.js (CommonJS) + Angular (ES modules)
+- **✅ Development Workflow** - npm scripts for start, build, test, lint (see DEVELOPMENT_GUIDE.md)
+
+#### **🔐 Authentication & Security**
 - **JWT Authentication** with refresh tokens
 - **API Key Authentication** with dual expiration strategy (cron + Redis TTL)
 - **Dual Authentication Support**: API keys work alongside JWT authentication
 - RBAC system with permission model: `resource:action:scope`
+- Security middleware (Helmet, Rate Limiting, CORS)
+
+#### **🏗️ Infrastructure & Monitoring**
 - Advanced audit system with multiple adapters (Direct DB, Redis Pub/Sub, RabbitMQ)
 - Structured logging system with correlation ID tracking
 - Log monitoring with Seq and Grafana + Loki support
 - Database schema with migrations and seeds
-- Security middleware (Helmet, Rate Limiting, CORS)
 - API documentation with Swagger
 - Docker setup with health checks
 - **✅ Notification System** - Complete multi-channel notification service with Gmail SMTP support and Bull/RabbitMQ queue processing
@@ -246,16 +276,30 @@ Healthcare features in `/features/` directory:
 
 ## Development Commands
 
+### Full-Stack Development
+- `npm start` - Start both API + Angular (parallel development)
+- `npm run start:api` - Start API server only (port 3000)
+- `npm run start:web` - Start Angular app only (port 4200)
+- `npm run build` - Build both API + Angular
+- `npm run build:api` - Build API only
+- `npm run build:web` - Build Angular only
+- `npm run build:libs` - Build shared libraries
+
 ### Database
 - `npm run db:setup` - Start PostgreSQL container
-- `npm run db:migrate` - Run migrations
-- `npm run db:seed` - Seed data
+- `npm run db:dev:migrate` - Run migrations (development)
+- `npm run db:dev:seed` - Seed data (development)
+- `npm run db:migrate` - Run migrations (production)
+- `npm run db:seed` - Seed data (production)
 - `npm run db:reset` - Full reset
 
-### Development
-- `npx nx serve api` - Start development server
-- `npx nx build api` - Production build
-- `npx nx test api` - Run tests
+### Code Quality
+- `npm test` - Run tests for all projects
+- `npm run test:api` - Test API only
+- `npm run test:web` - Test Angular only
+- `npm run lint` - Lint all projects
+- `npm run typecheck` - TypeScript type checking
+- `npm run format` - Format code with Prettier
 
 ### Logging Selector (Interactive Tool)
 - `./scripts/logging-selector.sh` - Interactive logging solution selector
@@ -276,17 +320,18 @@ Healthcare features in `/features/` directory:
 - Stop commands: Replace `up -d` with `down` for any of the above
 
 ### Access Points
-- API Server: http://localhost:3000
-- API Docs: http://localhost:3000/docs
-- pgAdmin: http://localhost:8080
-- Seq (when enabled): http://localhost:5341
-- Grafana (when enabled): http://localhost:3001 (admin/admin123)
-- Loki API (when enabled): http://localhost:3100
-- Fluent Bit (when enabled): http://localhost:2020 (monitoring)
-- Elasticsearch (optional): http://localhost:9200
-- Kibana (optional): http://localhost:5601
-- Graylog (when enabled): http://localhost:9000 (admin/admin)
-- Graylog Elasticsearch: http://localhost:9201
+- **API Server**: http://localhost:3000
+- **API Documentation**: http://localhost:3000/docs
+- **Angular Frontend**: http://localhost:4200
+- **pgAdmin**: http://localhost:8080
+- **Seq** (when enabled): http://localhost:5341
+- **Grafana** (when enabled): http://localhost:3001 (admin/admin123)
+- **Loki API** (when enabled): http://localhost:3100
+- **Fluent Bit** (when enabled): http://localhost:2020 (monitoring)
+- **Elasticsearch** (optional): http://localhost:9200
+- **Kibana** (optional): http://localhost:5601
+- **Graylog** (when enabled): http://localhost:9000 (admin/admin)
+- **Graylog Elasticsearch**: http://localhost:9201
 
 ## Important Files
 
@@ -294,6 +339,8 @@ Healthcare features in `/features/` directory:
 - `docs/feature-summary.md` - **📋 Complete feature overview and summary** (must read!)
 - `docs/folder_structure_guide.md` - **📖 Complete folder structure guide** (must read!)
 - `docs/BOILERPLATE_ROADMAP.md` - **🚀 Development roadmap and feature status** (must read!)
+- `docs/typescript-configuration-guide.md` - **🔧 TypeScript Configuration Guide** (dual setup for Node.js + Angular environments)
+- `DEVELOPMENT_GUIDE.md` - **🚀 Complete development workflow guide** (npm scripts, testing, troubleshooting)
 - `tools/cli/README.md` - **🛠️ CLI scaffolding tool documentation** (must read!)
 - `docs/api-key-authentication.md` - **🔑 API Key Authentication documentation** (enterprise API key management with dual expiration strategy)
 - `docs/api-key-testing-guide.md` - **🧪 API Key Testing Guide** (complete testing examples and troubleshooting)
@@ -308,6 +355,15 @@ Healthcare features in `/features/` directory:
 - `docs/image-processing-service.md` - **🎨 Image Processing Service documentation** (comprehensive Sharp.js integration with storage system)
 
 ### Configuration Files
+
+#### TypeScript Configuration (Nx Monorepo)
+- `tsconfig.base.json` - **Base TypeScript configuration** shared by all projects (generic for both Node.js + Angular)
+- `apps/api/tsconfig.app.json` - **API-specific config** (Node.js with CommonJS modules)
+- `apps/web/tsconfig.app.json` - **Angular-specific config** (Browser with ES modules)
+- `libs/shared/types/tsconfig.lib.json` - **Shared types library config**
+- `libs/shared/api-client/tsconfig.lib.json` - **API client library config**
+
+#### Database & Services
 - `knexfile.ts` / `knexfile.prod.js` - Database configuration
 - `docker-compose.yml` - Service orchestration
 - `docker-compose.seq.yml` - Seq logging stack
@@ -317,6 +373,8 @@ Healthcare features in `/features/` directory:
 - `.env.example` - Environment configuration template
 
 ### Core Infrastructure
+
+#### API Backend (Fastify)
 - `apps/api/src/app/core/plugins/logging/` - Structured logging implementation
 - `apps/api/src/app/core/shared/audit/` - Audit system implementation
 - `apps/api/src/app/core/plugins/security/rbac.ts` - RBAC implementation
@@ -328,6 +386,15 @@ Healthcare features in `/features/` directory:
 - `apps/api/src/app/core/shared/services/bull-queue.service.ts` - **Bull Queue Service (Redis) with enterprise features**
 - `apps/api/src/app/core/shared/services/rabbitmq-queue.service.ts` - **RabbitMQ Queue Service with advanced routing**
 - `apps/api/src/app/core/shared/services/queue-monitoring.service.ts` - **Unified queue monitoring with metrics and health checks**
+
+#### Angular Frontend
+- `apps/web/src/app/app.ts` - **Main Angular application component**
+- `apps/web/src/styles.scss` - **Global styles with PrimeNG theming**
+- `apps/web/proxy.conf.json` - **Development proxy configuration for API calls**
+
+#### Shared Libraries
+- `libs/shared/types/src/lib/` - **Type-safe interfaces shared between frontend/backend**
+- `libs/shared/api-client/src/lib/` - **Type-safe API client for Angular frontend**
 - `apps/api/src/app/domains/notification/` - **📨 Notification domain with standard architecture**
   - `controllers/notification-controller.ts` - Core notification operations controller
   - `controllers/batch-controller.ts` - **⚡ Dedicated batch processing controller**
@@ -658,6 +725,15 @@ This is designed for healthcare applications requiring:
 - Scalable architecture for enterprise healthcare systems
 
 ## Recent Development Focus
+- **✅ Full-Stack Angular Integration**: Complete Angular 20 frontend integration with Nx monorepo
+  - **✅ Angular 20 Setup**: Standalone components architecture in `apps/web/`
+  - **✅ TypeScript Dual Configuration**: Separate configs for Node.js (API) and Angular (Frontend)
+  - **✅ Shared Libraries**: Type-safe communication with `@aegisx-boilerplate/types` and `@aegisx-boilerplate/api-client`
+  - **✅ Development Workflow**: npm scripts for parallel development of API + Frontend
+  - **✅ Nx Monorepo Structure**: Proper workspace structure with apps/ and libs/
+  - **✅ PrimeNG Integration**: UI framework setup with custom styling
+  - **✅ Build Success**: Both API and Angular build and run successfully
+  - **✅ Documentation Complete**: DEVELOPMENT_GUIDE.md and TypeScript configuration guide
 - **✅ Notification Domain Architecture Complete**: Enterprise-standard domain structure with build success
   - **✅ Domain Separation**: Clean separation of batch processing from core notifications
   - **✅ Standard Structure**: Controllers, routes, schemas, types following domain patterns
