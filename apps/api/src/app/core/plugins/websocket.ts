@@ -66,7 +66,7 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
         if (!connection.channels.has(channel)) continue;
 
         try {
-          const wsConnection = fastify.websocketServer.clients.get(connectionId);
+          const wsConnection = (fastify as any).websocketServer.clients.get(connectionId);
           if (wsConnection && wsConnection.readyState === 1) { // OPEN
             wsConnection.send(messageData);
           }
@@ -87,7 +87,7 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
         if (connection.userId !== userId) continue;
 
         try {
-          const wsConnection = fastify.websocketServer.clients.get(connectionId);
+          const wsConnection = (fastify as any).websocketServer.clients.get(connectionId);
           if (wsConnection && wsConnection.readyState === 1) {
             wsConnection.send(messageData);
           }
@@ -108,7 +108,7 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
       });
 
       try {
-        const wsConnection = fastify.websocketServer.clients.get(connectionId);
+        const wsConnection = (fastify as any).websocketServer.clients.get(connectionId);
         if (wsConnection && wsConnection.readyState === 1) {
           wsConnection.send(messageData);
         }
@@ -163,12 +163,12 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
 
   // Health check endpoint for WebSocket
   fastify.get('/ws/health', { websocket: true }, (connection, request) => {
-    connection.socket.send(JSON.stringify({
+    connection.send(JSON.stringify({
       type: 'health',
       status: 'ok',
       timestamp: new Date().toISOString()
     }));
-    connection.socket.close();
+    connection.close();
   });
 
   // Main WebSocket endpoint
@@ -194,7 +194,7 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
     // Store WebSocket instance for manager access
     (fastify as any).websocketServer = (fastify as any).websocketServer || new Map();
     (fastify as any).websocketServer.clients = (fastify as any).websocketServer.clients || new Map();
-    (fastify as any).websocketServer.clients.set(connectionId, connection.socket);
+    (fastify as any).websocketServer.clients.set(connectionId, connection);
 
     fastify.log.info('WebSocket connection established', { 
       connectionId, 
@@ -203,7 +203,7 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
     });
 
     // Send welcome message
-    connection.socket.send(JSON.stringify({
+    connection.send(JSON.stringify({
       type: 'welcome',
       data: {
         connectionId,
@@ -219,7 +219,7 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
     }));
 
     // Handle incoming messages
-    connection.socket.on('message', (message: any) => {
+    connection.on('message', (message: any) => {
       try {
         const data = JSON.parse(message.toString());
         wsConnection.lastActivity = new Date();
@@ -228,7 +228,7 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
           case 'subscribe':
             if (data.channel && typeof data.channel === 'string') {
               websocketManager.subscribeToChannel(connectionId, data.channel);
-              connection.socket.send(JSON.stringify({
+              connection.send(JSON.stringify({
                 type: 'subscribed',
                 channel: data.channel,
                 timestamp: new Date().toISOString()
@@ -239,7 +239,7 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
           case 'unsubscribe':
             if (data.channel && typeof data.channel === 'string') {
               websocketManager.unsubscribeFromChannel(connectionId, data.channel);
-              connection.socket.send(JSON.stringify({
+              connection.send(JSON.stringify({
                 type: 'unsubscribed',
                 channel: data.channel,
                 timestamp: new Date().toISOString()
@@ -248,14 +248,14 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
             break;
 
           case 'ping':
-            connection.socket.send(JSON.stringify({
+            connection.send(JSON.stringify({
               type: 'pong',
               timestamp: new Date().toISOString()
             }));
             break;
 
           case 'get_status':
-            connection.socket.send(JSON.stringify({
+            connection.send(JSON.stringify({
               type: 'status',
               data: {
                 connectionId,
@@ -268,7 +268,7 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
             break;
 
           default:
-            connection.socket.send(JSON.stringify({
+            connection.send(JSON.stringify({
               type: 'error',
               message: 'Unknown message type',
               timestamp: new Date().toISOString()
@@ -276,7 +276,7 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
         }
       } catch (error) {
         fastify.log.error('Error processing WebSocket message', { connectionId, error });
-        connection.socket.send(JSON.stringify({
+        connection.send(JSON.stringify({
           type: 'error',
           message: 'Invalid message format',
           timestamp: new Date().toISOString()
@@ -285,7 +285,7 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
     });
 
     // Handle connection close
-    connection.socket.on('close', () => {
+    connection.on('close', () => {
       connections.delete(connectionId);
       (fastify as any).websocketServer?.clients?.delete(connectionId);
       
@@ -297,7 +297,7 @@ async function websocketPlugin(fastify: FastifyInstance): Promise<void> {
     });
 
     // Handle connection error
-    connection.socket.on('error', (error: any) => {
+    connection.on('error', (error: any) => {
       fastify.log.error('WebSocket connection error', { connectionId, userId, error });
       connections.delete(connectionId);
       (fastify as any).websocketServer?.clients?.delete(connectionId);

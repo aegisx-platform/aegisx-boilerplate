@@ -24,10 +24,13 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
     const { reportId } = request.params as { reportId: string };
     const userId = (request as any).user?.id;
     
+    // Generate connection ID for this WebSocket connection
+    const connectionId = `report_${reportId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     fastify.log.info('Report progress WebSocket connection established', {
       reportId,
       userId,
-      connectionId: connection.socket.id
+      connectionId
     });
 
     // Subscribe to report-specific progress channel
@@ -36,9 +39,9 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
     
     // Subscribe to channels through websocket manager
     if (fastify.websocketManager) {
-      fastify.websocketManager.subscribeToChannel(connection.socket.id, progressChannel);
+      fastify.websocketManager.subscribeToChannel(connectionId, progressChannel);
       if (userChannel) {
-        fastify.websocketManager.subscribeToChannel(connection.socket.id, userChannel);
+        fastify.websocketManager.subscribeToChannel(connectionId, userChannel);
       }
     }
 
@@ -52,14 +55,14 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
         message: 'Report generation started'
       };
       
-      connection.socket.send(JSON.stringify({
+      connection.send(JSON.stringify({
         type: 'report_status',
         data: reportStatus,
         timestamp: new Date().toISOString()
       }));
     } catch (error) {
       fastify.log.error('Error fetching initial report status', { reportId, error });
-      connection.socket.send(JSON.stringify({
+      connection.send(JSON.stringify({
         type: 'error',
         message: 'Failed to fetch report status',
         timestamp: new Date().toISOString()
@@ -67,7 +70,7 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
     }
 
     // Handle incoming messages
-    connection.socket.on('message', async (message: any) => {
+    connection.on('message', async (message: any) => {
       try {
         const data = JSON.parse(message.toString());
         
@@ -77,9 +80,9 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
             if (data.templateId) {
               const templateChannel = `template:${data.templateId}`;
               if (fastify.websocketManager) {
-                fastify.websocketManager.subscribeToChannel(connection.socket.id, templateChannel);
+                fastify.websocketManager.subscribeToChannel(connectionId, templateChannel);
               }
-              connection.socket.send(JSON.stringify({
+              connection.send(JSON.stringify({
                 type: 'subscribed',
                 channel: templateChannel,
                 timestamp: new Date().toISOString()
@@ -91,13 +94,13 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
             // Cancel report generation (stub implementation)
             try {
               fastify.log.info('Report generation cancelled', { reportId });
-              connection.socket.send(JSON.stringify({
+              connection.send(JSON.stringify({
                 type: 'report_cancelled',
                 reportId,
                 timestamp: new Date().toISOString()
               }));
             } catch (error) {
-              connection.socket.send(JSON.stringify({
+              connection.send(JSON.stringify({
                 type: 'error',
                 message: 'Failed to cancel report generation',
                 timestamp: new Date().toISOString()
@@ -114,13 +117,13 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
                 progress: 50,
                 message: 'Report generation in progress'
               };
-              connection.socket.send(JSON.stringify({
+              connection.send(JSON.stringify({
                 type: 'report_status',
                 data: currentStatus,
                 timestamp: new Date().toISOString()
               }));
             } catch (error) {
-              connection.socket.send(JSON.stringify({
+              connection.send(JSON.stringify({
                 type: 'error',
                 message: 'Failed to get report status',
                 timestamp: new Date().toISOString()
@@ -129,7 +132,7 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
             break;
 
           default:
-            connection.socket.send(JSON.stringify({
+            connection.send(JSON.stringify({
               type: 'error',
               message: 'Unknown message type',
               timestamp: new Date().toISOString()
@@ -137,7 +140,7 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
         }
       } catch (error) {
         fastify.log.error('Error processing WebSocket message', { reportId, error });
-        connection.socket.send(JSON.stringify({
+        connection.send(JSON.stringify({
           type: 'error',
           message: 'Invalid message format',
           timestamp: new Date().toISOString()
@@ -146,20 +149,20 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
     });
 
     // Handle connection close
-    connection.socket.on('close', () => {
+    connection.on('close', () => {
       fastify.log.info('Report progress WebSocket connection closed', {
         reportId,
         userId,
-        connectionId: connection.socket.id
+        connectionId
       });
     });
 
     // Handle errors
-    connection.socket.on('error', (error: any) => {
+    connection.on('error', (error: any) => {
       fastify.log.error('Report progress WebSocket error', {
         reportId,
         userId,
-        connectionId: connection.socket.id,
+        connectionId,
         error
       });
     });
@@ -177,16 +180,19 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
     const { templateId } = request.params as { templateId: string };
     const userId = (request as any).user?.id;
     
+    // Generate connection ID for this WebSocket connection
+    const connectionId = `stream_${templateId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     fastify.log.info('Live data streaming WebSocket connection established', {
       templateId,
       userId,
-      connectionId: connection.socket.id
+      connectionId
     });
 
     // Subscribe to template data updates
     const dataChannel = `template:data:${templateId}`;
     if (fastify.websocketManager) {
-      fastify.websocketManager.subscribeToChannel(connection.socket.id, dataChannel);
+      fastify.websocketManager.subscribeToChannel(connectionId, dataChannel);
     }
 
     // Send initial data (stub implementation)
@@ -195,14 +201,14 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
         { timestamp: new Date().toISOString(), value: Math.random() * 100 },
         { timestamp: new Date(Date.now() - 60000).toISOString(), value: Math.random() * 100 }
       ];
-      connection.socket.send(JSON.stringify({
+      connection.send(JSON.stringify({
         type: 'initial_data',
         data: initialData,
         timestamp: new Date().toISOString()
       }));
     } catch (error) {
       fastify.log.error('Error fetching initial data for live stream', { templateId, error });
-      connection.socket.send(JSON.stringify({
+      connection.send(JSON.stringify({
         type: 'error',
         message: 'Failed to fetch initial data',
         timestamp: new Date().toISOString()
@@ -210,7 +216,7 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
     }
 
     // Handle incoming messages
-    connection.socket.on('message', async (message: any) => {
+    connection.on('message', async (message: any) => {
       try {
         const data = JSON.parse(message.toString());
         
@@ -218,7 +224,7 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
           case 'update_interval':
             // Update data refresh interval
             if (data.interval && typeof data.interval === 'number') {
-              connection.socket.send(JSON.stringify({
+              connection.send(JSON.stringify({
                 type: 'interval_updated',
                 interval: data.interval,
                 timestamp: new Date().toISOString()
@@ -229,7 +235,7 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
           case 'apply_filter':
             // Apply real-time filter to data stream
             if (data.filter) {
-              connection.socket.send(JSON.stringify({
+              connection.send(JSON.stringify({
                 type: 'filter_applied',
                 filter: data.filter,
                 timestamp: new Date().toISOString()
@@ -238,7 +244,7 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
             break;
 
           default:
-            connection.socket.send(JSON.stringify({
+            connection.send(JSON.stringify({
               type: 'error',
               message: 'Unknown message type',
               timestamp: new Date().toISOString()
@@ -246,7 +252,7 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
         }
       } catch (error) {
         fastify.log.error('Error processing live stream message', { templateId, error });
-        connection.socket.send(JSON.stringify({
+        connection.send(JSON.stringify({
           type: 'error',
           message: 'Invalid message format',
           timestamp: new Date().toISOString()
@@ -255,20 +261,20 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
     });
 
     // Handle connection close
-    connection.socket.on('close', () => {
+    connection.on('close', () => {
       fastify.log.info('Live data streaming WebSocket connection closed', {
         templateId,
         userId,
-        connectionId: connection.socket.id
+        connectionId
       });
     });
 
     // Handle errors
-    connection.socket.on('error', (error: any) => {
+    connection.on('error', (error: any) => {
       fastify.log.error('Live data streaming WebSocket error', {
         templateId,
         userId,
-        connectionId: connection.socket.id,
+        connectionId,
         error
       });
     });
@@ -280,9 +286,12 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
   }, async (connection, request) => {
     const userId = (request as any).user?.id;
     
+    // Generate connection ID for this WebSocket connection
+    const connectionId = `notifications_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     fastify.log.info('Report notifications WebSocket connection established', {
       userId,
-      connectionId: connection.socket.id
+      connectionId
     });
 
     // Subscribe to general report notifications
@@ -298,12 +307,12 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
 
     if (fastify.websocketManager) {
       notificationChannels.forEach(channel => {
-        fastify.websocketManager.subscribeToChannel(connection.socket.id, channel);
+        fastify.websocketManager.subscribeToChannel(connectionId, channel);
       });
     }
 
     // Send welcome message
-    connection.socket.send(JSON.stringify({
+    connection.send(JSON.stringify({
       type: 'welcome',
       data: {
         subscribedChannels: notificationChannels,
@@ -313,18 +322,18 @@ export default async function reportWebSocketRoutes(fastify: FastifyInstance) {
     }));
 
     // Handle connection close
-    connection.socket.on('close', () => {
+    connection.on('close', () => {
       fastify.log.info('Report notifications WebSocket connection closed', {
         userId,
-        connectionId: connection.socket.id
+        connectionId
       });
     });
 
     // Handle errors
-    connection.socket.on('error', (error: any) => {
+    connection.on('error', (error: any) => {
       fastify.log.error('Report notifications WebSocket error', {
         userId,
-        connectionId: connection.socket.id,
+        connectionId,
         error
       });
     });

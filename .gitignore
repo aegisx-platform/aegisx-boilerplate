@@ -79,3 +79,5 @@ server.log
 test-*.txt
 test-*.html
 test-*.sh
+
+.angular
