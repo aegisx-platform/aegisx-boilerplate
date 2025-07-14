@@ -1,5 +1,5 @@
 import type { Knex } from 'knex';
-import * as dotenv from 'dotenv';
+const dotenv = require('dotenv');
 
 // Load environment variables
 dotenv.config();
@@ -80,4 +80,9 @@ const connections: { [key: string]: Knex.Config } = {
   }
 };
 
-export default connections[NODE_ENV] || connections.development;
+module.exports = connections[NODE_ENV] || connections.development;
+
+// Also export for named imports
+module.exports.development = connections.development;
+module.exports.test = connections.test;
+module.exports.production = connections.production;
