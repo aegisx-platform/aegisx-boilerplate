@@ -63,18 +63,19 @@ apps/api/src/app/domains/
 **Purpose**: Core business domains that every application needs
 **When to use**: Authentication, user management, permissions, audit, file storage, notifications
 
-### 🏥 Layer 3: Features Layer - "Healthcare Features" 🚧
+### 🏥 Layer 3: Features Layer - "Advanced Business Features" ✅
 ```
-apps/api/src/app/features/
-├── 📁 patient-management/     # 🚧 Patient system (ready for implementation)
-├── 📁 appointment-scheduling/ # 🚧 Appointment system
-├── 📁 medical-records/        # 🚧 Medical records
-├── 📁 billing/               # 🚧 Billing system
-├── 📁 inventory/             # 🚧 Inventory management
-└── 📁 reporting/             # 🚧 Reporting system
+apps/api/src/app/domains/
+├── 📁 reports/              # ✅ Report Builder System (Low-Code Report Generation)
+├── 📁 patient-management/   # 🚧 Patient system (ready for implementation)
+├── 📁 appointment-scheduling/ # 🚧 Appointment system  
+├── 📁 medical-records/      # 🚧 Medical records
+├── 📁 billing/             # 🚧 Billing system
+├── 📁 inventory/           # 🚧 Inventory management
+└── 📁 healthcare-workflows/ # 🚧 Healthcare-specific workflows
 ```
-**Purpose**: Healthcare-specific features
-**When to use**: Patient management, appointments, medical records
+**Purpose**: Advanced business and healthcare-specific features
+**When to use**: Report generation, business intelligence, patient management, appointments, medical records
 
 ### 🔌 Layer 4: Infrastructure Layer - "External Services"
 ```
@@ -209,14 +210,23 @@ auth/
   - **Image Processing Service** - Comprehensive Sharp.js integration with storage system
   - **WebSocket Service** - Real-time communication with connection management and channel subscriptions
 
+#### **✅ Report Builder System**
+- **Low-Code Report Generation** - Template-based report creation with multi-data source support
+- **Multi-Data Source Support** - PostgreSQL, MySQL, MongoDB, REST APIs, Files
+- **URL-Based Generation** - Public report access with parameter filtering
+- **Multi-Format Export** - HTML, PDF, Excel, CSV, JSON, Images
+- **Template Management** - Versioning, duplication, search functionality
+- **Background Processing** - Async generation with job scheduling
+- **Real-time Features** - WebSocket integration for live updates and progress tracking
+- **Caching Strategy** - Redis-based performance optimization
+
 ### 🚧 Structured But Not Implemented
-Healthcare features in `/features/` directory:
+Healthcare features ready for implementation:
 - Patient Management
 - Appointment Scheduling  
 - Medical Records
 - Billing
 - Inventory
-- Reporting
 
 ## Key Systems
 
@@ -270,9 +280,22 @@ Healthcare features in `/features/` directory:
   - **Channel Optimization**: Email(10), SMS(5), Push(15), Slack(3) concurrent processing
   - **Standard Architecture**: Follows same patterns as auth, storage, rbac domains
 
+### Report Builder System (Complete Domain Implementation)
+- **Domain Structure**: Standard enterprise domain pattern with controllers, services, repositories
+- **Multi-Data Source Support**: PostgreSQL, MySQL, MongoDB, REST APIs, File uploads
+- **Template Management**: Versioning, duplication, search with comprehensive metadata
+- **Report Generation**: Background processing with WebSocket progress tracking
+- **Public Access**: URL-based report sharing with parameter filtering
+- **Export Formats**: HTML, PDF, Excel, CSV, JSON, PNG, JPG with format-specific options
+- **Caching Strategy**: Redis-based template and data caching for performance
+- **Real-time Updates**: WebSocket integration for live data streaming and notifications
+- **8-Table Schema**: Complete database schema for templates, instances, data sources, analytics
+
 ### Database Schema
 **Core Tables**: users, refresh_tokens, roles, permissions, user_roles, role_permissions, audit_logs
 **Notification Tables**: notifications, notification_templates, notification_batches, notification_batch_items, notification_preferences, notification_statistics, notification_errors, healthcare_notifications
+**Storage Tables**: storage_files, storage_access_permissions, storage_shared_files, storage_usage_analytics, storage_file_versions
+**Report Tables**: report_data_sources, report_templates, report_parameters, report_instances, report_schedules, report_exports, report_shares, report_analytics
 
 ## Development Commands
 
@@ -353,6 +376,7 @@ Healthcare features in `/features/` directory:
 - `docs/websocket-service.md` - **🌐 WebSocket Service documentation** (complete real-time communication system with connection management)
 - `docs/thumbnail-generation.md` - **🖼️ Thumbnail Generation Service documentation** (automatic image thumbnail creation with Sharp)
 - `docs/image-processing-service.md` - **🎨 Image Processing Service documentation** (comprehensive Sharp.js integration with storage system)
+- `docs/features/report-builder.md` - **📊 Report Builder System documentation** (low-code report generation with multi-data source support)
 
 ### Configuration Files
 
@@ -411,6 +435,17 @@ Healthcare features in `/features/` directory:
 - `apps/api/src/app/domains/auth/` - **Authentication domain with JWT & API key support**
 - `apps/api/src/app/domains/storage/` - **Storage domain with database persistence & shared files management**
 - `apps/api/src/app/domains/storage/controllers/storage-image-controller.ts` - **Image processing API controller**
+- `apps/api/src/app/domains/reports/` - **📊 Report Builder domain with complete implementation**
+  - `controllers/report-template-controller.ts` - Report template management controller
+  - `controllers/report-generation-controller.ts` - Report generation and export controller
+  - `controllers/report-data-source-controller.ts` - Data source management controller
+  - `routes/report-template-routes.ts` - Template management API routes
+  - `routes/report-generation-routes.ts` - Report generation API routes
+  - `routes/report-data-source-routes.ts` - Data source API routes
+  - `routes/report-websocket-routes.ts` - **🌐 WebSocket routes for real-time features**
+  - `services/report-template-service.ts` - Template management business logic
+  - `services/report-generation-service.ts` - Report generation and export service
+  - `services/report-data-source-service.ts` - Data source connection service
 
 ### Monitoring & Logging
 - `config/fluent-bit*.conf` - Fluent Bit configurations (simple, advanced, Graylog)
@@ -426,7 +461,7 @@ Healthcare features in `/features/` directory:
 ## Core Infrastructure Components
 
 ### Enterprise Infrastructure Services
-Complete suite of 17 production-ready services with healthcare compliance features:
+Complete suite of 20+ production-ready services with healthcare compliance features:
 
 #### Core Communication & Processing
 - **HTTP Client Service**: `apps/api/src/app/core/shared/services/http-client.service.ts`
@@ -782,6 +817,18 @@ This is designed for healthcare applications requiring:
   - **✅ Enterprise Features**: Authentication integration, error handling, and structured logging
   - **✅ API Endpoints**: `/ws`, `/ws/health`, `/reports/progress/:id`, `/reports/stream/:id`, `/reports/notifications`
   - **✅ Complete Documentation**: Comprehensive usage guide with JavaScript examples and testing instructions
+- **✅ Report Builder System**: Complete low-code report generation system with enterprise features
+  - **✅ Domain Implementation**: Full enterprise domain structure with controllers, services, repositories
+  - **✅ Multi-Data Source Support**: PostgreSQL, MySQL, MongoDB, REST APIs, File uploads
+  - **✅ Template Management**: Versioning, duplication, search with comprehensive metadata
+  - **✅ Report Generation**: Background processing with job scheduling and status tracking
+  - **✅ Public Access**: URL-based report sharing with parameter filtering and security
+  - **✅ Multi-Format Export**: HTML, PDF, Excel, CSV, JSON, PNG, JPG with format-specific options
+  - **✅ Real-time Features**: WebSocket integration for live updates and progress tracking
+  - **✅ Caching Strategy**: Redis-based template and data caching for performance optimization
+  - **✅ 8-Table Database Schema**: Complete database schema for templates, instances, data sources, analytics
+  - **✅ Production Ready**: Full TypeScript implementation with build success
+  - **✅ Documentation**: Comprehensive documentation with usage examples and best practices
 - **✅ Image Processing Service**: Complete Sharp.js image processing integration with storage system
   - **✅ Comprehensive Operations**: Resize, crop, rotate, filters, color adjustments, watermarking
   - **✅ Format Conversion**: JPEG, PNG, WebP, AVIF, TIFF support with quality controls
@@ -846,7 +893,7 @@ This is designed for healthcare applications requiring:
 9. **Healthcare Features**: Build on existing foundation when boilerplate is complete
 
 ## Key Integration Points
-**When developing new features, ALWAYS integrate with these 16 available services:**
+**When developing new features, ALWAYS integrate with these 20+ available services:**
 
 ### Core Services (Must Use)
 - 🔄 **Event Bus**: Cross-domain communication (`fastify.eventBus`)
@@ -875,6 +922,7 @@ This is designed for healthcare applications requiring:
 ### File Storage & Templates
 - 📄 **Template Engine**: Email/document templates (`fastify.templates`)
 - 📁 **Storage Service**: File storage with HIPAA compliance (`fastify.storage`)
+- 🎨 **Image Processing**: Sharp.js image operations (`fastify.imageProcessing`)
 
 ---
 
