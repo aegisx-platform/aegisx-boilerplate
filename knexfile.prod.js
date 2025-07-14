@@ -1,4 +1,12 @@
 // knexfile.js - Production configuration (compiled from knexfile.ts)
+// Use ts-node to compile TypeScript files
+require('ts-node').register({
+  transpileOnly: true,
+  compilerOptions: {
+    module: 'commonjs'
+  }
+});
+
 const baseConfig = {
   client: 'pg',
   migrations: {
