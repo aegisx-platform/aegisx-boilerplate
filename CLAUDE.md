@@ -10,7 +10,7 @@ AegisX Boilerplate is a production-ready Fastify API boilerplate designed for He
 - **Validation**: TypeBox for schema validation
 - **Architecture**: Nx monorepo with layered architecture (apps/ + libs/)
 - **Frontend**: Angular 20 with standalone components
-- **UI Framework**: PrimeNG + custom CSS utilities
+- **UI Framework**: PrimeNG 20 RC + Angular CDK + custom CSS utilities
 - **Shared Libraries**: Type-safe communication between frontend/backend
 - **Caching**: Redis with connection pooling
 - **Message Queue**: RabbitMQ for enterprise messaging
