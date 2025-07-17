@@ -1,6 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, HostListener, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { ResponsiveService } from '../../../shared/services/responsive.service';
+import { Subscription } from 'rxjs';
 
 interface MenuItem {
   label: string;
@@ -15,14 +17,25 @@ interface MenuItem {
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
+    <!-- Mobile Overlay -->
     <div
-      [class]="isCollapsed ? 'w-16' : 'w-64'"
+      *ngIf="isMobileMenuOpen"
+      class="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+      (click)="closeMobileMenu()"
+      (keyup.escape)="closeMobileMenu()"
+      tabindex="0"
+      role="button"
+      aria-label="Close mobile menu"
+    ></div>
+
+    <div
+      [class]="getSidebarClasses()"
       class="bg-gray-900 text-white flex flex-col h-screen transition-all duration-300"
     >
       <!-- Logo -->
       <div class="p-6 border-b border-gray-800 flex-shrink-0">
         <!-- When expanded: show logo and toggle -->
-        <div *ngIf="!isCollapsed" class="flex items-center justify-between">
+        <div *ngIf="!isCollapsed || isMobile" class="flex items-center justify-between">
           <div class="flex items-center space-x-3">
             <div
               class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center"
@@ -31,18 +44,18 @@ interface MenuItem {
             </div>
             <span class="text-xl font-bold transition-all">AegisX</span>
           </div>
-          <!-- Toggle button for expanded state -->
+          <!-- Toggle button for expanded state (desktop) or close button (mobile) -->
           <button
-            (click)="toggleSidebar()"
+            (click)="isMobile ? closeMobileMenu() : toggleSidebar()"
             class="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-200"
-            title="ย่อ sidebar"
+            [title]="isMobile ? 'ปิด menu' : 'ย่อ sidebar'"
           >
-            <i class="pi pi-angle-left text-base"></i>
+            <i [class]="isMobile ? 'pi pi-times text-lg' : 'pi pi-angle-left text-base'"></i>
           </button>
         </div>
 
         <!-- When collapsed: only show toggle button -->
-        <div *ngIf="isCollapsed" class="flex justify-center">
+        <div *ngIf="isCollapsed && !isMobile" class="flex justify-center">
           <button
             (click)="toggleSidebar()"
             class="p-2 rounded-lg bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors duration-200"
@@ -57,90 +70,102 @@ interface MenuItem {
       <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         <div class="mb-6">
           <h3
-            [class.hidden]="isCollapsed"
+            [class.hidden]="isCollapsed && !isMobile"
             class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3"
           >
             Dashboards
           </h3>
-          <div
+          <a
             *ngFor="let item of dashboardItems"
             class="flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors group"
             [class.bg-indigo-600]="item.isActive"
             [class.text-white]="item.isActive"
             [class.text-gray-300]="!item.isActive"
             [class.hover:bg-gray-800]="!item.isActive"
-            [class.justify-center]="isCollapsed"
+            [class.justify-center]="isCollapsed && !isMobile"
             [routerLink]="item.route"
-            [title]="isCollapsed ? item.label : ''"
+            [title]="isCollapsed && !isMobile ? item.label : ''"
+            (click)="onMenuItemClick()"
+            (keyup.enter)="onMenuItemClick()"
+            role="button"
+            tabindex="0"
           >
             <i
               [class]="item.icon"
               class="text-lg"
-              [class.mr-3]="!isCollapsed"
+              [class.mr-3]="!isCollapsed || isMobile"
             ></i>
-            <span [class.hidden]="isCollapsed">{{ item.label }}</span>
-          </div>
+            <span [class.hidden]="isCollapsed && !isMobile">{{ item.label }}</span>
+          </a>
         </div>
 
         <div class="mb-6">
           <h3
-            [class.hidden]="isCollapsed"
+            [class.hidden]="isCollapsed && !isMobile"
             class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3"
           >
             Pages
           </h3>
-          <div
+          <a
             *ngFor="let item of pageItems"
             class="flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors"
             [class.bg-indigo-600]="item.isActive"
             [class.text-white]="item.isActive"
             [class.text-gray-300]="!item.isActive"
             [class.hover:bg-gray-800]="!item.isActive"
-            [class.justify-center]="isCollapsed"
+            [class.justify-center]="isCollapsed && !isMobile"
             [routerLink]="item.route"
-            [title]="isCollapsed ? item.label : ''"
+            [title]="isCollapsed && !isMobile ? item.label : ''"
+            (click)="onMenuItemClick()"
+            (keyup.enter)="onMenuItemClick()"
+            role="button"
+            tabindex="0"
           >
             <i
               [class]="item.icon"
               class="text-lg"
-              [class.mr-3]="!isCollapsed"
+              [class.mr-3]="!isCollapsed || isMobile"
             ></i>
-            <span [class.hidden]="isCollapsed">{{ item.label }}</span>
-          </div>
+            <span [class.hidden]="isCollapsed && !isMobile">{{ item.label }}</span>
+          </a>
         </div>
 
         <div class="mb-6">
           <h3
-            [class.hidden]="isCollapsed"
+            [class.hidden]="isCollapsed && !isMobile"
             class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3"
           >
             Analytics
           </h3>
-          <div
+          <a
             *ngFor="let item of analyticsItems"
             class="flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors"
             [class.bg-indigo-600]="item.isActive"
             [class.text-white]="item.isActive"
             [class.text-gray-300]="!item.isActive"
             [class.hover:bg-gray-800]="!item.isActive"
-            [class.justify-center]="isCollapsed"
+            [class.justify-center]="isCollapsed && !isMobile"
             [routerLink]="item.route"
-            [title]="isCollapsed ? item.label : ''"
+            [title]="isCollapsed && !isMobile ? item.label : ''"
+            (click)="onMenuItemClick()"
+            (keyup.enter)="onMenuItemClick()"
+            role="button"
+            tabindex="0"
           >
             <i
               [class]="item.icon"
               class="text-lg"
-              [class.mr-3]="!isCollapsed"
+              [class.mr-3]="!isCollapsed || isMobile"
             ></i>
-            <span [class.hidden]="isCollapsed">{{ item.label }}</span>
-          </div>
+            <span [class.hidden]="isCollapsed && !isMobile">{{ item.label }}</span>
+          </a>
         </div>
       </nav>
 
       <!-- User Profile -->
       <div class="p-4 border-t border-gray-800 flex-shrink-0">
-        <!-- When collapsed: center profile -->
-        <div *ngIf="isCollapsed" class="flex justify-center">
+        <!-- When collapsed (desktop only): center profile -->
+        <div *ngIf="isCollapsed && !isMobile" class="flex justify-center">
           <div class="relative">
             <img
               class="w-8 h-8 rounded-full ring-2 ring-indigo-500 ring-offset-1 ring-offset-gray-900"
@@ -154,8 +179,8 @@ interface MenuItem {
           </div>
         </div>
 
-        <!-- When expanded: full profile layout -->
-        <div *ngIf="!isCollapsed" class="flex items-center space-x-3">
+        <!-- When expanded or mobile: full profile layout -->
+        <div *ngIf="!isCollapsed || isMobile" class="flex items-center space-x-3">
           <!-- Profile Avatar -->
           <div class="relative">
             <img
@@ -186,11 +211,76 @@ interface MenuItem {
     </div>
   `,
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit, OnDestroy {
   isCollapsed = false;
+  isMobileMenuOpen = false;
+  isMobile = false;
+  private responsiveSubscription?: Subscription;
+  private responsiveService = inject(ResponsiveService);
+
+  @HostListener('window:resize')
+  onResize() {
+    this.checkScreenSize();
+  }
+
+  ngOnInit() {
+    this.checkScreenSize();
+
+    // Subscribe to responsive service for better state management
+    this.responsiveSubscription = this.responsiveService.getResponsiveState().subscribe(state => {
+      this.isMobile = state.isMobile || state.isTablet;
+      if (!this.isMobile) {
+        this.isMobileMenuOpen = false;
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    this.responsiveSubscription?.unsubscribe();
+  }
+
+  checkScreenSize() {
+    this.isMobile = window.innerWidth < 1024; // lg breakpoint
+    if (!this.isMobile) {
+      this.isMobileMenuOpen = false;
+    }
+  }
+
+  getSidebarClasses() {
+    let classes = '';
+
+    if (this.isMobile) {
+      // Mobile: fixed positioned, full height, slide in/out
+      classes = this.isMobileMenuOpen
+        ? 'fixed inset-y-0 left-0 z-50 w-64 transform translate-x-0 lg:translate-x-0 lg:static lg:inset-0'
+        : 'fixed inset-y-0 left-0 z-50 w-64 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-0';
+    } else {
+      // Desktop: static positioning with width changes
+      classes = this.isCollapsed ? 'w-16' : 'w-64';
+    }
+
+    return classes;
+  }
 
   toggleSidebar() {
-    this.isCollapsed = !this.isCollapsed;
+    if (this.isMobile) {
+      this.isMobileMenuOpen = !this.isMobileMenuOpen;
+    } else {
+      this.isCollapsed = !this.isCollapsed;
+    }
+  }
+
+  closeMobileMenu() {
+    if (this.isMobile) {
+      this.isMobileMenuOpen = false;
+    }
+  }
+
+  onMenuItemClick() {
+    // Close mobile menu when item is clicked on mobile
+    if (this.isMobile) {
+      this.closeMobileMenu();
+    }
   }
 
   dashboardItems: MenuItem[] = [
