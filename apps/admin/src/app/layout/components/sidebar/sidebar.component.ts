@@ -15,89 +15,191 @@ interface MenuItem {
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="w-64 bg-gray-900 text-white flex flex-col">
+    <div
+      [class]="isCollapsed ? 'w-16' : 'w-64'"
+      class="bg-gray-900 text-white flex flex-col h-screen transition-all duration-300"
+    >
       <!-- Logo -->
-      <div class="p-6 border-b border-gray-800">
-        <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <i class="pi pi-chart-line text-white text-sm"></i>
+      <div class="p-6 border-b border-gray-800 flex-shrink-0">
+        <!-- When expanded: show logo and toggle -->
+        <div *ngIf="!isCollapsed" class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div
+              class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center"
+            >
+              <i class="pi pi-chart-line text-white text-sm"></i>
+            </div>
+            <span class="text-xl font-bold transition-all">AegisX</span>
           </div>
-          <span class="text-xl font-bold">AegisX</span>
+          <!-- Toggle button for expanded state -->
+          <button
+            (click)="toggleSidebar()"
+            class="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-all duration-200"
+            title="ย่อ sidebar"
+          >
+            <i class="pi pi-angle-left text-base"></i>
+          </button>
+        </div>
+
+        <!-- When collapsed: only show toggle button -->
+        <div *ngIf="isCollapsed" class="flex justify-center">
+          <button
+            (click)="toggleSidebar()"
+            class="p-2 rounded-lg bg-gray-800 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors duration-200"
+            title="ขยาย sidebar"
+          >
+            <i class="pi pi-chevron-right text-xs"></i>
+          </button>
         </div>
       </div>
 
       <!-- Navigation -->
-      <nav class="flex-1 px-4 py-6 space-y-2">
+      <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         <div class="mb-6">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <h3
+            [class.hidden]="isCollapsed"
+            class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3"
+          >
             Dashboards
           </h3>
-          <div *ngFor="let item of dashboardItems" 
-               class="flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors"
-               [class.bg-indigo-600]="item.isActive"
-               [class.text-white]="item.isActive"
-               [class.text-gray-300]="!item.isActive"
-               [class.hover:bg-gray-800]="!item.isActive"
-               [routerLink]="item.route">
-            <i [class]="item.icon" class="mr-3 text-lg"></i>
-            {{ item.label }}
+          <div
+            *ngFor="let item of dashboardItems"
+            class="flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors group"
+            [class.bg-indigo-600]="item.isActive"
+            [class.text-white]="item.isActive"
+            [class.text-gray-300]="!item.isActive"
+            [class.hover:bg-gray-800]="!item.isActive"
+            [class.justify-center]="isCollapsed"
+            [routerLink]="item.route"
+            [title]="isCollapsed ? item.label : ''"
+          >
+            <i
+              [class]="item.icon"
+              class="text-lg"
+              [class.mr-3]="!isCollapsed"
+            ></i>
+            <span [class.hidden]="isCollapsed">{{ item.label }}</span>
           </div>
         </div>
 
         <div class="mb-6">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <h3
+            [class.hidden]="isCollapsed"
+            class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3"
+          >
             Pages
           </h3>
-          <div *ngFor="let item of pageItems" 
-               class="flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors"
-               [class.bg-indigo-600]="item.isActive"
-               [class.text-white]="item.isActive"
-               [class.text-gray-300]="!item.isActive"
-               [class.hover:bg-gray-800]="!item.isActive"
-               [routerLink]="item.route">
-            <i [class]="item.icon" class="mr-3 text-lg"></i>
-            {{ item.label }}
+          <div
+            *ngFor="let item of pageItems"
+            class="flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors"
+            [class.bg-indigo-600]="item.isActive"
+            [class.text-white]="item.isActive"
+            [class.text-gray-300]="!item.isActive"
+            [class.hover:bg-gray-800]="!item.isActive"
+            [class.justify-center]="isCollapsed"
+            [routerLink]="item.route"
+            [title]="isCollapsed ? item.label : ''"
+          >
+            <i
+              [class]="item.icon"
+              class="text-lg"
+              [class.mr-3]="!isCollapsed"
+            ></i>
+            <span [class.hidden]="isCollapsed">{{ item.label }}</span>
           </div>
         </div>
 
         <div class="mb-6">
-          <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <h3
+            [class.hidden]="isCollapsed"
+            class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3"
+          >
             Analytics
           </h3>
-          <div *ngFor="let item of analyticsItems" 
-               class="flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors"
-               [class.bg-indigo-600]="item.isActive"
-               [class.text-white]="item.isActive"
-               [class.text-gray-300]="!item.isActive"
-               [class.hover:bg-gray-800]="!item.isActive"
-               [routerLink]="item.route">
-            <i [class]="item.icon" class="mr-3 text-lg"></i>
-            {{ item.label }}
+          <div
+            *ngFor="let item of analyticsItems"
+            class="flex items-center px-3 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors"
+            [class.bg-indigo-600]="item.isActive"
+            [class.text-white]="item.isActive"
+            [class.text-gray-300]="!item.isActive"
+            [class.hover:bg-gray-800]="!item.isActive"
+            [class.justify-center]="isCollapsed"
+            [routerLink]="item.route"
+            [title]="isCollapsed ? item.label : ''"
+          >
+            <i
+              [class]="item.icon"
+              class="text-lg"
+              [class.mr-3]="!isCollapsed"
+            ></i>
+            <span [class.hidden]="isCollapsed">{{ item.label }}</span>
           </div>
         </div>
       </nav>
 
       <!-- User Profile -->
-      <div class="p-4 border-t border-gray-800">
-        <div class="flex items-center space-x-3">
-          <img class="w-10 h-10 rounded-full" 
-               src="https://ui-avatars.com/api/?name=Florence+Shaw&background=6366f1&color=fff" 
-               alt="User">
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-white truncate">Florence Shaw</p>
-            <p class="text-xs text-gray-400 truncate">hi&#64;florenceshaw.com</p>
+      <div class="p-4 border-t border-gray-800 flex-shrink-0">
+        <!-- When collapsed: center profile -->
+        <div *ngIf="isCollapsed" class="flex justify-center">
+          <div class="relative">
+            <img
+              class="w-8 h-8 rounded-full ring-2 ring-indigo-500 ring-offset-1 ring-offset-gray-900"
+              src="https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff&size=32"
+              alt="User"
+              title="Admin User"
+            />
+            <div
+              class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"
+            ></div>
           </div>
-          <button class="p-1 text-gray-400 hover:text-white">
+        </div>
+
+        <!-- When expanded: full profile layout -->
+        <div *ngIf="!isCollapsed" class="flex items-center space-x-3">
+          <!-- Profile Avatar -->
+          <div class="relative">
+            <img
+              class="w-10 h-10 rounded-full ring-2 ring-indigo-500 ring-offset-2 ring-offset-gray-900"
+              src="https://ui-avatars.com/api/?name=Admin+User&background=6366f1&color=fff"
+              alt="User"
+            />
+            <div
+              class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-900"
+            ></div>
+          </div>
+
+          <!-- User Info -->
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-white truncate">Admin User</p>
+            <p class="text-xs text-gray-400 truncate">admin&#64;aegisx.com</p>
+          </div>
+
+          <!-- Settings Button -->
+          <button
+            class="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+            title="Settings"
+          >
             <i class="pi pi-cog text-sm"></i>
           </button>
         </div>
       </div>
     </div>
-  `
+  `,
 })
 export class SidebarComponent {
+  isCollapsed = false;
+
+  toggleSidebar() {
+    this.isCollapsed = !this.isCollapsed;
+  }
+
   dashboardItems: MenuItem[] = [
-    { label: 'Overview', icon: 'pi pi-home', route: '/dashboard', isActive: true },
+    {
+      label: 'Overview',
+      icon: 'pi pi-home',
+      route: '/dashboard',
+      isActive: true,
+    },
     { label: 'Analyze', icon: 'pi pi-chart-pie', route: '/analytics' },
   ];
 
