@@ -1,0 +1,100 @@
+/* Admin Dashboard - PrimeNG + Tailwind CSS */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Dashboard Layout */
+.dashboard-container {
+  @apply p-6 min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500;
+}
+
+.dashboard-header {
+  @apply mb-8 text-center;
+  
+  h1 {
+    @apply text-4xl font-bold m-0 flex items-center justify-center gap-3 text-white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .subtitle {
+    @apply text-lg mt-2 text-white/90 font-medium;
+  }
+}
+
+/* Custom Components */
+.metric-card {
+  @apply bg-white/95 backdrop-blur-md border border-white/20 shadow-2xl rounded-2xl !important;
+  
+  .metric-header {
+    @apply flex items-center justify-between mb-4;
+    
+    .metric-title {
+      @apply flex items-center gap-2 font-semibold text-slate-600;
+    }
+    
+    .metric-icon {
+      @apply text-xl bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent;
+    }
+  }
+  
+  .metric-value {
+    @apply text-4xl font-extrabold mb-3 leading-none bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent;
+  }
+}
+
+/* PrimeNG Cards */
+.p-card {
+  @apply bg-white/95 backdrop-blur-md border border-white/20 shadow-2xl rounded-2xl transition-all duration-300 !important;
+  
+  &:hover {
+    @apply shadow-2xl -translate-y-1 !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  }
+}
+
+/* Stats Cards */
+.stats-card {
+  @apply transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] !important;
+}
+
+.chart-placeholder {
+  @apply h-72 flex flex-col items-center justify-center rounded-xl bg-gradient-to-br from-slate-50 to-slate-200 border-2 border-dashed border-slate-300;
+  
+  .pi {
+    @apply text-6xl mb-4 text-slate-400;
+  }
+  
+  p {
+    @apply text-slate-600 font-medium;
+  }
+}
+
+.activity-item {
+  @apply flex items-center gap-4 py-3 border-b border-slate-200 last:border-b-0;
+  
+  .activity-icon {
+    @apply w-8 h-8 rounded-full flex items-center justify-center text-sm bg-indigo-500 text-white;
+  }
+  
+  .activity-content {
+    @apply flex-1;
+    
+    .activity-title {
+      @apply font-medium mb-1;
+    }
+  }
+}
+
+.user-item {
+  @apply flex items-center gap-3 py-3 border-b border-slate-200 last:border-b-0;
+  
+  .user-info {
+    @apply flex-1;
+    
+    .user-name {
+      @apply font-medium mb-1;
+    }
+  }
+}
+

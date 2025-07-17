@@ -1,0 +1,180 @@
+// PrimeNG Dashboard Styles
+
+.dashboard-container {
+  // Use PrimeNG variables
+  background-color: var(--surface-ground);
+  min-height: 100vh;
+}
+
+// Enhanced stats cards with hover effects
+.stats-card {
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+}
+
+// Progress bars with custom colors
+:host ::ng-deep {
+  .progress-primary .p-progressbar-value {
+    background: var(--primary-color);
+  }
+  
+  .progress-success .p-progressbar-value {
+    background: var(--green-500);
+  }
+  
+  .progress-warning .p-progressbar-value {
+    background: var(--yellow-500);
+  }
+  
+  .progress-info .p-progressbar-value {
+    background: var(--cyan-500);
+  }
+}
+
+// User list styling
+.user-list {
+  .user-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--surface-border);
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    .user-info {
+      flex: 1;
+      margin-left: 0.75rem;
+    }
+  }
+}
+
+// Enhanced activity timeline
+.activity-timeline {
+  .activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--surface-border);
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary-color);
+      color: white;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    
+    .activity-content {
+      flex: 1;
+      
+      .activity-title {
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 0.25rem;
+      }
+      
+      .activity-description {
+        color: var(--text-color-secondary);
+        line-height: 1.4;
+      }
+      
+      .activity-time {
+        color: var(--text-color-secondary);
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+      }
+    }
+  }
+}
+
+// Card header enhancements
+:host ::ng-deep {
+  .p-card .p-card-header {
+    border-bottom: 1px solid var(--surface-border);
+    background: var(--surface-50);
+  }
+  
+  .p-card .p-card-body {
+    padding: 1.5rem;
+  }
+  
+  .p-card .p-card-content {
+    padding: 0;
+  }
+}
+
+// Button styles
+:host ::ng-deep {
+  .p-button.p-button-text {
+    &:hover {
+      background: var(--surface-100);
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 1rem;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  .metric-value {
+    font-size: 2rem !important;
+  }
+  
+  .activity-timeline .activity-item {
+    .activity-icon {
+      width: 32px;
+      height: 32px;
+      font-size: 0.875rem;
+    }
+  }
+}
+
+// Custom animations
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stats-card {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+// Chart placeholder styling
+.chart-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  background: var(--surface-50);
+  border-radius: var(--border-radius);
+  border: 2px dashed var(--surface-300);
+}
