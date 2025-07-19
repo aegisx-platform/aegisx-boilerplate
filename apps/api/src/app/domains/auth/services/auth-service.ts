@@ -149,6 +149,15 @@ export class AuthService {
         throw this.fastify.httpErrors.unauthorized('Invalid username/email or password');
       }
 
+      // Update last login timestamp
+      try {
+        await this.userRepo.update(user.id, { last_login_at: new Date() } as any);
+        this.fastify.log.debug('Updated last login timestamp', { userId: user.id });
+      } catch (error) {
+        this.fastify.log.warn('Failed to update last login timestamp', { userId: user.id, error });
+        // Continue with login even if updating last_login_at fails
+      }
+
       // Fetch user roles and permissions with cache optimization
       this.fastify.log.debug('Fetching RBAC data for user', { userId: user.id });
       const rbacData = await this.getUserRBACDataWithCache(user.id);

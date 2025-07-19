@@ -4,6 +4,51 @@
 @tailwind components;
 @tailwind utilities;
 
+/* PrimeNG Menu Customization */
+.profile-menu-dropdown {
+  z-index: 9999 !important;
+  @apply shadow-xl border border-gray-200 rounded-lg overflow-hidden;
+  
+  .p-menu-list {
+    @apply py-2 !important;
+  }
+  
+  .p-menuitem-text {
+    @apply text-gray-700 text-sm !important;
+  }
+  
+  .p-menuitem-icon {
+    @apply text-gray-500 mr-3 !important;
+  }
+  
+  .p-menuitem-link {
+    @apply px-4 py-2 hover:bg-gray-100 transition-colors !important;
+  }
+  
+  .p-menu-separator {
+    @apply border-t border-gray-200 my-1 !important;
+  }
+  
+  .p-submenu-header {
+    @apply px-4 py-3 border-b border-gray-200 bg-gray-50 !important;
+    
+    .p-menuitem-text {
+      @apply text-gray-900 font-medium !important;
+    }
+  }
+}
+
+/* PrimeNG Overlay Global Fix */
+.p-component-overlay {
+  z-index: 9999 !important;
+}
+
+/* Fix for layout shifting */
+.p-menu-overlay {
+  z-index: 9999 !important;
+  position: fixed !important;
+}
+
 /* Dashboard Layout */
 .dashboard-container {
   @apply p-6 min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500;

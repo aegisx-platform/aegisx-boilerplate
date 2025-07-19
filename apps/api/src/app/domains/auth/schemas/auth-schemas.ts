@@ -32,6 +32,10 @@ export const UserSchema = Type.Object({
     Type.String({ format: 'date-time' }),
     Type.Null()
   ]),
+  last_login_at: Type.Union([
+    Type.String({ format: 'date-time' }),
+    Type.Null()
+  ]),
   created_at: Type.String({ format: 'date-time' }),
   updated_at: Type.String({ format: 'date-time' })
 });

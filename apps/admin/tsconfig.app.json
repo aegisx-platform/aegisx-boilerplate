@@ -10,5 +10,13 @@
     "src/test-setup.ts",
     "src/**/*.test.ts",
     "src/**/*.spec.ts"
+  ],
+  "references": [
+    {
+      "path": "../../libs/shared/types"
+    },
+    {
+      "path": "../../libs/shared/api-client"
+    }
   ]
 }
