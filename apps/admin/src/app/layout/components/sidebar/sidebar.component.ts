@@ -202,9 +202,11 @@ interface MenuItem {
           <!-- Settings Button -->
           <button
             class="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-            title="Settings"
+            title="Profile Settings"
+            [routerLink]="'/profile'"
+            (click)="onMenuItemClick()"
           >
-            <i class="pi pi-cog text-sm"></i>
+            <i class="pi pi-user text-sm"></i>
           </button>
         </div>
       </div>
@@ -297,6 +299,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     { label: 'Manage access', icon: 'pi pi-users', route: '/access' },
     { label: 'Roles & Permissions', icon: 'pi pi-shield', route: '/rbac' },
     { label: 'API Keys', icon: 'pi pi-key', route: '/api-keys' },
+    { label: 'Profile', icon: 'pi pi-user', route: '/profile' },
   ];
 
   analyticsItems: MenuItem[] = [

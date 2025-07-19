@@ -65,6 +65,10 @@ export const appRoutes: Route[] = [
         loadChildren: () => import('./features/api-key/api-key.routes').then(m => m.API_KEY_ROUTES)
       },
       {
+        path: 'profile',
+        loadChildren: () => import('./features/profile/profile.routes').then(m => m.PROFILE_ROUTES)
+      },
+      {
         path: 'support',
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
       }
