@@ -18,7 +18,7 @@ import {
 })
 export class RbacService {
   private http = inject(HttpClient);
-  private apiUrl = '/api/v1/rbac';
+  private apiUrl = 'http://localhost:3000/api/v1/rbac';
   
   // Cache subjects
   private rolesSubject = new BehaviorSubject<Role[]>([]);
