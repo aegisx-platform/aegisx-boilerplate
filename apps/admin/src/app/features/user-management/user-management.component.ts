@@ -67,7 +67,7 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div *ngFor="let stat of userStats" class="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
             <div class="flex items-center">
               <div class="flex-shrink-0">
@@ -419,7 +419,7 @@ import { AuthService } from '../../core/services/auth.service';
             <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
               <i class="pi pi-user text-indigo-600 text-xl"></i>
             </div>
-            
+
             <!-- User Info -->
             <div class="flex-1">
               <h3 class="text-xl font-semibold text-gray-800">{{ selectedUserDetail.name }}</h3>
@@ -434,7 +434,7 @@ import { AuthService } from '../../core/services/auth.service';
                 </span>
               </div>
             </div>
-            
+
             <!-- Status Badge -->
             <div class="text-right">
               <p-tag
@@ -589,7 +589,7 @@ import { AuthService } from '../../core/services/auth.service';
                   {{ getDaysActive(selectedUserDetail.created_at) }}
                 </p>
               </div>
-              
+
               <div>
                 <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-2">
                   <i class="pi pi-check-circle text-indigo-600"></i>
@@ -605,7 +605,7 @@ import { AuthService } from '../../core/services/auth.service';
                   {{ selectedUserDetail.status }}
                 </p>
               </div>
-              
+
               <div>
                 <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-2">
                   <i class="pi pi-shield text-indigo-600"></i>
