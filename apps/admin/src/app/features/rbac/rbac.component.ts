@@ -1,6 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { TabsModule } from 'primeng/tabs';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
@@ -19,7 +18,6 @@ import { RoleStats } from './types/rbac.types';
   standalone: true,
   imports: [
     CommonModule,
-    TabsModule,
     CardModule,
     ButtonModule,
     ToastModule,
@@ -116,32 +114,37 @@ import { RoleStats } from './types/rbac.types';
           </div>
         </div>
 
-        <!-- Tab View -->
-        <p-tabs class="rbac-tabs">
-          <p-tab>
-            <ng-template pTemplate="header">
-              <i class="pi pi-sitemap mr-2"></i>
-              <span>Roles</span>
-            </ng-template>
-            <app-role-list></app-role-list>
-          </p-tab>
-
-          <p-tab>
-            <ng-template pTemplate="header">
-              <i class="pi pi-users mr-2"></i>
-              <span>User Assignments</span>
-            </ng-template>
-            <app-user-roles></app-user-roles>
-          </p-tab>
-
-          <p-tab>
-            <ng-template pTemplate="header">
-              <i class="pi pi-key mr-2"></i>
-              <span>Permissions</span>
-            </ng-template>
-            <app-permission-browser></app-permission-browser>
-          </p-tab>
-        </p-tabs>
+        <!-- Custom Tab Navigation -->
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm">
+          <!-- Tab Headers -->
+          <div class="border-b border-gray-200">
+            <nav class="flex space-x-8 px-6" aria-label="Tabs">
+              <button
+                *ngFor="let tab of tabs; let i = index"
+                (click)="activeTabIndex = i"
+                [class]="getTabClasses(i)"
+                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                <i [class]="tab.icon + ' mr-2'"></i>
+                {{ tab.label }}
+              </button>
+            </nav>
+          </div>
+          
+          <!-- Tab Content -->
+          <div class="p-6">
+            <div [ngSwitch]="activeTabIndex">
+              <div *ngSwitchCase="0">
+                <app-role-list></app-role-list>
+              </div>
+              <div *ngSwitchCase="1">
+                <app-user-roles></app-user-roles>
+              </div>
+              <div *ngSwitchCase="2">
+                <app-permission-browser></app-permission-browser>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Toast Messages -->
         <p-toast></p-toast>
@@ -150,27 +153,7 @@ import { RoleStats } from './types/rbac.types';
   `,
   styles: [`
     :host ::ng-deep {
-      .rbac-tabs {
-        .p-tabview-nav {
-          @apply bg-white border-b border-gray-200;
-          
-          .p-tabview-nav-link {
-            @apply text-gray-600 font-medium;
-            
-            &.p-highlight {
-              @apply text-indigo-600 border-indigo-600;
-            }
-            
-            &:hover {
-              @apply text-gray-800 border-gray-300;
-            }
-          }
-        }
-        
-        .p-tabview-panels {
-          @apply bg-transparent p-0;
-        }
-      }
+      /* Custom tab styles handled by Tailwind classes */
     }
   `]
 })
@@ -180,9 +163,21 @@ export class RbacComponent implements OnInit {
   
   activeTabIndex = 0;
   stats: RoleStats | null = null;
+  
+  tabs = [
+    { label: 'Roles', icon: 'pi pi-sitemap' },
+    { label: 'User Assignments', icon: 'pi pi-users' },
+    { label: 'Permissions', icon: 'pi pi-key' }
+  ];
 
   ngOnInit() {
     this.loadData();
+  }
+
+  getTabClasses(index: number): string {
+    return index === this.activeTabIndex
+      ? 'border-indigo-500 text-indigo-600'
+      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300';
   }
 
   loadData() {
