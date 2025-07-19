@@ -19,7 +19,7 @@ interface RBACOptions {
 async function rbacPlugin(fastify: FastifyInstance, _options: RBACOptions) {
   // Initialize RBAC service
   const roleRepository = new RoleRepository(fastify.knex);
-  const rbacService = new RBACService(roleRepository);
+  const rbacService = new RBACService(roleRepository, fastify);
 
   // Register RBAC service
   fastify.decorate('rbac', rbacService);

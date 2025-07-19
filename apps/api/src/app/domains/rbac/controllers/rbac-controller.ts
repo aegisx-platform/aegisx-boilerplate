@@ -9,7 +9,6 @@ export class RBACController {
   async getAllRoles(request: FastifyRequest, reply: FastifyReply): Promise<any> {
     try {
       const roles = await this.rbacService.getAllRoles();
-      console.log('Retrieved roles:', roles);
       return {
         roles: roles,
         total: roles.length
@@ -245,17 +244,20 @@ export class RBACController {
   // Current user permissions
   async getCurrentUserPermissions(request: FastifyRequest, reply: FastifyReply): Promise<any> {
     try {
-      const userContext = this.rbacService.getUserContext(request);
-      if (!userContext) {
+      // Get user from JWT
+      const user = (request as any).user;
+      if (!user || !user.id) {
         return reply.code(401).send({
           success: false,
-          message: 'Unauthorized'
+          message: 'Unauthorized - no user found'
         });
       }
 
+      // Since JWT already contains roles and permissions, we can return them directly
+      // But for consistency with expected API format, let's also fetch from database
       const [userRoles, permissions] = await Promise.all([
-        this.rbacService.getUserRoles(userContext.userId),
-        this.rbacService.getUserPermissions(userContext.userId)
+        this.rbacService.getUserRoles(user.id),
+        this.rbacService.getUserPermissions(user.id)
       ]);
 
       return {
@@ -265,11 +267,15 @@ export class RBACController {
           permissions
         }
       };
-    } catch (error) {
-      request.log.error('Failed to get current user permissions:', error);
+    } catch (error: any) {
+      request.log.error('Failed to get current user permissions:', { 
+        error: error.message, 
+        stack: error.stack,
+        user: (request as any).user?.id 
+      });
       return reply.code(500).send({
         success: false,
-        message: 'Failed to retrieve permissions'
+        message: error.message || 'Failed to retrieve permissions'
       });
     }
   }
