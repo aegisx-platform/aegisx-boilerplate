@@ -300,6 +300,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     { label: 'Visual labels', icon: 'pi pi-tags', route: '/labels' },
     { label: 'Live data feed', icon: 'pi pi-rss', route: '/feed' },
     { label: 'Manage access', icon: 'pi pi-users', route: '/access' },
+    { label: 'Roles & Permissions', icon: 'pi pi-shield', route: '/rbac' },
   ];
 
   analyticsItems: MenuItem[] = [

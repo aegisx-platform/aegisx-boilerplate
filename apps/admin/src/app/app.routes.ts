@@ -57,6 +57,10 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./features/user-management/user-management.component').then(m => m.UserManagementComponent)
       },
       {
+        path: 'rbac',
+        loadComponent: () => import('./features/rbac/rbac.component').then(m => m.RbacComponent)
+      },
+      {
         path: 'support',
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
       }
