@@ -203,9 +203,9 @@ export class ApiKeyService {
         }
       }
 
-      // Parse JSON fields
-      const permissions = JSON.parse(apiKeyRecord.permissions || '{}')
-      const ipWhitelist = JSON.parse(apiKeyRecord.ip_whitelist || '[]')
+      // Parse JSON fields safely
+      const permissions = this.parsePermissions(apiKeyRecord.permissions)
+      const ipWhitelist = this.parseIpWhitelist(apiKeyRecord.ip_whitelist)
 
       // Check IP whitelist if configured
       if (ipWhitelist.length > 0 && ip) {
@@ -302,7 +302,7 @@ export class ApiKeyService {
         name: key.name,
         description: key.description,
         prefix: key.key_prefix,
-        permissions: JSON.parse(key.permissions || '{}'),
+        permissions: this.parsePermissions(key.permissions),
         expiresAt: key.expires_at,
         lastUsedAt: key.last_used_at,
         usageCount: key.usage_count,
@@ -347,7 +347,7 @@ export class ApiKeyService {
         name: apiKey.name,
         description: apiKey.description,
         prefix: apiKey.key_prefix,
-        permissions: JSON.parse(apiKey.permissions || '{}'),
+        permissions: this.parsePermissions(apiKey.permissions),
         expiresAt: apiKey.expires_at,
         lastUsedAt: apiKey.last_used_at,
         usageCount: apiKey.usage_count,
@@ -539,5 +539,40 @@ export class ApiKeyService {
       topEndpoints: [],
       dailyUsage: []
     }
+  }
+
+  /**
+   * Safely parse permissions field from database
+   */
+  private parsePermissions(permissions: any): any {
+    if (!permissions) return {}
+    if (typeof permissions === 'object') return permissions
+    if (typeof permissions === 'string') {
+      try {
+        return JSON.parse(permissions)
+      } catch (error) {
+        this.logger.warn('Failed to parse permissions JSON', { permissions, error })
+        return {}
+      }
+    }
+    return {}
+  }
+
+  /**
+   * Safely parse IP whitelist field from database
+   */
+  private parseIpWhitelist(ipWhitelist: any): string[] {
+    if (!ipWhitelist) return []
+    if (Array.isArray(ipWhitelist)) return ipWhitelist
+    if (typeof ipWhitelist === 'string') {
+      try {
+        const parsed = JSON.parse(ipWhitelist)
+        return Array.isArray(parsed) ? parsed : []
+      } catch (error) {
+        this.logger.warn('Failed to parse IP whitelist JSON', { ipWhitelist, error })
+        return []
+      }
+    }
+    return []
   }
 }

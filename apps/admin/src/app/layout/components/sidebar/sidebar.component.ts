@@ -294,13 +294,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
   ];
 
   pageItems: MenuItem[] = [
-    { label: 'All charts', icon: 'pi pi-chart-bar', route: '/charts' },
-    { label: 'All projects', icon: 'pi pi-folder', route: '/projects' },
-    { label: 'Explore events', icon: 'pi pi-calendar', route: '/events' },
-    { label: 'Visual labels', icon: 'pi pi-tags', route: '/labels' },
-    { label: 'Live data feed', icon: 'pi pi-rss', route: '/feed' },
     { label: 'Manage access', icon: 'pi pi-users', route: '/access' },
     { label: 'Roles & Permissions', icon: 'pi pi-shield', route: '/rbac' },
+    { label: 'API Keys', icon: 'pi pi-key', route: '/api-keys' },
   ];
 
   analyticsItems: MenuItem[] = [

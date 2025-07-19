@@ -61,6 +61,10 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./features/rbac/rbac.component').then(m => m.RbacComponent)
       },
       {
+        path: 'api-keys',
+        loadChildren: () => import('./features/api-key/api-key.routes').then(m => m.API_KEY_ROUTES)
+      },
+      {
         path: 'support',
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
       }
