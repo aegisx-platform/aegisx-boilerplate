@@ -256,7 +256,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         : 'fixed inset-y-0 left-0 z-50 w-64 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-0';
     } else {
       // Desktop: static positioning with width changes
-      classes = this.isCollapsed ? 'w-16' : 'w-64';
+      classes = this.isCollapsed ? 'w-20' : 'w-64';
     }
 
     return classes;
