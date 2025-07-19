@@ -1,6 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -11,7 +13,6 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { TooltipModule } from 'primeng/tooltip';
 import { MessageService, ConfirmationService } from 'primeng/api';
 
-import { UserManagementClient } from '@aegisx-boilerplate/api-client';
 import { User } from '@aegisx-boilerplate/types';
 import { RbacService } from '../../services/rbac.service';
 import { Role, UserRole, AssignRoleRequest } from '../../types/rbac.types';
@@ -51,10 +52,12 @@ import { Role, UserRole, AssignRoleRequest } from '../../types/rbac.types';
               [(ngModel)]="selectedUser"
               [suggestions]="userSuggestions"
               (completeMethod)="searchUsers($event)"
-              field="name"
+              (onClear)="onUserClear()"
+              optionLabel="name"
               placeholder="Type to search users..."
               [dropdown]="true"
               [showClear]="true"
+              [forceSelection]="true"
               styleClass="w-full">
               
               <ng-template let-user pTemplate="item">
@@ -201,11 +204,12 @@ import { Role, UserRole, AssignRoleRequest } from '../../types/rbac.types';
               [(ngModel)]="assignData.selectedRole"
               name="role"
               required
-              [suggestions]="availableRoles"
+              [suggestions]="filteredRoles"
               (completeMethod)="filterRoles($event)"
-              field="display_name"
+              optionLabel="display_name"
               placeholder="Select a role..."
               [dropdown]="true"
+              [forceSelection]="true"
               styleClass="w-full">
               
               <ng-template let-role pTemplate="item">
@@ -281,10 +285,12 @@ import { Role, UserRole, AssignRoleRequest } from '../../types/rbac.types';
   `]
 })
 export class UserRolesComponent implements OnInit {
-  userClient = inject(UserManagementClient);
+  http = inject(HttpClient);
   rbacService = inject(RbacService);
   messageService = inject(MessageService);
   confirmationService = inject(ConfirmationService);
+  
+  private apiUrl = 'http://localhost:3000/api/v1/user-management';
 
   selectedUser: User | null = null;
   userSuggestions: User[] = [];
@@ -294,6 +300,7 @@ export class UserRolesComponent implements OnInit {
   assignDialogVisible = false;
   assigning = false;
   availableRoles: Role[] = [];
+  filteredRoles: Role[] = [];
   assignData = {
     selectedRole: null as Role | null,
     expirationDate: null as Date | null
@@ -317,25 +324,42 @@ export class UserRolesComponent implements OnInit {
 
   async searchUsers(event: any) {
     const query = event.query;
+    console.log('Search users called with query:', query);
+    
     if (query.length >= 2) {
       try {
-        const response = await this.userClient.getUsers({ 
-          search: query, 
-          limit: 10 
-        });
-        this.userSuggestions = response.users;
+        console.log('Making API call to:', `${this.apiUrl}/`);
+        const response = await firstValueFrom(
+          this.http.get<{users: User[], pagination: any}>(`${this.apiUrl}/`, {
+            params: { 
+              q: query,  // ใช้ 'q' ตาม UserSearchRequestSchema
+              limit: '10' 
+            }
+          })
+        );
+        console.log('API response:', response);
+        this.userSuggestions = response?.users || [];
+        console.log('User suggestions set to:', this.userSuggestions);
       } catch (error) {
         console.error('Error searching users:', error);
         this.userSuggestions = [];
       }
+    } else {
+      this.userSuggestions = [];
     }
   }
 
+  onUserClear() {
+    this.selectedUser = null;
+    this.userRoles = [];
+    this.userSuggestions = [];
+  }
+
   getUserInitials(user: User): string {
-    if (!user) return '';
+    if (!user || !user.name) return '';
     const names = user.name.split(' ');
     if (names.length >= 2) {
-      return names[0][0] + names[1][0];
+      return (names[0][0] || '') + (names[1][0] || '');
     }
     return user.name[0] || '';
   }
@@ -365,12 +389,13 @@ export class UserRolesComponent implements OnInit {
       selectedRole: null,
       expirationDate: null
     };
+    this.filteredRoles = [...this.availableRoles]; // Initialize with all roles
     this.assignDialogVisible = true;
   }
 
   filterRoles(event: any) {
     const query = event.query.toLowerCase();
-    this.availableRoles = this.availableRoles.filter(role =>
+    this.filteredRoles = this.availableRoles.filter(role =>
       role.display_name.toLowerCase().includes(query) ||
       role.name.toLowerCase().includes(query)
     );

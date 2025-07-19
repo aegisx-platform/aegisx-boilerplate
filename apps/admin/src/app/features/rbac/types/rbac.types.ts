@@ -70,6 +70,16 @@ export interface PermissionGroup {
   permissions: Permission[];
 }
 
+// For permission assignment UI
+export interface PermissionGroupWithAssignment {
+  resource: string;
+  permissions: PermissionWithAssignment[];
+}
+
+export interface PermissionWithAssignment extends Permission {
+  assigned: boolean;
+}
+
 // For permission selection UI
 export interface PermissionSelection {
   permission: Permission;

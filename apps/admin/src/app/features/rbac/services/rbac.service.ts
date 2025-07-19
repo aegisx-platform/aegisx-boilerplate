@@ -1,11 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, tap, map } from 'rxjs';
-import { 
-  Role, 
-  Permission, 
-  UserRole, 
-  CreateRoleRequest, 
+import {
+  Role,
+  Permission,
+  UserRole,
+  CreateRoleRequest,
   UpdateRoleRequest,
   AssignPermissionsRequest,
   AssignRoleRequest,
@@ -19,33 +19,44 @@ import {
 export class RbacService {
   private http = inject(HttpClient);
   private apiUrl = 'http://localhost:3000/api/v1/rbac';
-  
+
   // Cache subjects
   private rolesSubject = new BehaviorSubject<Role[]>([]);
   private permissionsSubject = new BehaviorSubject<Permission[]>([]);
-  
+
   roles$ = this.rolesSubject.asObservable();
   permissions$ = this.permissionsSubject.asObservable();
 
   // Role Management
   getRoles(): Observable<Role[]> {
-    return this.http.get<Role[]>(`${this.apiUrl}/roles`).pipe(
+    return this.http.get<{roles: Role[], total: number}>(`${this.apiUrl}/roles`).pipe(
+      map(response => response.roles),
       tap(roles => this.rolesSubject.next(roles))
     );
   }
 
+  getRoleById(id: string): Observable<Role> {
+    return this.http.get<{role: Role}>(`${this.apiUrl}/roles/${id}`).pipe(
+      map(response => response.role)
+    );
+  }
+
   getRole(id: string): Observable<Role> {
-    return this.http.get<Role>(`${this.apiUrl}/roles/${id}`);
+    return this.http.get<{role: Role}>(`${this.apiUrl}/roles/${id}`).pipe(
+      map(response => response.role)
+    );
   }
 
   createRole(data: CreateRoleRequest): Observable<Role> {
-    return this.http.post<Role>(`${this.apiUrl}/roles`, data).pipe(
+    return this.http.post<{message: string, role: Role}>(`${this.apiUrl}/roles`, data).pipe(
+      map(response => response.role),
       tap(() => this.getRoles().subscribe())
     );
   }
 
   updateRole(id: string, data: UpdateRoleRequest): Observable<Role> {
-    return this.http.put<Role>(`${this.apiUrl}/roles/${id}`, data).pipe(
+    return this.http.put<{message: string, role: Role}>(`${this.apiUrl}/roles/${id}`, data).pipe(
+      map(response => response.role),
       tap(() => this.getRoles().subscribe())
     );
   }
@@ -58,7 +69,8 @@ export class RbacService {
 
   // Permission Management
   getPermissions(): Observable<Permission[]> {
-    return this.http.get<Permission[]>(`${this.apiUrl}/permissions`).pipe(
+    return this.http.get<{permissions: Permission[], total: number}>(`${this.apiUrl}/permissions`).pipe(
+      map(response => response.permissions),
       tap(permissions => this.permissionsSubject.next(permissions))
     );
   }
@@ -71,7 +83,9 @@ export class RbacService {
 
   // User Role Management
   getUserRoles(userId: string): Observable<UserRole[]> {
-    return this.http.get<UserRole[]>(`${this.apiUrl}/users/${userId}/roles`);
+    return this.http.get<{user_id: string, roles: UserRole[], total_roles: number}>(`${this.apiUrl}/users/${userId}/roles`).pipe(
+      map(response => response.roles)
+    );
   }
 
   assignRoleToUser(userId: string, data: AssignRoleRequest): Observable<UserRole> {
@@ -83,7 +97,9 @@ export class RbacService {
   }
 
   getCurrentUserPermissions(): Observable<Permission[]> {
-    return this.http.get<Permission[]>(`${this.apiUrl}/me/permissions`);
+    return this.http.get<{user_id: string, permissions: any[], total_permissions: number}>(`${this.apiUrl}/me/permissions`).pipe(
+      map(response => response.permissions)
+    );
   }
 
   // Cache Management
@@ -116,10 +132,10 @@ export class RbacService {
           permissions: permissions.sort((a, b) => {
             const actionOrder = ['read', 'create', 'update', 'delete', 'assign'];
             const scopeOrder = ['own', 'department', 'all'];
-            
+
             const actionDiff = actionOrder.indexOf(a.action) - actionOrder.indexOf(b.action);
             if (actionDiff !== 0) return actionDiff;
-            
+
             return scopeOrder.indexOf(a.scope) - scopeOrder.indexOf(b.scope);
           })
         })).sort((a, b) => a.resource.localeCompare(b.resource));

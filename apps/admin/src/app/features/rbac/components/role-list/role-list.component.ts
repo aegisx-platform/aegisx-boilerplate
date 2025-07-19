@@ -10,10 +10,13 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { TooltipModule } from 'primeng/tooltip';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ToastModule } from 'primeng/toast';
+import { CheckboxModule } from 'primeng/checkbox';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { MessageService, ConfirmationService } from 'primeng/api';
 
 import { RbacService } from '../../services/rbac.service';
-import { Role, CreateRoleRequest, UpdateRoleRequest } from '../../types/rbac.types';
+import { Role, CreateRoleRequest, UpdateRoleRequest, Permission, PermissionGroupWithAssignment, AssignPermissionsRequest, PermissionWithAssignment } from '../../types/rbac.types';
 import { RoleDialogComponent } from './role-dialog.component';
 
 @Component({
@@ -31,6 +34,9 @@ import { RoleDialogComponent } from './role-dialog.component';
     TooltipModule,
     ConfirmDialogModule,
     ToastModule,
+    CheckboxModule,
+    IconFieldModule,
+    InputIconModule,
     RoleDialogComponent
   ],
   providers: [MessageService, ConfirmationService],
@@ -39,16 +45,15 @@ import { RoleDialogComponent } from './role-dialog.component';
       <!-- Header -->
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
-          <div class="relative">
-            <i class="pi pi-search absolute left-3 top-3 text-gray-500"></i>
+          <p-iconfield class="w-80">
+            <p-inputicon class="pi pi-search" />
             <input
               type="text"
               pInputText
               [(ngModel)]="searchTerm"
               (input)="onSearch($event, dt)"
-              placeholder="Search roles..."
-              class="pl-10 pr-4 py-2 w-80 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-          </div>
+              placeholder="Search roles..." />
+          </p-iconfield>
         </div>
         <button
           (click)="showCreateDialog()"
@@ -111,7 +116,11 @@ import { RoleDialogComponent } from './role-dialog.component';
               <td>
                 <div class="flex items-center space-x-2">
                   <i class="pi pi-key text-gray-500"></i>
-                  <span>{{ role.permissions?.length || 0 }}</span>
+                  <button
+                    (click)="showPermissionDetails(role)"
+                    class="text-indigo-600 hover:text-indigo-700 underline cursor-pointer text-sm">
+                    View
+                  </button>
                 </div>
               </td>
               <td>
@@ -173,20 +182,225 @@ import { RoleDialogComponent } from './role-dialog.component';
         [(visible)]="permissionsDialogVisible"
         [header]="'Manage Permissions: ' + selectedRole?.display_name"
         [modal]="true"
-        [style]="{width: '800px'}"
+        [style]="{width: '900px'}"
         [maximizable]="true">
         
-        <div *ngIf="selectedRole" class="space-y-4">
-          <!-- Coming soon: Permission assignment UI -->
-          <p class="text-gray-600">Permission assignment interface will be implemented here.</p>
-          <p class="text-sm text-gray-500">
-            Current permissions: {{ selectedRole.permissions?.length || 0 }}
-          </p>
+        <div *ngIf="selectedRole" class="space-y-6">
+          <!-- Permission Statistics -->
+          <div class="flex items-center justify-between bg-gray-50 rounded-lg p-4">
+            <div>
+              <h4 class="text-sm font-medium text-gray-800">Permission Summary</h4>
+              <p class="text-xs text-gray-600">
+                {{ getAssignedPermissionsCount() }} of {{ allPermissions.length }} permissions assigned
+              </p>
+            </div>
+            <div class="flex space-x-2">
+              <button
+                (click)="selectAllPermissions()"
+                class="px-3 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100">
+                Select All
+              </button>
+              <button
+                (click)="clearAllPermissions()"
+                class="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded hover:bg-gray-200">
+                Clear All
+              </button>
+            </div>
+          </div>
+
+          <!-- Search Permissions -->
+          <div>
+            <div class="relative">
+              <i class="pi pi-search absolute left-3 top-3 text-gray-400"></i>
+              <input
+                type="text"
+                [(ngModel)]="permissionSearchTerm"
+                (input)="filterPermissions()"
+                placeholder="Search permissions..."
+                class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+          </div>
+
+          <!-- Permission Groups -->
+          <div *ngIf="!permissionSearchTerm; else searchResults" class="space-y-4 max-h-96 overflow-y-auto">
+            <div *ngFor="let group of permissionGroups" class="border border-gray-200 rounded-lg overflow-hidden">
+              <!-- Group Header -->
+              <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-3">
+                    <i [class]="getResourceIcon(group.resource)" class="text-indigo-600"></i>
+                    <div>
+                      <h5 class="font-medium text-gray-800 capitalize">{{ group.resource }}</h5>
+                      <p class="text-xs text-gray-500">
+                        {{ getGroupAssignedCount(group) }} of {{ group.permissions.length }} permissions assigned
+                      </p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <button
+                      (click)="toggleGroupPermissions(group)"
+                      class="px-2 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 rounded hover:bg-indigo-100">
+                      {{ isGroupFullyAssigned(group) ? 'Unselect' : 'Select' }} All
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Group Permissions -->
+              <div class="p-4 space-y-2">
+                <div *ngFor="let permission of group.permissions" class="flex items-center justify-between py-2">
+                  <div class="flex items-center space-x-3">
+                    <p-checkbox
+                      [(ngModel)]="permission.assigned"
+                      [binary]="true"
+                      (onChange)="onPermissionChange(permission)">
+                    </p-checkbox>
+                    <div>
+                      <p class="text-sm font-medium text-gray-800">{{ permission.display_name }}</p>
+                      <p class="text-xs text-gray-500">
+                        {{ permission.resource }}:{{ permission.action }}:{{ permission.scope }}
+                      </p>
+                      <p *ngIf="permission.description" class="text-xs text-gray-400 mt-1">
+                        {{ permission.description }}
+                      </p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <p-tag
+                      [value]="permission.action"
+                      [severity]="getActionSeverity(permission.action)"
+                      styleClass="text-xs">
+                    </p-tag>
+                    <p-tag
+                      [value]="permission.scope"
+                      severity="secondary"
+                      styleClass="text-xs">
+                    </p-tag>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search Results -->
+          <ng-template #searchResults>
+            <div class="max-h-96 overflow-y-auto">
+              <div class="space-y-2">
+                <div *ngFor="let permission of filteredPermissions" class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div class="flex items-center space-x-3">
+                    <p-checkbox
+                      [(ngModel)]="permission.assigned"
+                      [binary]="true"
+                      (onChange)="onPermissionChange(permission)">
+                    </p-checkbox>
+                    <div>
+                      <p class="text-sm font-medium text-gray-800">{{ permission.display_name }}</p>
+                      <p class="text-xs text-gray-500">
+                        {{ permission.resource }}:{{ permission.action }}:{{ permission.scope }}
+                      </p>
+                      <p *ngIf="permission.description" class="text-xs text-gray-400 mt-1">
+                        {{ permission.description }}
+                      </p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <p-tag
+                      [value]="permission.action"
+                      [severity]="getActionSeverity(permission.action)"
+                      styleClass="text-xs">
+                    </p-tag>
+                    <p-tag
+                      [value]="permission.scope"
+                      severity="secondary"
+                      styleClass="text-xs">
+                    </p-tag>
+                  </div>
+                </div>
+                
+                <div *ngIf="filteredPermissions.length === 0" class="text-center py-8 text-gray-500">
+                  <i class="pi pi-search text-2xl"></i>
+                  <p class="mt-2">No permissions found matching "{{ permissionSearchTerm }}"</p>
+                </div>
+              </div>
+            </div>
+          </ng-template>
         </div>
         
         <ng-template pTemplate="footer">
+          <div class="flex justify-between items-center">
+            <div class="text-sm text-gray-600">
+              {{ getAssignedPermissionsCount() }} permissions selected
+            </div>
+            <div class="flex space-x-2">
+              <button
+                (click)="permissionsDialogVisible = false"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+                Cancel
+              </button>
+              <button
+                (click)="savePermissions()"
+                [disabled]="savingPermissions"
+                class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+                <i class="pi pi-spinner pi-spin mr-2" *ngIf="savingPermissions"></i>
+                Save Permissions
+              </button>
+            </div>
+          </div>
+        </ng-template>
+      </p-dialog>
+
+      <!-- Permission Details Dialog -->
+      <p-dialog
+        [(visible)]="permissionDetailsVisible"
+        [header]="'Permissions for: ' + selectedRole?.display_name"
+        [modal]="true"
+        [style]="{width: '700px'}">
+        
+        <div *ngIf="selectedRole && selectedRole.permissions" class="space-y-4">
+          <!-- Permission Summary -->
+          <div class="bg-gray-50 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-medium text-gray-800">Total Permissions</h4>
+              <span class="text-2xl font-bold text-indigo-600">{{ selectedRole.permissions.length }}</span>
+            </div>
+          </div>
+
+          <!-- Grouped Permissions -->
+          <div class="space-y-3">
+            <div *ngFor="let group of getGroupedPermissions(selectedRole)" 
+                 class="border border-gray-200 rounded-lg overflow-hidden">
+              <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                <div class="flex items-center space-x-2">
+                  <i [class]="getResourceIcon(group.resource)" class="text-indigo-600"></i>
+                  <h5 class="font-medium text-gray-800 capitalize">{{ group.resource }}</h5>
+                  <span class="text-sm text-gray-500">({{ group.permissions.length }})</span>
+                </div>
+              </div>
+              <div class="p-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div *ngFor="let perm of group.permissions" 
+                       class="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                    <p-tag
+                      [value]="perm.action"
+                      [severity]="getActionSeverity(perm.action)"
+                      styleClass="text-xs">
+                    </p-tag>
+                    <span class="text-sm text-gray-700">{{ perm.display_name }}</span>
+                    <p-tag
+                      [value]="perm.scope"
+                      severity="secondary"
+                      styleClass="text-xs">
+                    </p-tag>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <ng-template pTemplate="footer">
           <button
-            (click)="permissionsDialogVisible = false"
+            (click)="permissionDetailsVisible = false"
             class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
             Close
           </button>
@@ -240,6 +454,14 @@ export class RoleListComponent implements OnInit {
   selectedRole: Role | null = null;
   
   permissionsDialogVisible = false;
+  savingPermissions = false;
+  permissionDetailsVisible = false;
+  
+  // Permission management
+  allPermissions: PermissionWithAssignment[] = [];
+  permissionGroups: PermissionGroupWithAssignment[] = [];
+  filteredPermissions: PermissionWithAssignment[] = [];
+  permissionSearchTerm = '';
 
   ngOnInit() {
     this.loadRoles();
@@ -336,7 +558,56 @@ export class RoleListComponent implements OnInit {
 
   viewPermissions(role: Role) {
     this.selectedRole = role;
-    this.permissionsDialogVisible = true;
+    
+    // Load full role details with permissions first
+    this.loading = true;
+    this.rbacService.getRoleById(role.id).subscribe({
+      next: (fullRole: Role) => {
+        this.selectedRole = fullRole;
+        this.loading = false;
+        this.loadPermissions();
+        this.permissionsDialogVisible = true;
+      },
+      error: (error: any) => {
+        this.loading = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load role permissions'
+        });
+      }
+    });
+  }
+
+  loadPermissions() {
+    this.rbacService.getPermissions().subscribe(permissions => {
+      // Add assigned property to track permission assignments
+      this.allPermissions = permissions.map(permission => ({
+        ...permission,
+        assigned: this.selectedRole?.permissions?.some(p => p.id === permission.id) || false
+      }));
+      
+      // Group permissions by resource
+      this.groupPermissions();
+    });
+  }
+
+  groupPermissions() {
+    const groups = new Map<string, PermissionGroupWithAssignment>();
+    
+    this.allPermissions.forEach(permission => {
+      if (!groups.has(permission.resource)) {
+        groups.set(permission.resource, {
+          resource: permission.resource,
+          permissions: []
+        });
+      }
+      groups.get(permission.resource)!.permissions.push(permission);
+    });
+    
+    this.permissionGroups = Array.from(groups.values()).sort((a, b) => 
+      a.resource.localeCompare(b.resource)
+    );
   }
 
   onSaveRole(data: CreateRoleRequest | UpdateRoleRequest) {
@@ -387,5 +658,195 @@ export class RoleListComponent implements OnInit {
         });
       }
     });
+  }
+
+  // Permission management methods
+  getAssignedPermissionsCount(): number {
+    return this.allPermissions.filter(p => p.assigned).length;
+  }
+
+  getGroupAssignedCount(group: PermissionGroupWithAssignment): number {
+    return group.permissions.filter(p => p.assigned).length;
+  }
+
+  isGroupFullyAssigned(group: PermissionGroupWithAssignment): boolean {
+    return group.permissions.length > 0 && group.permissions.every(p => p.assigned);
+  }
+
+  selectAllPermissions() {
+    this.allPermissions.forEach(permission => {
+      permission.assigned = true;
+    });
+    this.groupPermissions();
+  }
+
+  clearAllPermissions() {
+    this.allPermissions.forEach(permission => {
+      permission.assigned = false;
+    });
+    this.groupPermissions();
+  }
+
+  toggleGroupPermissions(group: PermissionGroupWithAssignment) {
+    const allAssigned = this.isGroupFullyAssigned(group);
+    group.permissions.forEach(permission => {
+      permission.assigned = !allAssigned;
+    });
+  }
+
+  onPermissionChange(permission: PermissionWithAssignment) {
+    // Permission assignment is handled by ngModel binding
+    // This method can be used for additional logic if needed
+  }
+
+  filterPermissions() {
+    if (!this.permissionSearchTerm.trim()) {
+      this.filteredPermissions = [];
+      return;
+    }
+
+    const searchTerm = this.permissionSearchTerm.toLowerCase();
+    this.filteredPermissions = this.allPermissions.filter(permission =>
+      permission.display_name.toLowerCase().includes(searchTerm) ||
+      permission.resource.toLowerCase().includes(searchTerm) ||
+      permission.action.toLowerCase().includes(searchTerm) ||
+      permission.scope.toLowerCase().includes(searchTerm) ||
+      (permission.description && permission.description.toLowerCase().includes(searchTerm))
+    );
+  }
+
+  getResourceIcon(resource: string): string {
+    const iconMap: { [key: string]: string } = {
+      'users': 'pi pi-users',
+      'roles': 'pi pi-sitemap',
+      'permissions': 'pi pi-key',
+      'api_keys': 'pi pi-shield',
+      'files': 'pi pi-file',
+      'storage': 'pi pi-folder',
+      'notifications': 'pi pi-bell',
+      'audit': 'pi pi-eye',
+      'reports': 'pi pi-chart-bar',
+      'settings': 'pi pi-cog'
+    };
+    return iconMap[resource] || 'pi pi-circle';
+  }
+
+  getActionSeverity(action: string): 'success' | 'info' | 'warning' | 'danger' | 'secondary' {
+    const severityMap: { [key: string]: 'success' | 'info' | 'warning' | 'danger' | 'secondary' } = {
+      'read': 'info',
+      'create': 'success',
+      'update': 'warning',
+      'delete': 'danger',
+      'assign': 'secondary'
+    };
+    return severityMap[action] || 'secondary';
+  }
+
+  savePermissions() {
+    if (!this.selectedRole) return;
+
+    const assignedPermissionIds = this.allPermissions
+      .filter(p => p.assigned)
+      .map(p => p.id);
+
+    const request: AssignPermissionsRequest = {
+      permission_ids: assignedPermissionIds
+    };
+
+    this.savingPermissions = true;
+    this.rbacService.assignPermissionsToRole(this.selectedRole.id, request).subscribe({
+      next: () => {
+        this.savingPermissions = false;
+        this.permissionsDialogVisible = false;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Permissions Updated',
+          detail: `Permissions for role "${this.selectedRole?.display_name}" have been updated successfully`
+        });
+        
+        // Refresh roles to get updated permission counts
+        this.loadRoles();
+      },
+      error: (error) => {
+        this.savingPermissions = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Update Failed',
+          detail: error.error?.message || 'Failed to update permissions'
+        });
+      }
+    });
+  }
+
+  getPermissionTooltip(role: Role): string {
+    if (!role.permissions || role.permissions.length === 0) {
+      return 'No permissions assigned';
+    }
+
+    // Group permissions by resource
+    const grouped = role.permissions.reduce((acc, perm) => {
+      if (!acc[perm.resource]) {
+        acc[perm.resource] = [];
+      }
+      acc[perm.resource].push(`${perm.action}:${perm.scope}`);
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    // Format as readable text
+    const lines = Object.entries(grouped).map(([resource, actions]) => {
+      return `${resource}: ${actions.join(', ')}`;
+    });
+
+    return lines.join('\n');
+  }
+
+  showPermissionDetails(role: Role) {
+    this.selectedRole = role;
+    
+    // Load full role details with permissions
+    this.loading = true;
+    this.rbacService.getRoleById(role.id).subscribe({
+      next: (fullRole: Role) => {
+        this.selectedRole = fullRole;
+        this.loading = false;
+        this.permissionDetailsVisible = true;
+      },
+      error: (error: any) => {
+        this.loading = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load role permissions'
+        });
+      }
+    });
+  }
+
+  getGroupedPermissions(role: Role): { resource: string; permissions: Permission[] }[] {
+    if (!role.permissions || role.permissions.length === 0) {
+      return [];
+    }
+
+    const grouped = role.permissions.reduce((acc, perm) => {
+      if (!acc[perm.resource]) {
+        acc[perm.resource] = [];
+      }
+      acc[perm.resource].push(perm);
+      return acc;
+    }, {} as Record<string, Permission[]>);
+
+    return Object.entries(grouped)
+      .map(([resource, permissions]) => ({
+        resource,
+        permissions: permissions.sort((a, b) => {
+          const actionOrder = ['read', 'create', 'update', 'delete', 'assign'];
+          const actionDiff = actionOrder.indexOf(a.action) - actionOrder.indexOf(b.action);
+          if (actionDiff !== 0) return actionDiff;
+          
+          const scopeOrder = ['own', 'department', 'all'];
+          return scopeOrder.indexOf(a.scope) - scopeOrder.indexOf(b.scope);
+        })
+      }))
+      .sort((a, b) => a.resource.localeCompare(b.resource));
   }
 }
