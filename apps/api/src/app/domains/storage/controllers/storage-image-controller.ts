@@ -160,7 +160,7 @@ export class StorageImageController {
             operation: 'image_process',
             status: 'success',
             provider: this.storageService.getCurrentProvider(),
-            fileId: processedFileId,
+            fileId: (await this.databaseService.getFileMetadata(processedFileId))?.id || 0,
             userId,
             bytesTransferred: processResult.size,
             duration: processingTime,

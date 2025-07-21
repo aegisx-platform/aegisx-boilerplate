@@ -310,4 +310,11 @@ export class AuthService {
       return null;
     }
   }
+
+  /**
+   * Get current access token
+   */
+  getToken(): string | null {
+    return this.getStoredAccessToken();
+  }
 }
