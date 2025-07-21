@@ -479,11 +479,20 @@ export class StorageFileRepository {
 
   // Statistics and Analytics
 
-  async getStorageStats(userId?: string): Promise<StorageStatsResult> {
+  async getStorageStats(userId?: string, folderId?: number | null): Promise<StorageStatsResult> {
     let baseQuery = this.knex('storage_files').where({ status: 'active' })
 
     if (userId) {
       baseQuery = baseQuery.where('created_by', userId)
+    }
+
+    // Filter by folder if specified
+    if (folderId !== undefined) {
+      if (folderId === null) {
+        baseQuery = baseQuery.whereNull('folder_id')
+      } else {
+        baseQuery = baseQuery.where('folder_id', folderId)
+      }
     }
 
     // Get basic counts and sizes

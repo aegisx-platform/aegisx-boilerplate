@@ -20,6 +20,7 @@ import { PanelModule } from 'primeng/panel';
 import { MeterGroupModule } from 'primeng/metergroup';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { BreadcrumbModule } from 'primeng/breadcrumb';
 
 import { StorageService, FileInfo, UploadProgress, StorageStats } from '../../services/storage.service';
 import { FileUploadComponent } from '../file-upload/file-upload.component';
@@ -58,6 +59,7 @@ interface FilterOptions {
     MeterGroupModule,
     IconFieldModule,
     InputIconModule,
+    BreadcrumbModule,
     FileUploadComponent,
     FilePreviewComponent,
     FileShareComponent,
@@ -98,11 +100,71 @@ interface FilterOptions {
 
               <!-- Right Panel - File List -->
               <ng-template pTemplate="end">
-                <div class="file-panel" 
+                <div class="file-panel"
                      (dragover)="onDragOver($event)"
-                     (dragleave)="onDragLeave($event)"  
+                     (dragleave)="onDragLeave($event)"
                      (drop)="onDrop($event)"
                      [class.drag-over]="isDragOver">
+
+                  <!-- Breadcrumb Navigation -->
+                  <div class="breadcrumb-section p-3 border-bottom-1 border-gray-200 bg-gray-50">
+                    <div  >
+                      <!-- Breadcrumb -->
+                      <p-breadcrumb [model]="breadcrumbItems" [home]="homeBreadcrumb">
+                        <ng-template pTemplate="item" let-item>
+                          <span class="breadcrumb-item" (click)="navigateToFolder(item.data)"
+                                [class.cursor-pointer]="item.data !== selectedFolder">
+                            <i [class]="item.icon" *ngIf="item.icon"></i>
+                            {{ item.label }}
+                          </span>
+                        </ng-template>
+                      </p-breadcrumb>
+
+                      <!-- Folder Statistics -->
+                      <div *ngIf="folderStats && !folderStatsLoading" class="folder-stats-section">
+                        <!-- Quick Stats Row -->
+                        <div class="flex align-items-center gap-3 text-sm mb-3">
+                          <span class="font-semibold text-gray-700">
+                            {{ folderStats.totalFiles }} files
+                          </span>
+                          <span class="text-gray-500">•</span>
+                          <span class="text-gray-600">
+                            {{ formatFileSize(folderStats.totalSize) }}
+                          </span>
+                        </div>
+
+                        <!-- Meter Groups Row -->
+                        <div *ngIf="getFileTypeMeterData().length > 0">
+                          <!-- File Type Distribution -->
+                          <div *ngIf="getFileTypeMeterData().length > 0">
+                            <!-- <div class="text-xs text-gray-500 mb-2">File Types</div> -->
+                            <p-meterGroup
+                              [value]="getFileTypeMeterData()"
+                              labelPosition="end">
+                            </p-meterGroup>
+                          </div>
+
+                          <!-- Classification Distribution (commented out) -->
+                          <!-- <div *ngIf="getClassificationMeterData().length > 0">
+                            <div class="text-xs text-gray-500 mb-2">Classifications</div>
+                            <p-meterGroup
+                              [value]="getClassificationMeterData()"
+                              labelPosition="end">
+                            </p-meterGroup>
+                          </div> -->
+                        </div>
+                      </div>
+
+                      <!-- Loading State -->
+                      <div *ngIf="folderStatsLoading" class="folder-stats-loading">
+                        <div class="flex align-items-center gap-2 text-sm text-gray-500">
+                          <i class="pi pi-spin pi-spinner"></i>
+                          Loading folder statistics...
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <!-- File List -->
                   <div class="file-list-section flex-1">
                     <app-file-list
@@ -218,6 +280,88 @@ interface FilterOptions {
       flex: 1;
       overflow-y: auto;
       height: calc(100vh - 300px);
+    }
+
+    .breadcrumb-section {
+      background: var(--surface-50);
+      border-bottom: 1px solid var(--surface-border);
+      min-height: 3rem;
+    }
+
+    .folder-stats-section {
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--surface-border);
+    }
+
+    .folder-stats-section .flex {
+      align-items: flex-start;
+    }
+
+    @media (max-width: 768px) {
+      .folder-stats-section .flex {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+    }
+
+    /* MeterGroup styling */
+    :host ::ng-deep .p-metergroup {
+      margin-bottom: 0.25rem;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    :host ::ng-deep .p-metergroup .p-metergroup-meter {
+      height: 0.5rem;
+      border-radius: 0.25rem;
+      width: 100%;
+    }
+
+    :host ::ng-deep .p-metergroup .p-metergroup-labels {
+      margin-top: 0.25rem;
+      gap: 0.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    :host ::ng-deep .p-metergroup .p-metergroup-labels .p-metergroup-label {
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      white-space: nowrap;
+    }
+
+    :host ::ng-deep .p-metergroup .p-metergroup-label-icon {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+
+    .breadcrumb-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-weight: 500;
+    }
+
+    .breadcrumb-item.cursor-pointer:hover {
+      color: var(--primary-color);
+      text-decoration: underline;
+    }
+
+    :host ::ng-deep .p-breadcrumb ul {
+      background: transparent;
+      border: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    :host ::ng-deep .p-breadcrumb .p-breadcrumb-list .p-breadcrumb-item {
+      margin: 0;
     }
 
     .file-list-section {
@@ -357,6 +501,12 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   files: FileInfo[] = [];
   selectedFolder: StorageFolder | null = null;
   selectedFile: FileInfo | null = null;
+  folderStats: StorageStats | null = null;
+  folderStatsLoading = false;
+
+  // Breadcrumb navigation
+  breadcrumbItems: any[] = [];
+  homeBreadcrumb = { icon: 'pi pi-home', command: () => this.navigateToFolder(null) };
 
   // Dialog states
   showUploadDialog = false;
@@ -368,6 +518,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.loadFiles();
+    this.loadFolderStats(); // Load initial folder stats (root folder)
   }
 
   ngOnDestroy() {
@@ -383,7 +534,9 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   onFolderSelected(folder: StorageFolder | null) {
     console.log('Folder selected:', folder);
     this.selectedFolder = folder;
+    this.buildBreadcrumb(folder);
     this.loadFiles();
+    this.loadFolderStats();
   }
 
   onFolderCreated(folder: StorageFolder) {
@@ -409,6 +562,43 @@ export class FileManagerComponent implements OnInit, OnDestroy {
       detail: 'Folder deleted successfully'
     });
     this.loadFiles();
+  }
+
+  // Breadcrumb navigation
+  buildBreadcrumb(folder: StorageFolder | null) {
+    this.breadcrumbItems = [];
+
+    if (!folder) {
+      return; // Root level - only home icon will show
+    }
+
+    // Build path segments from the folder path
+    const pathSegments = folder.path.split('/').filter(segment => segment.length > 0);
+    let currentPath = '';
+
+    pathSegments.forEach((segment, index) => {
+      currentPath += (index === 0 ? '' : '/') + segment;
+      const isLast = index === pathSegments.length - 1;
+
+      this.breadcrumbItems.push({
+        label: segment,
+        data: isLast ? folder : { path: currentPath }, // For intermediate folders, we only have path
+        command: isLast ? undefined : () => this.navigateToPath(currentPath)
+      });
+    });
+  }
+
+  navigateToFolder(folder: StorageFolder | null) {
+    this.selectedFolder = folder;
+    this.buildBreadcrumb(folder);
+    this.loadFiles();
+    this.loadFolderStats();
+  }
+
+  navigateToPath(path: string) {
+    // Create a minimal folder object for navigation
+    const folder = { path, name: path.split('/').pop() || path, id: 0 } as StorageFolder;
+    this.navigateToFolder(folder);
   }
 
   // File operations
@@ -456,6 +646,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
           detail: 'File deleted successfully'
         });
         this.loadFiles();
+        this.loadFolderStats(); // Refresh folder stats after delete
       },
       error: (error) => {
         console.error('Delete error:', error);
@@ -489,6 +680,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     // Add delay to ensure files are processed on server and avoid rate limiting
     setTimeout(() => {
       this.loadFiles();
+      this.loadFolderStats(); // Refresh folder stats after upload
     }, 2000);
   }
 
@@ -552,6 +744,24 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     });
   }
 
+  private loadFolderStats() {
+    this.folderStatsLoading = true;
+
+    const folderId = this.selectedFolder?.id;
+
+    this.storageService.getStorageStats(folderId).subscribe({
+      next: (stats) => {
+        console.log('Folder stats loaded:', stats);
+        this.folderStats = stats;
+        this.folderStatsLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading folder stats:', error);
+        this.folderStatsLoading = false;
+      }
+    });
+  }
+
   onFileUpdated() {
     this.loadFiles();
     this.showPreview = false;
@@ -591,11 +801,112 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     this.isDragOver = false;
-    
+
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
       this.draggedFiles = Array.from(files);
       this.showUploadDialog = true;
     }
+  }
+
+  // MeterGroup data formatting
+  getFileTypeMeterData(): any[] {
+    if (!this.folderStats?.filesByMimeType) return [];
+
+    const mimeTypes = Object.entries(this.folderStats.filesByMimeType);
+    const totalFiles = this.folderStats.totalFiles;
+
+    if (totalFiles === 0) return [];
+
+    // Group by file type categories first
+    const groupedTypes: Record<string, { count: number, color: string }> = {};
+
+    mimeTypes.forEach(([mimeType, count]) => {
+      const label = this.getFileTypeLabel(mimeType);
+      const color = this.getFileTypeColor(mimeType);
+
+      if (groupedTypes[label]) {
+        groupedTypes[label].count += count;
+      } else {
+        groupedTypes[label] = { count, color };
+      }
+    });
+
+    return Object.entries(groupedTypes).map(([label, { count, color }]) => ({
+      label,
+      value: Math.round((count / totalFiles) * 100),
+      color,
+      count
+    })).filter(item => item.value > 0);
+  }
+
+  getClassificationMeterData(): any[] {
+    if (!this.folderStats?.filesByClassification) return [];
+
+    const classifications = Object.entries(this.folderStats.filesByClassification);
+    const totalFiles = this.folderStats.totalFiles;
+
+    if (totalFiles === 0) return [];
+
+    return classifications.map(([classification, count]) => ({
+      label: classification.charAt(0).toUpperCase() + classification.slice(1),
+      value: Math.round((count / totalFiles) * 100),
+      color: this.getClassificationColor(classification),
+      count: count
+    })).filter(item => item.value > 0);
+  }
+
+  private getFileTypeLabel(mimeType: string): string {
+    // More specific matching to avoid overlaps
+    if (mimeType.startsWith('image/')) return 'Images';
+    if (mimeType.startsWith('video/')) return 'Videos';
+    if (mimeType.startsWith('audio/')) return 'Audio';
+    if (mimeType === 'application/pdf') return 'PDFs';
+
+    // Document types
+    if (mimeType.includes('word') ||
+      mimeType.includes('excel') ||
+      mimeType.includes('powerpoint') ||
+      mimeType.includes('spreadsheet') ||
+      mimeType.includes('presentation') ||
+      mimeType === 'application/msword' ||
+      mimeType === 'application/vnd.ms-excel' ||
+      mimeType === 'application/vnd.ms-powerpoint' ||
+      mimeType.includes('opendocument') ||
+      mimeType === 'application/rtf') {
+      return 'Documents';
+    }
+
+    // Text files
+    if (mimeType.startsWith('text/')) return 'Text Files';
+
+    // Other application types as Documents
+    if (mimeType.startsWith('application/')) return 'Documents';
+
+    return 'Other';
+  }
+
+  private getFileTypeColor(mimeType: string): string {
+    if (mimeType.startsWith('image/')) return '#3b82f6'; // blue
+    if (mimeType.startsWith('video/')) return '#ef4444'; // red
+    if (mimeType.startsWith('audio/')) return '#8b5cf6'; // purple
+    if (mimeType === 'application/pdf') return '#f59e0b'; // yellow
+    if (mimeType.startsWith('application/')) return '#10b981'; // green
+    if (mimeType.startsWith('text/')) return '#06b6d4'; // cyan
+    return '#6b7280'; // gray
+  }
+
+  private getClassificationColor(classification: string): string {
+    switch (classification) {
+      case 'public': return '#10b981'; // green
+      case 'internal': return '#3b82f6'; // blue
+      case 'confidential': return '#f59e0b'; // yellow
+      case 'restricted': return '#ef4444'; // red
+      default: return '#6b7280'; // gray
+    }
+  }
+
+  formatFileSize(bytes: number): string {
+    return this.storageService.formatFileSize(bytes);
   }
 }

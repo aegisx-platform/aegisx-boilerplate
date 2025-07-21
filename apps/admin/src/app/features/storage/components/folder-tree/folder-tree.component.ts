@@ -293,6 +293,32 @@ export interface CreateFolderRequest {
       background-color: var(--primary-100);
       color: var(--primary-700);
     }
+
+    /* Context menu warning styles */
+    :host ::ng-deep .p-contextmenu .p-menuitem-text {
+      font-size: 0.875rem;
+    }
+
+    :host ::ng-deep .p-contextmenu .p-menuitem.text-orange-500 .p-menuitem-text {
+      color: #f59e0b !important;
+      font-weight: 500;
+    }
+
+    :host ::ng-deep .p-contextmenu .p-menuitem.text-red-600 .p-menuitem-text {
+      color: #dc2626 !important;
+      font-weight: 600;
+    }
+
+    :host ::ng-deep .p-contextmenu .p-menuitem.text-red-500 .p-menuitem-text {
+      color: #ef4444 !important;
+    }
+
+    /* Add warning icon for content folders */
+    :host ::ng-deep .p-contextmenu .p-menuitem.text-orange-500 .p-menuitem-icon::after {
+      content: '⚠️';
+      margin-left: 0.25rem;
+      font-size: 0.75rem;
+    }
   `]
 })
 export class FolderTreeComponent implements OnInit, OnDestroy {
@@ -346,6 +372,14 @@ export class FolderTreeComponent implements OnInit, OnDestroy {
   ];
 
   private selectedContextFolder: StorageFolder | null = null;
+  
+  // Folder content info cache
+  private folderInfoCache = new Map<number, {
+    fileCount: number
+    subfolderCount: number
+    hasContent: boolean
+    lastChecked: number
+  }>();
 
   ngOnInit() {
     this.loadFolders();
@@ -353,6 +387,7 @@ export class FolderTreeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscriptions.unsubscribe();
+    this.folderInfoCache.clear();
   }
 
   loadFolders() {
@@ -467,6 +502,11 @@ export class FolderTreeComponent implements OnInit, OnDestroy {
     this.selectedContextFolder = folder;
     this.folderSelected.emit(folder);
     console.log('Folder selected:', folder);
+    
+    // Preload folder info for context menu
+    if (folder) {
+      this.preloadFolderInfo(folder.id);
+    }
   }
 
   onFolderUnselect(event: any) {
@@ -617,31 +657,171 @@ export class FolderTreeComponent implements OnInit, OnDestroy {
     if (!this.selectedContextFolder) return;
 
     const folder = this.selectedContextFolder;
-    this.confirmationService.confirm({
-      message: `Are you sure you want to delete folder "${folder.name}"? This will also delete all files and subfolders inside it.`,
-      header: 'Confirm Delete',
-      icon: 'pi pi-exclamation-triangle',
-      acceptButtonStyleClass: 'p-button-danger',
-      accept: () => {
-        this.storageService.deleteFolder(folder.id).subscribe({
-          next: () => {
-            this.folderDeleted.emit(folder.id);
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'Folder deleted successfully'
-            });
-            this.loadFolders();
-          },
-          error: (error) => {
-            console.error('Error deleting folder:', error);
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'Failed to delete folder'
-            });
+    
+    // First, get detailed folder information
+    this.storageService.getFolderDeletionInfo(folder.id).subscribe({
+      next: (deletionInfo) => {
+        if (!deletionInfo.canDelete) {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Cannot Delete',
+            detail: deletionInfo.reason || 'This folder cannot be deleted'
+          });
+          return;
+        }
+
+        const folderInfo = deletionInfo.folderInfo;
+        let message = `Are you sure you want to delete folder "${folderInfo.name}"?`;
+        
+        if (folderInfo.fileCount > 0 || folderInfo.subfolderCount > 0) {
+          message += '\n\nThis action will permanently delete:';
+          if (folderInfo.fileCount > 0) {
+            message += `\n• ${folderInfo.fileCount} file(s)`;
+          }
+          if (folderInfo.subfolderCount > 0) {
+            message += `\n• ${folderInfo.subfolderCount} subfolder(s)`;
+          }
+          if (folderInfo.totalSize > 0) {
+            message += `\n• Total size: ${this.formatFileSize(folderInfo.totalSize)}`;
+          }
+          message += '\n\nThis action cannot be undone.';
+        }
+
+        // Show enhanced confirmation dialog
+        this.confirmationService.confirm({
+          message: message,
+          header: `Delete ${folderInfo.hasSubfolders ? 'Folder and Contents' : 'Folder'}`,
+          icon: 'pi pi-exclamation-triangle',
+          acceptButtonStyleClass: 'p-button-danger',
+          acceptLabel: folderInfo.fileCount > 10 || folderInfo.subfolderCount > 5 ? 'Yes, Delete All' : 'Delete',
+          rejectLabel: 'Cancel',
+          accept: () => {
+            this.performDelete(folder.id, folderInfo.name);
           }
         });
+      },
+      error: (error) => {
+        console.error('Error getting folder deletion info:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Could not check folder status'
+        });
+      }
+    });
+  }
+
+  private performDelete(folderId: number, folderName: string) {
+    this.storageService.deleteFolder(folderId).subscribe({
+      next: (result) => {
+        this.folderDeleted.emit(folderId);
+        
+        let successMessage = 'Folder deleted successfully';
+        if (result.deletedFiles > 0 || result.deletedFolders > 1) {
+          successMessage = `Successfully deleted ${result.deletedFolders} folder(s) and ${result.deletedFiles} file(s)`;
+        }
+        
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: successMessage
+        });
+        this.loadFolders();
+      },
+      error: (error) => {
+        console.error('Error deleting folder:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error.error?.message || 'Failed to delete folder'
+        });
+      }
+    });
+  }
+
+  private formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  private preloadFolderInfo(folderId: number) {
+    const cached = this.folderInfoCache.get(folderId);
+    const now = Date.now();
+    
+    // Use cached data if it's less than 30 seconds old
+    if (cached && now - cached.lastChecked < 30000) {
+      this.updateContextMenu(folderId, cached);
+      return;
+    }
+
+    // Load fresh data
+    this.storageService.getFolderDeletionInfo(folderId).subscribe({
+      next: (info) => {
+        const folderInfo = {
+          fileCount: info.folderInfo.fileCount,
+          subfolderCount: info.folderInfo.subfolderCount,
+          hasContent: info.folderInfo.fileCount > 0 || info.folderInfo.subfolderCount > 0,
+          lastChecked: now
+        };
+        
+        this.folderInfoCache.set(folderId, folderInfo);
+        this.updateContextMenu(folderId, folderInfo);
+      },
+      error: (error) => {
+        console.error('Error preloading folder info:', error);
+      }
+    });
+  }
+
+  private updateContextMenu(folderId: number, folderInfo: any) {
+    const hasContent = folderInfo.hasContent;
+    
+    this.contextMenuItems = [
+      {
+        label: 'Create Subfolder',
+        icon: 'pi pi-plus',
+        command: () => this.createSubfolder()
+      },
+      {
+        label: hasContent ? 'Rename (Has Content)' : 'Rename',
+        icon: 'pi pi-pencil',
+        command: () => hasContent ? this.showContentWarning('rename') : this.renameFolder()
+      },
+      {
+        separator: true
+      },
+      {
+        label: hasContent ? 
+          `Delete (${folderInfo.fileCount} files, ${folderInfo.subfolderCount} subfolders)` : 
+          'Delete',
+        icon: 'pi pi-trash',
+        command: () => this.deleteFolder()
+      }
+    ];
+  }
+
+  private showContentWarning(action: 'rename' | 'delete') {
+    if (!this.selectedContextFolder) return;
+    
+    const folderInfo = this.folderInfoCache.get(this.selectedContextFolder.id);
+    if (!folderInfo) return;
+
+    const message = action === 'rename' 
+      ? `This folder contains ${folderInfo.fileCount} files and ${folderInfo.subfolderCount} subfolders. Renaming it may affect file organization. Continue?`
+      : `This folder contains content. Are you sure you want to ${action}?`;
+
+    this.confirmationService.confirm({
+      message: message,
+      header: `${action === 'rename' ? 'Rename' : 'Delete'} Folder with Content`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: action === 'delete' ? 'p-button-danger' : 'p-button-warning',
+      accept: () => {
+        if (action === 'rename') {
+          this.renameFolder();
+        }
       }
     });
   }

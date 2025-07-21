@@ -310,6 +310,15 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
     schema: {
       description: 'Get storage usage statistics',
       tags: ['Storage'],
+      querystring: {
+        type: 'object',
+        properties: {
+          folderId: {
+            type: 'string',
+            description: 'Filter statistics by folder ID (optional)'
+          }
+        }
+      },
       response: {
         200: StorageStatsResponseSchema,
         500: ErrorResponseSchema
@@ -810,7 +819,7 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
   })
 
   // Register folder management routes
-  await fastify.register(storageFolderRoutes, { prefix: '/storage' })
+  await fastify.register(storageFolderRoutes)
 }
 
 export default storageRoutes

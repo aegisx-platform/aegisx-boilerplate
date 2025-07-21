@@ -208,6 +208,77 @@ export class StorageFolderService {
   }
 
   /**
+   * Check if folder can be deleted and get deletion info
+   */
+  async getFolderDeletionInfo(folderId: number, userId?: string): Promise<{
+    canDelete: boolean
+    reason?: string
+    folderInfo: {
+      name: string
+      path: string
+      fileCount: number
+      subfolderCount: number
+      totalSize: number
+      hasSubfolders: boolean
+    }
+  }> {
+    try {
+      const folder = await this.folderRepository.getFolderById(folderId)
+      if (!folder) {
+        return {
+          canDelete: false,
+          reason: 'Folder not found',
+          folderInfo: {
+            name: '',
+            path: '',
+            fileCount: 0,
+            subfolderCount: 0,
+            totalSize: 0,
+            hasSubfolders: false
+          }
+        }
+      }
+
+      // Check delete permissions
+      // TODO: Implement permission checking when RBAC is integrated
+
+      // Get detailed folder statistics
+      const stats = await this.folderRepository.getFolderStats(folderId)
+      
+      return {
+        canDelete: true,
+        folderInfo: {
+          name: folder.name,
+          path: folder.path,
+          fileCount: stats.fileCount,
+          subfolderCount: stats.subfolderCount,
+          totalSize: stats.totalSize,
+          hasSubfolders: stats.subfolderCount > 0
+        }
+      }
+    } catch (error) {
+      this.fastify.log.error('Error checking folder deletion info', {
+        error: (error as Error).message,
+        folderId,
+        userId
+      })
+
+      return {
+        canDelete: false,
+        reason: 'Error checking folder status',
+        folderInfo: {
+          name: '',
+          path: '',
+          fileCount: 0,
+          subfolderCount: 0,
+          totalSize: 0,
+          hasSubfolders: false
+        }
+      }
+    }
+  }
+
+  /**
    * Delete folder
    */
   async deleteFolder(folderId: number, userId?: string): Promise<{

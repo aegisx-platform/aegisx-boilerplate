@@ -718,12 +718,16 @@ export class StorageController {
    * Get storage statistics
    * GET /storage/stats
    */
-  async getStats(request: FastifyRequest, reply: FastifyReply) {
+  async getStats(request: FastifyRequest<{ Querystring: any }>, reply: FastifyReply) {
     try {
       const currentUser = (request as any).user
+      const query = request.query as any
+
+      // Parse folderId parameter
+      const folderId = query.folderId ? parseInt(query.folderId) : undefined
 
       // Get statistics from database service
-      const stats = await this.databaseService.getStorageStatistics(currentUser?.id)
+      const stats = await this.databaseService.getStorageStatistics(currentUser?.id, folderId)
 
       // Get quota information if available
       let quotaInfo = undefined

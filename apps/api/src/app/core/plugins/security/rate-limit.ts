@@ -8,15 +8,23 @@ import rateLimit from '@fastify/rate-limit';
  * @see https://github.com/fastify/fastify-rate-limit
  */
 export default fp(async function (fastify: FastifyInstance) {
+  // Get environment
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
   await fastify.register(rateLimit, {
     // Maximum number of requests per time window
-    max: 100,
+    max: isDevelopment ? 10000 : 100, // Much higher limit for development
     // Time window in milliseconds (15 minutes)
     timeWindow: 15 * 60 * 1000,
     // Skip rate limiting for specific routes using allowList
     allowList: function (request: FastifyRequest) {
       // Skip rate limiting for Swagger documentation routes
-      return request.url.startsWith('/docs');
+      if (request.url.startsWith('/docs')) return true;
+      
+      // Skip rate limiting for storage routes in development
+      if (isDevelopment && request.url.includes('/storage')) return true;
+      
+      return false;
     },
     // Error response when rate limit is exceeded
     errorResponseBuilder: function (request, context) {

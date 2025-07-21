@@ -56,7 +56,7 @@ export interface FileListOptions {
   template: `
     <div class="file-list-container">
       <!-- Header with Search and Filters -->
-      <div class="file-list-header p-4 border-bottom-1 border-gray-200">
+      <div class="file-list-header pl-4 pr-4 border-bottom-1 border-gray-200">
         <div class="flex flex-wrap align-items-center justify-content-between gap-3">
 
           <!-- Search -->
@@ -488,7 +488,13 @@ export class FileListComponent implements OnInit, OnDestroy, OnChanges {
     if (changes['folder'] && !changes['folder'].firstChange) {
       console.log('Folder changed:', this.folder);
       this.currentPage = 0;
-      this.loadFiles();
+      // Preserve current pageSize when folder changes
+      this.loadFiles({
+        first: 0,
+        rows: this.pageSize,
+        sortField: this.sortField,
+        sortOrder: this.sortOrder
+      });
     }
   }
 
@@ -564,17 +570,29 @@ export class FileListComponent implements OnInit, OnDestroy, OnChanges {
     if (this.searchTimeout) {
       clearTimeout(this.searchTimeout);
     }
-    
+
     // Debounce search to avoid too many API calls
     this.searchTimeout = setTimeout(() => {
       this.currentPage = 0;
-      this.loadFiles();
+      // Preserve current pageSize when searching
+      this.loadFiles({
+        first: 0,
+        rows: this.pageSize,
+        sortField: this.sortField,
+        sortOrder: this.sortOrder
+      });
     }, 500);
   }
 
   onFilterChange() {
     this.currentPage = 0;
-    this.loadFiles();
+    // Preserve current pageSize when filtering
+    this.loadFiles({
+      first: 0,
+      rows: this.pageSize,
+      sortField: this.sortField,
+      sortOrder: this.sortOrder
+    });
   }
 
   onSort(event: any) {

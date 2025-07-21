@@ -376,7 +376,7 @@ export const FolderResponseSchema = Type.Object({
   id: Type.Number({ description: 'Folder unique identifier' }),
   name: Type.String({ description: 'Folder name' }),
   path: Type.String({ description: 'Full folder path' }),
-  parentId: Type.Optional(Type.Union([Type.Number(), Type.Null()], { description: 'Parent folder ID' })),
+  parentId: Type.Optional(Type.Number({ description: 'Parent folder ID' })),
   description: Type.Optional(Type.String({ description: 'Folder description' })),
   metadata: Type.Optional(Type.Record(Type.String(), Type.Any(), { description: 'Custom metadata' })),
   icon: Type.Optional(Type.String({ description: 'Folder icon name' })),

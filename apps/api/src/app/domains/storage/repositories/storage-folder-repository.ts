@@ -31,7 +31,9 @@ export class StorageFolderRepository {
       if (options.parentId) {
         const parent = await this.getFolderById(options.parentId)
         if (!parent) {
-          throw new Error('Parent folder not found')
+          const error = new Error('Parent folder not found')
+          error.name = 'PARENT_NOT_FOUND'
+          throw error
         }
         folderPath = `${parent.path}/${options.name}`
       } else {
@@ -46,7 +48,9 @@ export class StorageFolderRepository {
       .first()
 
     if (existing) {
-      throw new Error(`Folder already exists at path: ${folderPath}`)
+      const error = new Error(`Folder already exists at path: ${folderPath}`)
+      error.name = 'FOLDER_EXISTS'
+      throw error
     }
 
     const folderData = {
@@ -261,6 +265,45 @@ export class StorageFolderRepository {
       success: true,
       deletedFolders: subfolders.length,
       deletedFiles: files.length
+    }
+  }
+
+  /**
+   * Get detailed folder statistics
+   */
+  async getFolderStats(folderId: number): Promise<{
+    fileCount: number
+    subfolderCount: number
+    totalSize: number
+  }> {
+    const folder = await this.getFolderById(folderId)
+    if (!folder) {
+      return { fileCount: 0, subfolderCount: 0, totalSize: 0 }
+    }
+
+    // Count files directly in this folder and all subfolders
+    const fileStats = await this.knex('storage_files')
+      .join('storage_folders', 'storage_files.folder_id', 'storage_folders.id')
+      .where('storage_folders.path', 'like', `${folder.path}%`)
+      .where('storage_files.status', '!=', 'deleted')
+      .where('storage_folders.status', '!=', 'deleted')
+      .select(
+        this.knex.raw('COUNT(*) as file_count'),
+        this.knex.raw('COALESCE(SUM(storage_files.size), 0) as total_size')
+      )
+      .first()
+
+    // Count subfolders
+    const subfolderCount = await this.knex('storage_folders')
+      .where('path', 'like', `${folder.path}/%`)
+      .where('status', '!=', 'deleted')
+      .count('* as count')
+      .first()
+
+    return {
+      fileCount: parseInt(fileStats?.file_count || '0'),
+      subfolderCount: parseInt(String(subfolderCount?.count || '0')),
+      totalSize: parseInt(fileStats?.total_size || '0')
     }
   }
 

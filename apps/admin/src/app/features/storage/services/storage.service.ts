@@ -483,9 +483,15 @@ export class StorageService {
   /**
    * Get storage statistics
    */
-  getStorageStats(): Observable<StorageStats> {
+  getStorageStats(folderId?: number): Observable<StorageStats> {
+    let params = new HttpParams();
+    if (folderId !== undefined) {
+      params = params.set('folderId', folderId.toString());
+    }
+
     return this.http.get<StorageStats>(`${this.baseUrl}/stats`, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(),
+      params
     });
   }
 
@@ -634,7 +640,7 @@ export class StorageService {
    * Get folders list
    */
   getFolders(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/storage/folders`).pipe(
+    return this.http.get(`${this.baseUrl}/folders`).pipe(
       catchError((error) => {
         console.error('Error getting folders:', error);
         return throwError(() => error);
@@ -646,7 +652,7 @@ export class StorageService {
    * Create new folder
    */
   createFolder(folderData: { name: string; parentId?: number; description?: string }): Observable<any> {
-    return this.http.post(`${this.baseUrl}/storage/folders`, folderData).pipe(
+    return this.http.post(`${this.baseUrl}/folders`, folderData).pipe(
       catchError((error) => {
         console.error('Error creating folder:', error);
         return throwError(() => error);
@@ -658,9 +664,45 @@ export class StorageService {
    * Update folder
    */
   updateFolder(folderId: number, folderData: { name: string; description?: string }): Observable<any> {
-    return this.http.patch(`${this.baseUrl}/storage/folders/${folderId}`, folderData).pipe(
+    return this.http.patch(`${this.baseUrl}/folders/${folderId}`, folderData).pipe(
       catchError((error) => {
         console.error('Error updating folder:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Get folder deletion information
+   */
+  getFolderDeletionInfo(folderId: number): Observable<{
+    success: boolean
+    canDelete: boolean
+    reason?: string
+    folderInfo: {
+      name: string
+      path: string
+      fileCount: number
+      subfolderCount: number
+      totalSize: number
+      hasSubfolders: boolean
+    }
+  }> {
+    return this.http.get<{
+      success: boolean
+      canDelete: boolean
+      reason?: string
+      folderInfo: {
+        name: string
+        path: string
+        fileCount: number
+        subfolderCount: number
+        totalSize: number
+        hasSubfolders: boolean
+      }
+    }>(`${this.baseUrl}/folders/${folderId}/deletion-info`).pipe(
+      catchError((error) => {
+        console.error('Error getting folder deletion info:', error);
         return throwError(() => error);
       })
     );
@@ -670,7 +712,7 @@ export class StorageService {
    * Delete folder
    */
   deleteFolder(folderId: number): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/storage/folders/${folderId}`).pipe(
+    return this.http.delete(`${this.baseUrl}/folders/${folderId}`).pipe(
       catchError((error) => {
         console.error('Error deleting folder:', error);
         return throwError(() => error);

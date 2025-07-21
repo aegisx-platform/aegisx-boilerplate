@@ -58,7 +58,7 @@ export class StorageFolderController {
         id: folder.id,
         name: folder.name,
         path: folder.path,
-        parentId: folder.parentId,
+        parentId: folder.parentId || undefined,
         description: folder.description,
         metadata: folder.metadata,
         icon: folder.icon,
@@ -127,7 +127,7 @@ export class StorageFolderController {
         id: folder.id,
         name: folder.name,
         path: folder.path,
-        parentId: folder.parentId,
+        parentId: folder.parentId || undefined,
         description: folder.description,
         metadata: folder.metadata,
         icon: folder.icon,
@@ -193,7 +193,7 @@ export class StorageFolderController {
           id: folder.id,
           name: folder.name,
           path: folder.path,
-          parentId: folder.parentId,
+          parentId: folder.parentId || undefined,
           description: folder.description,
           metadata: folder.metadata,
           icon: folder.icon,
@@ -264,7 +264,7 @@ export class StorageFolderController {
         id: folder.id,
         name: folder.name,
         path: folder.path,
-        parentId: folder.parentId,
+        parentId: folder.parentId || undefined,
         description: folder.description,
         metadata: folder.metadata,
         icon: folder.icon,
@@ -296,6 +296,45 @@ export class StorageFolderController {
 
       reply.code(400)
       throw request.server.httpErrors.badRequest((error as Error).message)
+    }
+  }
+
+  /**
+   * Get folder deletion info
+   * GET /storage/folders/:folderId/deletion-info
+   */
+  async getFolderDeletionInfo(
+    request: FastifyRequest<{ Params: { folderId: string } }>,
+    reply: FastifyReply
+  ) {
+    try {
+      const folderId = parseInt(request.params.folderId)
+      const userId = request.user?.id
+
+      if (isNaN(folderId)) {
+        reply.code(400)
+        throw request.server.httpErrors.badRequest('Invalid folder ID')
+      }
+
+      const deletionInfo = await this.folderService.getFolderDeletionInfo(folderId, userId)
+
+      return {
+        success: true,
+        ...deletionInfo
+      }
+    } catch (error) {
+      if ((error as any).statusCode) {
+        throw error // Re-throw HTTP errors
+      }
+
+      request.log.error('Error getting folder deletion info', {
+        error: (error as Error).message,
+        folderId: request.params.folderId,
+        userId: request.user?.id
+      })
+
+      reply.code(500)
+      throw request.server.httpErrors.internalServerError('Failed to get folder deletion info')
     }
   }
 
@@ -454,7 +493,7 @@ export class StorageFolderController {
         id: folder.id,
         name: folder.name,
         path: folder.path,
-        parentId: folder.parentId,
+        parentId: folder.parentId || undefined,
         description: folder.description,
         metadata: folder.metadata,
         icon: folder.icon,

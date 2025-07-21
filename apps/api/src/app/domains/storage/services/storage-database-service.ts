@@ -243,7 +243,7 @@ export class StorageDatabaseService {
 
   // Statistics and Analytics
 
-  async getStorageStatistics(userId?: string): Promise<{
+  async getStorageStatistics(userId?: string, folderId?: number | null): Promise<{
     totalFiles: number
     totalSize: number
     filesByProvider: Record<string, number>
@@ -256,7 +256,7 @@ export class StorageDatabaseService {
       downloads: number
     }
   }> {
-    const stats = await this.repository.getStorageStats(userId)
+    const stats = await this.repository.getStorageStats(userId, folderId)
 
     return {
       totalFiles: stats.totalFiles,

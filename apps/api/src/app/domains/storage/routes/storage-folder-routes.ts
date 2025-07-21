@@ -146,6 +146,57 @@ export async function storageFolderRoutes(fastify: FastifyInstance) {
     }
   })
 
+  // Get folder deletion info
+  fastify.get('/folders/:folderId/deletion-info', {
+    schema: {
+      summary: 'Get folder deletion information',
+      description: 'Check if folder can be deleted and get detailed information about contents',
+      tags: ['Storage Folders'],
+      security: [{ bearerAuth: [] }],
+      params: FolderIdParamsSchema,
+      response: {
+        200: {
+          type: 'object',
+          description: 'Folder deletion information retrieved successfully',
+          properties: {
+            success: { type: 'boolean' },
+            canDelete: { type: 'boolean' },
+            reason: { type: 'string' },
+            folderInfo: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                path: { type: 'string' },
+                fileCount: { type: 'number' },
+                subfolderCount: { type: 'number' },
+                totalSize: { type: 'number' },
+                hasSubfolders: { type: 'boolean' }
+              },
+              required: ['name', 'path', 'fileCount', 'subfolderCount', 'totalSize', 'hasSubfolders']
+            }
+          },
+          required: ['success', 'canDelete', 'folderInfo']
+        },
+        400: {
+          description: 'Invalid folder ID',
+          ...ErrorResponseSchema
+        },
+        404: {
+          description: 'Folder not found',
+          ...ErrorResponseSchema
+        },
+        500: {
+          description: 'Internal server error',
+          ...ErrorResponseSchema
+        }
+      }
+    },
+    preHandler: [fastify.authenticate],
+    handler: async (request, reply) => {
+      return folderController.getFolderDeletionInfo(request as any, reply)
+    }
+  })
+
   // Delete folder
   fastify.delete('/folders/:folderId', {
     schema: {
