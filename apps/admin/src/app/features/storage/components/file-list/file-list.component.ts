@@ -177,7 +177,7 @@ export interface FileListOptions {
                   [binary]="true"
                 ></p-checkbox>
               </th>
-              <th pSortableColumn="filename" style="width: 20%">
+              <th pSortableColumn="filename" style="width: 35%">
                 File Name
                 <p-sortIcon field="filename"></p-sortIcon>
               </th>
@@ -187,7 +187,7 @@ export interface FileListOptions {
                 <p-sortIcon field="size"></p-sortIcon>
               </th>
               <th style="width: 12%">Classification</th>
-              <th style="width: 15%">Tags</th>
+              <!-- <th style="width: 15%">Tags</th> -->
               <th pSortableColumn="created_at" style="width: 15%">
                 Created
                 <p-sortIcon field="created_at"></p-sortIcon>
@@ -247,7 +247,7 @@ export interface FileListOptions {
                 ></p-tag>
               </td>
 
-              <td>
+              <!-- <td>
                 <div class="flex flex-wrap gap-1" *ngIf="file.tags && file.tags.length > 0">
                   <p-tag
                     *ngFor="let tag of file.tags.slice(0, 3)"
@@ -259,7 +259,7 @@ export interface FileListOptions {
                     +{{ file.tags.length - 3 }} more
                   </span>
                 </div>
-              </td>
+              </td> -->
 
               <td>
                 <div class="text-sm">

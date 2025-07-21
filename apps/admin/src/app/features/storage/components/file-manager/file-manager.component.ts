@@ -99,7 +99,7 @@ interface FilterOptions {
                 </span>
               </ng-template>
             </p-breadcrumb>
-            <p-splitter layout="horizontal" [panelSizes]="[25, 75]" styleClass="h-full" [style]="{ height: 'calc(100vh - 120px)' }">
+            <p-splitter layout="horizontal" [panelSizes]="[20, 80]" styleClass="h-full" [style]="{ height: 'calc(100vh - 120px)' }">
               <!-- Left Panel - Folder Tree -->
               <ng-template pTemplate="start">
               <app-folder-tree
@@ -112,17 +112,17 @@ interface FilterOptions {
 
               <!-- Right Panel - File List -->
               <ng-template pTemplate="end">
-                <div class="file-panel border"
+                <div class="file-panel p-3"
                      (dragover)="onDragOver($event)"
                      (dragleave)="onDragLeave($event)"
                      (drop)="onDrop($event)"
                      [class.drag-over]="isDragOver">
 
                   <!-- Breadcrumb Navigation -->
-                  <div class="breadcrumb-section p-3   bg-gray-50">
-                    <div  >
+                  <div class="breadcrumb-section ">
+
                       <!-- Folder Statistics -->
-                      <div *ngIf="folderStats && !folderStatsLoading" class="folder-stats-section">
+                      <div *ngIf="folderStats && !folderStatsLoading" class="p-3 mb-3 bg-gray-50 border-solid rounded-lg border border-gray-100">
                         <!-- Quick Stats Row -->
                         <div class="flex align-items-center gap-4 text-sm mb-3">
                           <div class="flex align-items-center gap-2">
@@ -143,15 +143,15 @@ interface FilterOptions {
                         <!-- Meter Groups Row -->
                         <div *ngIf="getFileTypeMeterData().length > 0">
                           <!-- File Type Distribution -->
-                          <div *ngIf="getFileTypeMeterData().length > 0">
+
                             <!-- <div class="text-xs text-gray-500 mb-2">File Types</div> -->
                             <p-meterGroup
                               [value]="getFileTypeMeterData()"
-                              labelPosition="end"
+                              labelPosition="start"
                               pTooltip="Click to see file type breakdown"
                               tooltipPosition="top">
                             </p-meterGroup>
-                          </div>
+
 
                           <!-- Classification Distribution (commented out) -->
                           <!-- <div *ngIf="getClassificationMeterData().length > 0">
@@ -161,7 +161,7 @@ interface FilterOptions {
                               labelPosition="end">
                             </p-meterGroup>
                           </div> -->
-                        </div>
+
                       </div>
 
                       <!-- Loading State -->
@@ -316,54 +316,6 @@ interface FilterOptions {
       }
     }
 
-    /* MeterGroup styling */
-    :host ::ng-deep .p-metergroup {
-      margin-bottom: 0.5rem;
-      width: 100%;
-      overflow: hidden;
-      border-radius: 6px;
-    }
-
-    :host ::ng-deep .p-metergroup .p-metergroup-meter {
-      height: 0.75rem;
-      border-radius: 6px;
-      width: 100%;
-    }
-
-    :host ::ng-deep .p-metergroup .p-metergroup-labels {
-      margin-top: 0.5rem;
-      gap: 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-
-    :host ::ng-deep .p-metergroup .p-metergroup-labels .p-metergroup-label {
-      font-size: 0.8rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      white-space: nowrap;
-      padding: 0.25rem 0.5rem;
-      background: #ffffff;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
-      font-weight: 500;
-      transition: all 0.2s ease;
-    }
-
-    :host ::ng-deep .p-metergroup .p-metergroup-labels .p-metergroup-label:hover {
-      background: #f8fafc;
-      border-color: #cbd5e1;
-    }
-
-    :host ::ng-deep .p-metergroup .p-metergroup-label-icon {
-      width: 0.625rem;
-      height: 0.625rem;
-      border-radius: 50%;
-      flex-shrink: 0;
-      border: 1px solid #ffffff;
-    }
 
 
     .breadcrumb-item {
