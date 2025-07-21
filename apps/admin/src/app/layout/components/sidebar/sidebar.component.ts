@@ -1,8 +1,9 @@
 import { Component, OnInit, HostListener, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { ResponsiveService } from '../../../shared/services/responsive.service';
 import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
 
 interface MenuItem {
   label: string;
@@ -218,7 +219,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
   isMobileMenuOpen = false;
   isMobile = false;
   private responsiveSubscription?: Subscription;
+  private routerSubscription?: Subscription;
   private responsiveService = inject(ResponsiveService);
+  private router = inject(Router);
+  currentRoute = '';
 
   @HostListener('window:resize')
   onResize() {
@@ -227,6 +231,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.checkScreenSize();
+    this.currentRoute = this.router.url;
+    this.updateActiveStates();
 
     // Subscribe to responsive service for better state management
     this.responsiveSubscription = this.responsiveService.getResponsiveState().subscribe(state => {
@@ -235,10 +241,19 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.isMobileMenuOpen = false;
       }
     });
+
+    // Subscribe to router events to update active states
+    this.routerSubscription = this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe((event: NavigationEnd) => {
+        this.currentRoute = event.url;
+        this.updateActiveStates();
+      });
   }
 
   ngOnDestroy() {
     this.responsiveSubscription?.unsubscribe();
+    this.routerSubscription?.unsubscribe();
   }
 
   checkScreenSize() {
@@ -285,12 +300,43 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
   }
 
+  updateActiveStates() {
+    // Update dashboard items
+    this.dashboardItems.forEach(item => {
+      item.isActive = this.isRouteActive(item.route);
+    });
+
+    // Update page items
+    this.pageItems.forEach(item => {
+      item.isActive = this.isRouteActive(item.route);
+    });
+
+    // Update analytics items
+    this.analyticsItems.forEach(item => {
+      item.isActive = this.isRouteActive(item.route);
+    });
+  }
+
+  isRouteActive(route?: string): boolean {
+    if (!route) return false;
+
+    // For exact match routes like /dashboard
+    if (this.currentRoute === route) return true;
+
+    // For routes with children (like /storage, /profile, /api-keys)
+    // Check if current route starts with the menu route
+    if (this.currentRoute.startsWith(route + '/') || this.currentRoute.startsWith(route + '?')) {
+      return true;
+    }
+
+    return false;
+  }
+
   dashboardItems: MenuItem[] = [
     {
       label: 'Overview',
       icon: 'pi pi-home',
-      route: '/dashboard',
-      isActive: true,
+      route: '/dashboard'
     },
     { label: 'Analyze', icon: 'pi pi-chart-pie', route: '/analytics' },
   ];

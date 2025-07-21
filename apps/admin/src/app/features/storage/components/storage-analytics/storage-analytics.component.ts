@@ -72,7 +72,7 @@ interface AnalyticsCard {
                   <span class="text-gray-500 ml-1 hidden sm:inline">from last month</span>
                 </div>
               </div>
-              <div class="analytics-icon flex-shrink-0" [style.background-color]="card.color">
+              <div class="analytics-icon flex-shrink-0">
                 <i [class]="card.icon"></i>
               </div>
             </div>
@@ -336,11 +336,10 @@ interface AnalyticsCard {
     .analytics-icon {
       width: 2.5rem;
       height: 2.5rem;
-      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
+      color: #6b7280;
       font-size: 1.2rem;
       flex-shrink: 0;
     }
