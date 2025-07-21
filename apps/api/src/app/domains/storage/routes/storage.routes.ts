@@ -8,9 +8,13 @@ import { FastifyInstance } from 'fastify'
 import multipart from '@aegisx/fastify-multipart'
 import { StorageController } from '../controllers/storage-controller'
 import { StorageImageController } from '../controllers/storage-image-controller'
+import { StorageFolderController } from '../controllers/storage-folder-controller'
 import { StorageDatabaseService } from '../services/storage-database-service'
+import { StorageFolderService } from '../services/storage-folder-service'
 import { StorageFileRepository } from '../repositories/storage-file-repository'
+import { StorageFolderRepository } from '../repositories/storage-folder-repository'
 import { storageFactory } from '../../../core/shared/services/storage.factory'
+import { storageFolderRoutes } from './storage-folder-routes'
 
 import {
   UploadResponseSchema,
@@ -84,6 +88,16 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
 
   const controller = new StorageController((fastify as any).storage, databaseService)
   const imageController = new StorageImageController((fastify as any).storage, databaseService)
+
+  // Initialize folder dependencies
+  const folderRepository = new StorageFolderRepository((fastify as any).knex)
+  const folderService = new StorageFolderService(fastify, folderRepository)
+  const folderController = new StorageFolderController(folderService)
+
+  // Decorate fastify with folder service for use in other routes
+  if (!fastify.hasDecorator('storageFolder')) {
+    fastify.decorate('storageFolder', folderController)
+  }
 
   // Upload file
   fastify.post('/upload', {
@@ -296,6 +310,15 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
     schema: {
       description: 'Get storage usage statistics',
       tags: ['Storage'],
+      querystring: {
+        type: 'object',
+        properties: {
+          folderId: {
+            type: 'string',
+            description: 'Filter statistics by folder ID (optional)'
+          }
+        }
+      },
       response: {
         200: StorageStatsResponseSchema,
         500: ErrorResponseSchema
@@ -794,6 +817,9 @@ export async function storageRoutes(fastify: FastifyInstance): Promise<void> {
   }, async (request, reply) => {
     return imageController.getSupportedFormats(request as any, reply)
   })
+
+  // Register folder management routes
+  await fastify.register(storageFolderRoutes)
 }
 
 export default storageRoutes

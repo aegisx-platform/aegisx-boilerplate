@@ -1,6 +1,6 @@
 /**
  * Storage Service Types
- * 
+ *
  * Comprehensive type definitions for the enterprise storage system
  * with support for local file system and MinIO providers
  */
@@ -24,16 +24,17 @@ export interface FileMetadata {
   createdAt: Date
   updatedAt: Date
   createdBy?: string
+  folderId?: number
   tags?: string[]
   customMetadata?: Record<string, any>
-  
+
   // Healthcare metadata removed
-  
+
   // Security
   encrypted: boolean
   encryptionKeyId?: string
   dataClassification: DataClassification
-  
+
   // Storage provider specific
   provider: StorageProvider
   providerPath: string
@@ -54,6 +55,7 @@ export interface UploadRequest {
 // Upload options
 export interface UploadOptions {
   path?: string
+  folderId?: number
   encrypt?: boolean
   compress?: boolean
   overwrite?: boolean
@@ -132,6 +134,7 @@ export interface DownloadResult {
 
 // File info interface
 export interface FileInfo {
+  id?: number // bigserial primary key for internal use
   fileId: string
   filename: string
   originalName: string
@@ -230,26 +233,26 @@ export interface PresignedUrlResult {
 export interface StorageConfig {
   provider: StorageProvider
   enabled: boolean
-  
+
   // Provider configurations
   local?: LocalStorageConfig
   minio?: MinIOStorageConfig
-  
+
   // Security & encryption
   encryption: EncryptionConfig
-  
+
   // Performance & optimization
   compression: CompressionConfig
   caching: CachingConfig
-  
+
   // Healthcare compliance removed
-  
+
   // File processing
   processing: FileProcessingConfig
-  
+
   // Integration with enterprise services
   integration: IntegrationConfig
-  
+
   // Monitoring & metrics
   monitoring: MonitoringConfig
 }
@@ -403,35 +406,35 @@ export interface IStorageProvider {
   connect(): Promise<void>
   disconnect(): Promise<void>
   isConnected(): boolean
-  
+
   // Core operations
   upload(request: UploadRequest): Promise<StorageResult>
   download(request: DownloadRequest): Promise<DownloadResult>
   delete(fileId: string): Promise<boolean>
   exists(fileId: string): Promise<boolean>
-  
+
   // File management
   getMetadata(fileId: string): Promise<FileMetadata>
   updateMetadata(fileId: string, metadata: Partial<FileMetadata>): Promise<boolean>
   copyFile(sourceId: string, destinationPath: string): Promise<StorageResult>
   moveFile(sourceId: string, destinationPath: string): Promise<StorageResult>
-  
+
   // Batch operations
   uploadMultiple(requests: UploadRequest[]): Promise<StorageResult[]>
   downloadMultiple(requests: DownloadRequest[]): Promise<DownloadResult[]>
   deleteMultiple(fileIds: string[]): Promise<boolean[]>
-  
+
   // Listing and search
   listFiles(options: ListOptions): Promise<FileList>
   searchFiles(query: string, options?: ListOptions): Promise<FileList>
-  
+
   // URL generation
   generatePresignedUrl(request: PresignedUrlRequest): Promise<PresignedUrlResult>
-  
+
   // Health and monitoring
   getHealth(): Promise<StorageHealth>
   getStats(): Promise<StorageStats>
-  
+
   // Cleanup operations
   cleanup(options?: CleanupOptions): Promise<CleanupResult>
 }
@@ -567,7 +570,7 @@ export class StorageError extends Error {
   }
 }
 
-export type StorageErrorCode = 
+export type StorageErrorCode =
   | 'FILE_NOT_FOUND'
   | 'FILE_TOO_LARGE'
   | 'INVALID_FILE_TYPE'
@@ -636,7 +639,7 @@ export interface ContentAnalysisResult {
 export const DefaultStorageConfig: StorageConfig = {
   provider: 'local',
   enabled: true,
-  
+
   local: {
     basePath: './storage',
     permissions: '0755',
@@ -645,7 +648,7 @@ export const DefaultStorageConfig: StorageConfig = {
     thumbnailPath: './storage/thumbnails',
     tempPath: './storage/temp'
   },
-  
+
   encryption: {
     enabled: true,
     algorithm: 'AES-256-GCM',
@@ -656,7 +659,7 @@ export const DefaultStorageConfig: StorageConfig = {
     encryptMetadata: true,
     encryptFilenames: false
   },
-  
+
   compression: {
     enabled: true,
     algorithm: 'gzip',
@@ -664,7 +667,7 @@ export const DefaultStorageConfig: StorageConfig = {
     level: 6,
     mimeTypes: ['text/*', 'application/json', 'application/xml']
   },
-  
+
   caching: {
     enabled: true,
     metadataCache: {
@@ -683,9 +686,9 @@ export const DefaultStorageConfig: StorageConfig = {
       ttl: 300000 // 5 minutes
     }
   },
-  
+
   // Healthcare configuration removed
-  
+
   processing: {
     thumbnails: {
       enabled: true,
@@ -704,7 +707,7 @@ export const DefaultStorageConfig: StorageConfig = {
       classifyContent: false
     }
   },
-  
+
   integration: {
     circuitBreaker: {
       enabled: true,
@@ -731,7 +734,7 @@ export const DefaultStorageConfig: StorageConfig = {
       customMetrics: true
     }
   },
-  
+
   monitoring: {
     healthChecks: {
       enabled: true,

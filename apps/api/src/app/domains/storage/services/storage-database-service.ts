@@ -1,6 +1,6 @@
 /**
  * Storage Database Service
- * 
+ *
  * Manages database operations for storage files and integrates with the storage providers
  */
 
@@ -9,7 +9,8 @@ import { FileMetadata, UploadRequest, DataClassification } from '../../../core/s
 import { FileSearchOptions } from '../types/storage.types'
 
 export interface DatabaseFileMetadata {
-  id: string
+  id: number // bigserial primary key
+  uuid_public: string // public UUID for API access
   fileId: string
   filename: string
   originalName: string
@@ -35,7 +36,8 @@ export interface StorageOperationLog {
   operation: 'upload' | 'download' | 'delete' | 'copy' | 'move' | 'update_metadata' | 'image_process' | 'image_convert' | 'image_optimize'
   status: 'success' | 'failed' | 'pending'
   provider: string
-  fileId: string
+  fileId: number // internal bigserial ID
+  filePublicId?: string // public file_id string for API
   userId?: string
   sessionId?: string
   correlationId?: string
@@ -50,12 +52,12 @@ export interface StorageOperationLog {
 }
 
 export class StorageDatabaseService {
-  constructor(private repository: StorageFileRepository) {}
+  constructor(private repository: StorageFileRepository) { }
 
   // File Management Operations
 
   async saveFileMetadata(fileMetadata: FileMetadata, uploadRequest: UploadRequest, fileId: string): Promise<DatabaseFileMetadata> {
-    const fileRecord: Omit<StorageFileRecord, 'id' | 'created_at' | 'updated_at'> = {
+    const fileRecord: Omit<StorageFileRecord, 'id' | 'uuid_public' | 'created_at' | 'updated_at'> = {
       file_id: fileId, // Use the same fileId from storage provider
       filename: fileMetadata.filename,
       original_name: fileMetadata.originalName,
@@ -70,6 +72,7 @@ export class StorageDatabaseService {
       data_classification: fileMetadata.dataClassification,
       encrypted: fileMetadata.encrypted,
       encryption_key_id: fileMetadata.encryptionKeyId,
+      folder_id: fileMetadata.folderId || uploadRequest.options?.folderId,
       tags: fileMetadata.tags ? JSON.stringify(fileMetadata.tags) : undefined,
       custom_metadata: fileMetadata.customMetadata ? JSON.stringify(fileMetadata.customMetadata) : undefined,
       created_by: fileMetadata.createdBy,
@@ -90,7 +93,7 @@ export class StorageDatabaseService {
   }
 
   async getFileById(id: string): Promise<DatabaseFileMetadata | null> {
-    const record = await this.repository.getFileById(id)
+    const record = await this.repository.getFileById(parseInt(id))
     return record ? this.mapRecordToMetadata(record) : null
   }
 
@@ -154,7 +157,7 @@ export class StorageDatabaseService {
   // Operation Logging
 
   async logOperation(operationLog: StorageOperationLog): Promise<void> {
-    const operationRecord: Omit<StorageOperationRecord, 'id' | 'created_at'> = {
+    const operationRecord: Omit<StorageOperationRecord, 'id' | 'uuid_public' | 'created_at'> = {
       file_id: await this.getInternalFileId(operationLog.fileId),
       operation: operationLog.operation,
       status: operationLog.status,
@@ -202,7 +205,7 @@ export class StorageDatabaseService {
     }
   }> {
     const quota = await this.repository.getUserQuota(userId)
-    
+
     if (!quota) {
       return { allowed: true } // No quota restrictions
     }
@@ -240,7 +243,7 @@ export class StorageDatabaseService {
 
   // Statistics and Analytics
 
-  async getStorageStatistics(userId?: string): Promise<{
+  async getStorageStatistics(userId?: string, folderId?: number | null): Promise<{
     totalFiles: number
     totalSize: number
     filesByProvider: Record<string, number>
@@ -253,8 +256,8 @@ export class StorageDatabaseService {
       downloads: number
     }
   }> {
-    const stats = await this.repository.getStorageStats(userId)
-    
+    const stats = await this.repository.getStorageStats(userId, folderId)
+
     return {
       totalFiles: stats.totalFiles,
       totalSize: stats.totalSize,
@@ -312,7 +315,7 @@ export class StorageDatabaseService {
     shares: any[]
   }> {
     const sharedFilesWithDetails = await this.repository.getSharedFilesWithDetails(userId)
-    
+
     const files = sharedFilesWithDetails.map(record => {
       const fileRecord = { ...record }
       // Remove share-specific fields to create clean file record
@@ -325,7 +328,7 @@ export class StorageDatabaseService {
       delete fileRecord.shared_at
       delete fileRecord.shared_by_username
       delete fileRecord.shared_by_email
-      
+
       return this.mapRecordToMetadata(fileRecord)
     })
 
@@ -354,7 +357,7 @@ export class StorageDatabaseService {
     shares: any[]
   }> {
     const mySharesWithDetails = await this.repository.getMySharesWithDetails(userId)
-    
+
     const files = mySharesWithDetails.map(record => {
       const fileRecord = { ...record }
       // Remove share-specific fields to create clean file record
@@ -368,7 +371,7 @@ export class StorageDatabaseService {
       delete fileRecord.share_last_accessed_at
       delete fileRecord.shared_with_username
       delete fileRecord.shared_with_email
-      
+
       return this.mapRecordToMetadata(fileRecord)
     })
 
@@ -393,12 +396,12 @@ export class StorageDatabaseService {
     return { files, shares }
   }
 
-  async revokeShare(shareId: string, userId: string): Promise<{
+  async revokeShare(shareUuid: string, userId: string): Promise<{
     success: boolean
     message: string
   }> {
-    const share = await this.repository.getShareById(shareId)
-    
+    const share = await this.repository.getShareByUuidPublic(shareUuid)
+
     if (!share) {
       return {
         success: false,
@@ -420,8 +423,8 @@ export class StorageDatabaseService {
       }
     }
 
-    const success = await this.repository.revokeShare(shareId, userId)
-    
+    const success = await this.repository.revokeShare(shareUuid, userId)
+
     return {
       success,
       message: success ? 'Share revoked successfully' : 'Failed to revoke share'
@@ -430,8 +433,8 @@ export class StorageDatabaseService {
 
   // Cleanup Operations
 
-  async markCorruptedFiles(fileIds: string[]): Promise<number> {
-    return await this.repository.markFilesAsCorrupted(fileIds)
+  async markCorruptedFiles(fileUuids: string[]): Promise<number> {
+    return await this.repository.markFilesAsCorrupted(fileUuids)
   }
 
   async findOrphanedFiles(): Promise<DatabaseFileMetadata[]> {
@@ -445,9 +448,23 @@ export class StorageDatabaseService {
 
   // Private Helper Methods
 
-  private async getInternalFileId(fileId: string): Promise<string> {
+  private async getInternalFileId(fileId: string | number): Promise<number> {
+    if (typeof fileId === 'number') {
+      return fileId
+    }
     const file = await this.repository.getFileByFileId(fileId)
-    return file ? file.id : fileId // Fallback to original ID if not found
+    if (!file) {
+      throw new Error(`File not found with ID: ${fileId}`)
+    }
+    return file.id
+  }
+
+  private async getInternalFileIdFromUuid(uuid: string): Promise<number> {
+    const file = await this.repository.getFileByUuidPublic(uuid)
+    if (!file) {
+      throw new Error(`File not found with UUID: ${uuid}`)
+    }
+    return file.id
   }
 
   private mapRecordToMetadata(record: StorageFileRecord): DatabaseFileMetadata {
@@ -481,6 +498,7 @@ export class StorageDatabaseService {
 
       return {
         id: record.id,
+        uuid_public: record.uuid_public,
         fileId: record.file_id,
         filename: record.filename,
         originalName: record.original_name,
@@ -511,22 +529,22 @@ export class StorageDatabaseService {
   private parsePostgresArray(value: string): string[] {
     // Handle PostgreSQL array format like {value1,value2} or {"value1","value2"}
     if (typeof value !== 'string') return []
-    
+
     // Remove curly braces
     const cleaned = value.replace(/^\{|\}$/g, '')
-    
+
     // Handle empty array
     if (!cleaned) return []
-    
+
     // Split by comma, handling quoted values
     const result: string[] = []
     let current = ''
     let inQuotes = false
-    
+
     for (let i = 0; i < cleaned.length; i++) {
       const char = cleaned[i]
-      
-      if (char === '"' && (i === 0 || cleaned[i-1] !== '\\')) {
+
+      if (char === '"' && (i === 0 || cleaned[i - 1] !== '\\')) {
         inQuotes = !inQuotes
       } else if (char === ',' && !inQuotes) {
         result.push(current.trim().replace(/^"|"$/g, ''))
@@ -535,11 +553,11 @@ export class StorageDatabaseService {
         current += char
       }
     }
-    
+
     if (current) {
       result.push(current.trim().replace(/^"|"$/g, ''))
     }
-    
+
     return result
   }
 
@@ -555,7 +573,7 @@ export class StorageDatabaseService {
     deletedFiles: number
   }> {
     const stats = await this.repository.getStorageStats()
-    
+
     // Get additional health metrics
     const [healthMetrics] = await this.repository['knex']('storage_files')
       .select(

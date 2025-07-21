@@ -41,7 +41,7 @@ interface BulkActionRoute extends RouteGenericInterface {
 
 /**
  * User Management Controller
- * 
+ *
  * Handles all HTTP requests for user management operations.
  * Provides admin-level user management capabilities including:
  * - User listing, searching, and filtering
@@ -54,7 +54,12 @@ export class UserManagementController {
   constructor(
     private readonly fastify: FastifyInstance,
     private readonly userManagementService: UserManagementService
-  ) {}
+  ) {
+    this.fastify.log.info('UserManagementController initialized', {
+      hasService: !!this.userManagementService,
+      serviceName: this.userManagementService?.constructor?.name
+    });
+  }
 
   /**
    * List users with pagination and filtering
@@ -62,9 +67,11 @@ export class UserManagementController {
    */
   async listUsers(request: FastifyRequest<ListUsersRoute>, reply: FastifyReply) {
     try {
-      this.fastify.log.info('Listing users', { 
+      this.fastify.log.info('Listing users - Start', {
         query: request.query,
-        adminId: (request as any).user?.id 
+        adminId: (request as any).user?.id,
+        hasService: !!this.userManagementService,
+        serviceType: this.userManagementService?.constructor?.name
       });
 
       const filters = {
@@ -80,7 +87,25 @@ export class UserManagementController {
         sort_order: request.query.sort_order || 'desc'
       };
 
+      this.fastify.log.info('About to call userManagementService.listUsers', { filters, pagination });
+
+      // Check if service exists
+      if (!this.userManagementService) {
+        this.fastify.log.error('UserManagementService is null/undefined');
+        throw new Error('UserManagementService is not initialized');
+      }
+
+      // Check if method exists
+      if (typeof this.userManagementService.listUsers !== 'function') {
+        this.fastify.log.error('listUsers method is not a function', {
+          serviceType: typeof this.userManagementService,
+          methodType: typeof this.userManagementService.listUsers
+        });
+        throw new Error('listUsers method is not available');
+      }
+
       const result = await this.userManagementService.listUsers(filters, pagination);
+      this.fastify.log.info('Successfully called userManagementService.listUsers', { resultType: typeof result });
 
       this.fastify.log.info('Users listed successfully', {
         total: result.pagination.total,
@@ -92,6 +117,7 @@ export class UserManagementController {
     } catch (error) {
       this.fastify.log.error('Failed to list users', {
         error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
         query: request.query,
         adminId: (request as any).user?.id
       });
@@ -107,13 +133,13 @@ export class UserManagementController {
     try {
       const { id } = request.params;
 
-      this.fastify.log.info('Getting user details', { 
+      this.fastify.log.info('Getting user details', {
         userId: id,
-        adminId: (request as any).user?.id 
+        adminId: (request as any).user?.id
       });
 
       const user = await this.userManagementService.getUserById(id);
-      
+
       if (!user) {
         throw this.fastify.httpErrors.notFound(`User not found: ${id}`);
       }
@@ -123,13 +149,13 @@ export class UserManagementController {
       if (error instanceof UserNotFoundError) {
         throw this.fastify.httpErrors.notFound(error.message);
       }
-      
+
       this.fastify.log.error('Failed to get user', {
         error: error instanceof Error ? error.message : 'Unknown error',
         userId: request.params.id,
         adminId: (request as any).user?.id
       });
-      
+
       throw this.fastify.httpErrors.internalServerError('Failed to retrieve user');
     }
   }
@@ -140,10 +166,10 @@ export class UserManagementController {
    */
   async createUser(request: FastifyRequest<CreateUserRoute>, reply: FastifyReply) {
     try {
-      this.fastify.log.info('Creating new user', { 
+      this.fastify.log.info('Creating new user', {
         email: request.body.email,
         username: request.body.username,
-        adminId: (request as any).user?.id 
+        adminId: (request as any).user?.id
       });
 
       const user = await this.userManagementService.createUser(request.body);
@@ -178,10 +204,10 @@ export class UserManagementController {
     try {
       const { id } = request.params;
 
-      this.fastify.log.info('Updating user', { 
+      this.fastify.log.info('Updating user', {
         userId: id,
         updateFields: Object.keys(request.body),
-        adminId: (request as any).user?.id 
+        adminId: (request as any).user?.id
       });
 
       const user = await this.userManagementService.updateUser(id, request.body);
@@ -219,9 +245,9 @@ export class UserManagementController {
     try {
       const { id } = request.params;
 
-      this.fastify.log.info('Deleting user', { 
+      this.fastify.log.info('Deleting user', {
         userId: id,
-        adminId: (request as any).user?.id 
+        adminId: (request as any).user?.id
       });
 
       const deleted = await this.userManagementService.deleteUser(id);
@@ -235,9 +261,9 @@ export class UserManagementController {
         adminId: (request as any).user?.id
       });
 
-      return reply.send({ 
+      return reply.send({
         message: 'User deleted successfully',
-        success: true 
+        success: true
       });
     } catch (error) {
       if (error instanceof UserNotFoundError) {
@@ -260,8 +286,8 @@ export class UserManagementController {
    */
   async getUserStats(request: FastifyRequest, reply: FastifyReply) {
     try {
-      this.fastify.log.info('Getting user statistics', { 
-        adminId: (request as any).user?.id 
+      this.fastify.log.info('Getting user statistics', {
+        adminId: (request as any).user?.id
       });
 
       const stats = await this.userManagementService.getUserStats();
@@ -285,9 +311,9 @@ export class UserManagementController {
     try {
       const { id } = request.params;
 
-      this.fastify.log.info('Activating user', { 
+      this.fastify.log.info('Activating user', {
         userId: id,
-        adminId: (request as any).user?.id 
+        adminId: (request as any).user?.id
       });
 
       const success = await this.userManagementService.activateUser(id);
@@ -296,9 +322,9 @@ export class UserManagementController {
         throw this.fastify.httpErrors.notFound(`User not found: ${id}`);
       }
 
-      return reply.send({ 
+      return reply.send({
         message: 'User activated successfully',
-        success: true 
+        success: true
       });
     } catch (error) {
       if (error instanceof UserNotFoundError) {
@@ -323,9 +349,9 @@ export class UserManagementController {
     try {
       const { id } = request.params;
 
-      this.fastify.log.info('Deactivating user', { 
+      this.fastify.log.info('Deactivating user', {
         userId: id,
-        adminId: (request as any).user?.id 
+        adminId: (request as any).user?.id
       });
 
       const success = await this.userManagementService.deactivateUser(id);
@@ -334,9 +360,9 @@ export class UserManagementController {
         throw this.fastify.httpErrors.notFound(`User not found: ${id}`);
       }
 
-      return reply.send({ 
+      return reply.send({
         message: 'User deactivated successfully',
-        success: true 
+        success: true
       });
     } catch (error) {
       if (error instanceof UserNotFoundError) {
@@ -361,9 +387,9 @@ export class UserManagementController {
     try {
       const { id } = request.params;
 
-      this.fastify.log.info('Suspending user', { 
+      this.fastify.log.info('Suspending user', {
         userId: id,
-        adminId: (request as any).user?.id 
+        adminId: (request as any).user?.id
       });
 
       const success = await this.userManagementService.suspendUser(id);
@@ -372,9 +398,9 @@ export class UserManagementController {
         throw this.fastify.httpErrors.notFound(`User not found: ${id}`);
       }
 
-      return reply.send({ 
+      return reply.send({
         message: 'User suspended successfully',
-        success: true 
+        success: true
       });
     } catch (error) {
       if (error instanceof UserNotFoundError) {
@@ -399,9 +425,9 @@ export class UserManagementController {
     try {
       const { id } = request.params;
 
-      this.fastify.log.info('Verifying user email', { 
+      this.fastify.log.info('Verifying user email', {
         userId: id,
-        adminId: (request as any).user?.id 
+        adminId: (request as any).user?.id
       });
 
       const success = await this.userManagementService.verifyUserEmail(id);
@@ -410,9 +436,9 @@ export class UserManagementController {
         throw this.fastify.httpErrors.notFound(`User not found: ${id}`);
       }
 
-      return reply.send({ 
+      return reply.send({
         message: 'User email verified successfully',
-        success: true 
+        success: true
       });
     } catch (error) {
       if (error instanceof UserNotFoundError) {
@@ -437,10 +463,10 @@ export class UserManagementController {
     try {
       const { action, user_ids } = request.body;
 
-      this.fastify.log.info('Performing bulk action', { 
+      this.fastify.log.info('Performing bulk action', {
         action,
         userCount: user_ids.length,
-        adminId: (request as any).user?.id 
+        adminId: (request as any).user?.id
       });
 
       const result = await this.userManagementService.bulkAction(action, user_ids);

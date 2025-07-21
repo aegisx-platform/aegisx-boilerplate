@@ -1,5 +1,4 @@
 import { FastifyInstance } from 'fastify';
-import { UserRepository } from '../../auth/types/auth-types';
 import {
   UserFilters,
   PaginationParams,
@@ -18,7 +17,7 @@ import * as bcrypt from 'bcrypt';
 
 /**
  * User Management Service Implementation
- * 
+ *
  * Provides comprehensive user management capabilities for administrators:
  * - User listing, searching, and filtering
  * - User creation, updating, and deletion
@@ -30,20 +29,26 @@ export class UserManagementService implements IUserManagementService {
   private readonly BCRYPT_ROUNDS = 12;
 
   constructor(
-    private readonly fastify: FastifyInstance,
-    private readonly userRepo: UserRepository
-  ) {}
+    private readonly fastify: FastifyInstance
+  ) {
+    // Bind transformUserForResponse to avoid context issues
+    this.transformUserForResponse = this.transformUserForResponse.bind(this);
+  }
 
   /**
    * List users with pagination and filtering
    */
   async listUsers(filters?: UserFilters, pagination?: PaginationParams): Promise<PaginatedUsers> {
     try {
+      this.fastify.log.info('Starting listUsers method', { filters, pagination });
+
       const page = pagination?.page || 1;
       const limit = Math.min(pagination?.limit || 20, 100);
       const offset = (page - 1) * limit;
       const sortBy = pagination?.sort_by || 'created_at';
       const sortOrder = pagination?.sort_order || 'desc';
+
+      this.fastify.log.info('Pagination parameters', { page, limit, offset, sortBy, sortOrder });
 
       let query = this.fastify.knex('users').select('*');
 
@@ -62,10 +67,10 @@ export class UserManagementService implements IUserManagementService {
 
       if (filters?.search) {
         const searchTerm = `%${filters.search}%`;
-        query = query.where(function() {
-          this.whereILike('name', searchTerm)
-            .orWhereILike('email', searchTerm)
-            .orWhereILike('username', searchTerm);
+        query = query.where(function () {
+          this.where('name', 'ILIKE', searchTerm)
+            .orWhere('email', 'ILIKE', searchTerm)
+            .orWhere('username', 'ILIKE', searchTerm);
         });
       }
 
@@ -78,20 +83,36 @@ export class UserManagementService implements IUserManagementService {
       }
 
       // Get total count for pagination
-      const totalQuery = query.clone();
-      const [{ count: total }] = await totalQuery.count('* as count');
-      const totalUsers = parseInt(total as string, 10);
 
-      // Apply pagination and sorting
+      let totalUsers = 0;
+      try {
+        const [{ count: total }] = await this.fastify.knex('users').count('* as count');
+        totalUsers = parseInt(total as string, 10);
+      } catch (error) {
+        console.error('Error counting total users', error);
+      }
+
+      // // Apply pagination and sorting
+      // this.fastify.log.info('About to fetch users', { sortBy, sortOrder, limit, offset });
       const users = await query
         .orderBy(sortBy, sortOrder)
         .limit(limit)
         .offset(offset);
+      // this.fastify.log.info('Users fetched', { count: users.length });
 
       const pages = Math.ceil(totalUsers / limit);
 
+      // this.fastify.log.info('About to transform users', { userCount: users.length });
+
+      const transformedUsers = users.map(user => {
+        this.fastify.log.debug('Transforming user', { userId: user.id });
+        return this.transformUserForResponse(user);
+      });
+
+      this.fastify.log.info('Successfully transformed users');
+
       return {
-        users: users.map(this.transformUserForResponse),
+        users: transformedUsers,
         pagination: {
           page,
           limit,
@@ -102,7 +123,12 @@ export class UserManagementService implements IUserManagementService {
         }
       };
     } catch (error) {
-      this.fastify.log.error('Failed to list users', { error, filters, pagination });
+      this.fastify.log.error('Failed to list users', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack',
+        filters,
+        pagination
+      });
       throw new Error('Failed to retrieve user list');
     }
   }
@@ -115,7 +141,7 @@ export class UserManagementService implements IUserManagementService {
       const searchTerm = `%${query}%`;
       let dbQuery = this.fastify.knex('users')
         .select('*')
-        .where(function() {
+        .where(function () {
           this.whereILike('name', searchTerm)
             .orWhereILike('email', searchTerm)
             .orWhereILike('username', searchTerm);
@@ -135,7 +161,7 @@ export class UserManagementService implements IUserManagementService {
       }
 
       const users = await dbQuery.limit(50).orderBy('name');
-      return users.map(this.transformUserForResponse);
+      return users.map(user => this.transformUserForResponse(user));
     } catch (error) {
       this.fastify.log.error('Failed to search users', { error, query, filters });
       throw new Error('Failed to search users');
@@ -147,7 +173,7 @@ export class UserManagementService implements IUserManagementService {
    */
   async getUserById(id: string): Promise<UserDetailResponse | null> {
     try {
-      const user = await this.userRepo.findById(id);
+      const user = await this.fastify.knex('users').where('id', id).first();
       if (!user) {
         return null;
       }
@@ -203,14 +229,14 @@ export class UserManagementService implements IUserManagementService {
   async createUser(data: CreateUserRequest): Promise<UserDetailResponse> {
     try {
       // Check for existing email
-      const existingEmail = await this.userRepo.findByEmail(data.email);
+      const existingEmail = await this.fastify.knex('users').where('email', data.email).first();
       if (existingEmail) {
         throw new DuplicateUserError('email');
       }
 
       // Check for existing username if provided
       if (data.username) {
-        const existingUsername = await this.userRepo.findByUsername(data.username);
+        const existingUsername = await this.fastify.knex('users').where('username', data.username).first();
         if (existingUsername) {
           throw new DuplicateUserError('username');
         }
@@ -222,20 +248,19 @@ export class UserManagementService implements IUserManagementService {
       // Create user data
       const userData = {
         name: data.name,
-        username: data.username || undefined,
+        username: data.username || null,
         email: data.email.toLowerCase(),
-        password: data.password,
         password_hash: passwordHash,
         status: data.status || 'active',
         email_verified_at: data.email_verified ? new Date() : null
       };
 
-      const user = await this.userRepo.create(userData);
-      
-      this.fastify.log.info('User created by admin', { 
-        userId: user.id, 
+      const [user] = await this.fastify.knex('users').insert(userData).returning('*');
+
+      this.fastify.log.info('User created by admin', {
+        userId: user.id,
         email: user.email,
-        username: user.username 
+        username: user.username
       });
 
       return this.transformUserForResponse(user);
@@ -254,14 +279,14 @@ export class UserManagementService implements IUserManagementService {
   async updateUser(id: string, data: UpdateUserRequest): Promise<UserDetailResponse> {
     try {
       // Check if user exists
-      const existingUser = await this.userRepo.findById(id);
+      const existingUser = await this.fastify.knex('users').where('id', id).first();
       if (!existingUser) {
         throw new UserNotFoundError(id);
       }
 
       // Check for duplicate email if email is being updated
       if (data.email && data.email !== existingUser.email) {
-        const emailExists = await this.userRepo.findByEmail(data.email);
+        const emailExists = await this.fastify.knex('users').where('email', data.email).first();
         if (emailExists) {
           throw new DuplicateUserError('email');
         }
@@ -269,7 +294,7 @@ export class UserManagementService implements IUserManagementService {
 
       // Check for duplicate username if username is being updated
       if (data.username && data.username !== existingUser.username) {
-        const usernameExists = await this.userRepo.findByUsername(data.username);
+        const usernameExists = await this.fastify.knex('users').where('username', data.username).first();
         if (usernameExists) {
           throw new DuplicateUserError('username');
         }
@@ -282,14 +307,14 @@ export class UserManagementService implements IUserManagementService {
       if (data.email) updateData.email = data.email.toLowerCase();
       if (data.status) updateData.status = data.status;
 
-      const updatedUser = await this.userRepo.update(id, updateData);
+      const [updatedUser] = await this.fastify.knex('users').where('id', id).update(updateData).returning('*');
       if (!updatedUser) {
         throw new UserNotFoundError(id);
       }
 
-      this.fastify.log.info('User updated by admin', { 
-        userId: id, 
-        updatedFields: Object.keys(updateData) 
+      this.fastify.log.info('User updated by admin', {
+        userId: id,
+        updatedFields: Object.keys(updateData)
       });
 
       return this.transformUserForResponse(updatedUser);
@@ -307,21 +332,21 @@ export class UserManagementService implements IUserManagementService {
    */
   async deleteUser(id: string): Promise<boolean> {
     try {
-      const user = await this.userRepo.findById(id);
+      const user = await this.fastify.knex('users').where('id', id).first();
       if (!user) {
         throw new UserNotFoundError(id);
       }
 
-      const deleted = await this.userRepo.delete(id);
-      
+      const deleted = await this.fastify.knex('users').where('id', id).del();
+
       if (deleted) {
-        this.fastify.log.info('User deleted by admin', { 
-          userId: id, 
-          email: user.email 
+        this.fastify.log.info('User deleted by admin', {
+          userId: id,
+          email: user.email
         });
       }
 
-      return deleted;
+      return deleted > 0;
     } catch (error) {
       if (error instanceof UserNotFoundError) {
         throw error;
@@ -357,8 +382,9 @@ export class UserManagementService implements IUserManagementService {
    */
   async verifyUserEmail(id: string): Promise<boolean> {
     try {
-      const success = await this.userRepo.verifyEmail(id);
-      
+      const [updatedUser] = await this.fastify.knex('users').where('id', id).update({ email_verified_at: new Date() }).returning('*');
+      const success = !!updatedUser;
+
       if (success) {
         this.fastify.log.info('User email verified by admin', { userId: id });
       }
@@ -444,19 +470,19 @@ export class UserManagementService implements IUserManagementService {
    */
   private async updateUserStatus(id: string, status: 'active' | 'inactive' | 'suspended'): Promise<boolean> {
     try {
-      const user = await this.userRepo.findById(id);
+      const user = await this.fastify.knex('users').where('id', id).first();
       if (!user) {
         throw new UserNotFoundError(id);
       }
 
-      const updatedUser = await this.userRepo.update(id, { status });
+      const [updatedUser] = await this.fastify.knex('users').where('id', id).update({ status }).returning('*');
       const success = !!updatedUser;
 
       if (success) {
-        this.fastify.log.info('User status updated by admin', { 
-          userId: id, 
-          oldStatus: user.status, 
-          newStatus: status 
+        this.fastify.log.info('User status updated by admin', {
+          userId: id,
+          oldStatus: user.status,
+          newStatus: status
         });
       }
 
@@ -474,16 +500,30 @@ export class UserManagementService implements IUserManagementService {
    * Transform user object for API response (remove sensitive fields)
    */
   private transformUserForResponse(user: any): UserDetailResponse {
-    return {
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      email: user.email,
-      status: user.status,
-      email_verified_at: user.email_verified_at,
-      created_at: user.created_at,
-      updated_at: user.updated_at,
-      last_login_at: user.last_login_at || null
-    };
+    try {
+      this.fastify.log.debug('Transforming user object', {
+        userId: user?.id,
+        hasName: !!user?.name,
+        hasEmail: !!user?.email
+      });
+
+      return {
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        status: user.status,
+        email_verified_at: user.email_verified_at,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        last_login_at: user.last_login_at || null
+      };
+    } catch (error) {
+      this.fastify.log.error('Error in transformUserForResponse', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        user: user ? Object.keys(user) : 'null user'
+      });
+      throw error;
+    }
   }
 }

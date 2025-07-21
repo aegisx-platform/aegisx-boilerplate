@@ -149,6 +149,15 @@ export class AuthService {
         throw this.fastify.httpErrors.unauthorized('Invalid username/email or password');
       }
 
+      // Update last login timestamp
+      try {
+        await this.userRepo.update(user.id, { last_login_at: new Date() } as any);
+        this.fastify.log.debug('Updated last login timestamp', { userId: user.id });
+      } catch (error) {
+        this.fastify.log.warn('Failed to update last login timestamp', { userId: user.id, error });
+        // Continue with login even if updating last_login_at fails
+      }
+
       // Fetch user roles and permissions with cache optimization
       this.fastify.log.debug('Fetching RBAC data for user', { userId: user.id });
       const rbacData = await this.getUserRBACDataWithCache(user.id);
@@ -407,9 +416,9 @@ export class AuthService {
   }
 
   /**
-   * Get user profile information
+   * Get user profile information with roles and permissions
    */
-  async getProfile(user_id: string): Promise<User> {
+  async getProfile(user_id: string): Promise<any> {
     if (!user_id) {
       throw this.fastify.httpErrors.badRequest('User ID is required');
     }
@@ -419,7 +428,21 @@ export class AuthService {
       throw this.fastify.httpErrors.notFound('User profile not found');
     }
 
-    return this.sanitizeUser(user);
+    // Get user roles and permissions
+    const userRoles = await this.rbacService.getUserRoles(user_id);
+    const userPermissions = await this.rbacService.getUserPermissions(user_id);
+
+    const sanitizedUser = this.sanitizeUser(user);
+    
+    return {
+      ...sanitizedUser,
+      roles: userRoles.map(role => typeof role === 'string' ? role : role.name),
+      permissions: userPermissions.map(perm => 
+        typeof perm === 'string' ? perm : `${perm.resource}:${perm.action}:${perm.scope}`
+      ),
+      is_active: user.status === 'active',
+      is_email_verified: user.email_verified_at !== null
+    };
   }
 
   /**

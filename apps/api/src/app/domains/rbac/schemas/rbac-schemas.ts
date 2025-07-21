@@ -20,22 +20,23 @@ export const RoleSchema = Type.Object({
   is_system: Type.Boolean({ description: 'Whether this is a system role (cannot be deleted)' }),
   is_active: Type.Boolean({ description: 'Whether this role is active' }),
   created_at: Type.String({ format: 'date-time' }),
-  updated_at: Type.String({ format: 'date-time' })
+  updated_at: Type.String({ format: 'date-time' }),
+  user_count: Type.Optional(Type.Number({ description: 'Number of users assigned to this role' }))
 });
 
 export const CreateRoleSchema = Type.Object({
-  name: Type.String({ 
-    minLength: 2, 
+  name: Type.String({
+    minLength: 2,
     maxLength: 50,
     pattern: '^[a-z][a-z0-9_]*$',
     description: 'Role system name (lowercase, alphanumeric + underscore)'
   }),
-  display_name: Type.String({ 
-    minLength: 2, 
+  display_name: Type.String({
+    minLength: 2,
     maxLength: 100,
     description: 'Human-readable role name'
   }),
-  description: Type.Optional(Type.String({ 
+  description: Type.Optional(Type.String({
     maxLength: 500,
     description: 'Role description (optional)'
   })),
@@ -46,12 +47,12 @@ export const CreateRoleSchema = Type.Object({
 }, { additionalProperties: false });
 
 export const UpdateRoleSchema = Type.Object({
-  display_name: Type.Optional(Type.String({ 
-    minLength: 2, 
+  display_name: Type.Optional(Type.String({
+    minLength: 2,
     maxLength: 100,
     description: 'Human-readable role name'
   })),
-  description: Type.Optional(Type.String({ 
+  description: Type.Optional(Type.String({
     maxLength: 500,
     description: 'Role description'
   })),
@@ -74,11 +75,11 @@ export const PermissionSchema = Type.Object({
 // ========== Request Schemas ==========
 
 export const AssignRoleSchema = Type.Object({
-  role_id: Type.String({ 
+  role_id: Type.String({
     format: 'uuid',
     description: 'UUID of the role to assign'
   }),
-  expires_at: Type.Optional(Type.String({ 
+  expires_at: Type.Optional(Type.String({
     format: 'date-time',
     description: 'Optional expiration date for the role assignment'
   }))

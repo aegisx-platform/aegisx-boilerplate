@@ -37,11 +37,11 @@ export class StorageController {
 
     // 2. If user didn't specify, use default strategy based on provider
     const provider = this.storageService.getCurrentProvider();
-    
+
     if (provider === 'minio') {
       return false; // MinIO default: no encryption (use server-side encryption)
     }
-    
+
     // 3. Local storage: use environment variable
     return process.env.STORAGE_LOCAL_AUTO_ENCRYPT === 'true';
   }
@@ -125,6 +125,7 @@ export class StorageController {
       tags,
       customMetadata,
       path: fields.path,
+      folderId: fields.folderId ? parseInt(fields.folderId) : undefined,
       encrypt: shouldEncrypt,
       overwrite: fields.overwrite === 'true',
       generateThumbnail: fields.generateThumbnail === 'true',
@@ -201,10 +202,12 @@ export class StorageController {
           dataClassification: uploadMetadata.dataClassification,
           tags: uploadMetadata.tags,
           customMetadata: uploadMetadata.customMetadata,
-          createdBy: currentUser?.id
+          createdBy: currentUser?.id,
+          folderId: uploadMetadata.folderId
         },
         options: {
           path: uploadMetadata.path,
+          folderId: uploadMetadata.folderId,
           encrypt: uploadMetadata.encrypt,
           overwrite: uploadMetadata.overwrite,
           generateThumbnail: uploadMetadata.generateThumbnail,
@@ -336,19 +339,19 @@ export class StorageController {
       const { fileId, filename } = request.params
 
       // Check file exists and user has permission (this is handled by middleware)
-      
+
       // Download thumbnail from storage provider
       const fs = require('fs').promises
       const path = require('path')
-      
+
       // Get storage provider to handle thumbnail download
       const provider = this.storageService.getCurrentProvider()
-      
+
       if (provider === 'local') {
         // Local file system handling
         const basePath = process.env.STORAGE_LOCAL_BASE_PATH || './storage'
         const thumbnailPath = path.join(basePath, 'thumbnails', fileId, filename)
-        
+
         // Check if thumbnail file exists
         try {
           await fs.access(thumbnailPath)
@@ -363,7 +366,7 @@ export class StorageController {
 
         // Read and serve thumbnail
         const thumbnailData = await fs.readFile(thumbnailPath)
-        
+
         // Determine MIME type from file extension
         const ext = path.extname(filename).toLowerCase()
         const mimeTypeMap: Record<string, string> = {
@@ -382,7 +385,7 @@ export class StorageController {
         // MinIO handling - use the storage service to download
         try {
           const result = await this.storageService.downloadThumbnail(fileId, filename)
-          
+
           if (!result.success) {
             return reply.code(404).send({
               error: {
@@ -407,7 +410,7 @@ export class StorageController {
           }
           throw error
         }
-        
+
       } else {
         return reply.code(501).send({
           error: {
@@ -448,7 +451,8 @@ export class StorageController {
         path: fileInfo.path,
         checksum: fileInfo.checksum,
         metadata: {
-          id: '',
+          id: fileInfo.id || 0,
+          uuid_public: '', // Will be set by database
           fileId: fileInfo.fileId,
           filename: fileInfo.filename,
           originalName: fileInfo.originalName,
@@ -504,6 +508,8 @@ export class StorageController {
         status: query.status || 'active',
         tags: query.tags ? (Array.isArray(query.tags) ? query.tags : [query.tags]) : undefined,
         search: query.search,
+        folderId: query.folderId ? parseInt(query.folderId) : undefined,
+        path: query.path,
         sortBy: query.sortBy || 'created_at',
         sortOrder: query.sortOrder || 'desc',
         limit: parseInt(query.limit) || 50,
@@ -554,12 +560,12 @@ export class StorageController {
 
     } catch (error) {
       request.log.error('List files failed:', error)
-      
+
       // Log the full error for debugging
       console.error('Storage listFiles error:', error)
       console.error('Error type:', typeof error)
       console.error('Error details:', JSON.stringify(error, null, 2))
-      
+
       return reply.code(500).send({
         error: {
           code: 'INTERNAL_SERVER_ERROR',
@@ -654,15 +660,15 @@ export class StorageController {
 
     } catch (error) {
       request.log.error('Generate presigned URL failed:', error)
-      
+
       // Log detailed error information for debugging
       console.error('Presigned URL generation error:', error)
       console.error('Request body:', request.body)
-      
+
       // Handle StorageError specifically
       if (error && typeof error === 'object' && 'code' in error) {
         const storageError = error as any
-        
+
         if (storageError.code === 'FILE_NOT_FOUND') {
           return reply.code(404).send({
             error: {
@@ -672,7 +678,7 @@ export class StorageController {
             }
           })
         }
-        
+
         if (storageError.code === 'CONFIGURATION_ERROR') {
           return reply.code(500).send({
             error: {
@@ -683,7 +689,7 @@ export class StorageController {
           })
         }
       }
-      
+
       // Handle generic error cases
       if (error instanceof Error && error.message.includes('JSON')) {
         return reply.code(500).send({
@@ -694,7 +700,7 @@ export class StorageController {
           }
         })
       }
-      
+
       return reply.code(500).send({
         error: {
           code: 'INTERNAL_SERVER_ERROR',
@@ -712,12 +718,16 @@ export class StorageController {
    * Get storage statistics
    * GET /storage/stats
    */
-  async getStats(request: FastifyRequest, reply: FastifyReply) {
+  async getStats(request: FastifyRequest<{ Querystring: any }>, reply: FastifyReply) {
     try {
       const currentUser = (request as any).user
+      const query = request.query as any
+
+      // Parse folderId parameter
+      const folderId = query.folderId ? parseInt(query.folderId) : undefined
 
       // Get statistics from database service
-      const stats = await this.databaseService.getStorageStatistics(currentUser?.id)
+      const stats = await this.databaseService.getStorageStatistics(currentUser?.id, folderId)
 
       // Get quota information if available
       let quotaInfo = undefined
@@ -850,7 +860,7 @@ export class StorageController {
       request.log.error('Get shared files failed:', error)
       return reply.code(500).send({
         error: {
-          code: 'INTERNAL_SERVER_ERROR', 
+          code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to retrieve shared files'
         }
       })

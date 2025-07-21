@@ -1,4 +1,4 @@
-import { FastifyRequest } from 'fastify';
+import { FastifyRequest, FastifyInstance } from 'fastify';
 import { RoleRepository } from '../repositories/role-repository';
 import {
   Permission,
@@ -8,13 +8,22 @@ import {
 } from '../types/rbac-types';
 
 export class RBACService implements RBACServiceInterface {
-  constructor(private roleRepository: RoleRepository) {}
+  constructor(
+    private roleRepository: RoleRepository,
+    private fastify?: FastifyInstance
+  ) {}
 
   async getUserPermissions(userId: string): Promise<Permission[]> {
+    if (!userId) {
+      throw new Error('"user_id" is required!');
+    }
     return this.roleRepository.getUserPermissions(userId);
   }
 
   async getUserRoles(userId: string): Promise<Role[]> {
+    if (!userId) {
+      throw new Error('"user_id" is required!');
+    }
     const userWithRoles = await this.roleRepository.findUserRoles(userId);
     return userWithRoles.roles || [];
   }
@@ -107,10 +116,45 @@ export class RBACService implements RBACServiceInterface {
   // Helper method to extract user context from request
   getUserContext(request: FastifyRequest): { userId: string } | null {
     const user = (request as any).user;
-    if (!user || !user.id) {
+    if (this.fastify) {
+      this.fastify.log.info('getUserContext called', { 
+        hasUser: !!user, 
+        userId: user?.id,
+        userObject: user, // Log entire user object
+        userType: typeof user,
+        userKeys: user ? Object.keys(user) : null,
+        requestUrl: request.url 
+      });
+    }
+    
+    // Check different possible property names
+    const possibleIds = [user?.id, user?.user_id, user?.userId, user?.sub];
+    const actualId = possibleIds.find(id => id !== undefined && id !== null);
+    
+    if (this.fastify) {
+      this.fastify.log.info('Checking possible ID fields', { 
+        'user.id': user?.id,
+        'user.user_id': user?.user_id,
+        'user.userId': user?.userId,
+        'user.sub': user?.sub,
+        actualId
+      });
+    }
+    
+    if (!user || !actualId) {
+      if (this.fastify) {
+        this.fastify.log.warn('No user or user.id found in request', {
+          hasUser: !!user,
+          userProperties: user ? Object.keys(user) : null
+        });
+      }
       return null;
     }
-    return { userId: user.id };
+    
+    if (this.fastify) {
+      this.fastify.log.info('User context extracted successfully', { userId: actualId });
+    }
+    return { userId: actualId };
   }
 
   // Permission check middleware helper

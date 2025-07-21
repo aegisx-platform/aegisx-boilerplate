@@ -1,13 +1,14 @@
 /**
  * Storage File Repository
- * 
+ *
  * Handles database operations for storage files, operations, and related data
  */
 
 import { Knex } from 'knex'
 
 export interface StorageFileRecord {
-  id: string
+  id: number // bigserial primary key
+  uuid_public: string // public UUID for API access
   file_id: string
   filename: string
   original_name: string
@@ -22,6 +23,7 @@ export interface StorageFileRecord {
   data_classification: 'public' | 'internal' | 'confidential' | 'restricted'
   encrypted: boolean
   encryption_key_id?: string
+  folder_id?: number
   tags?: string
   custom_metadata?: string
   created_by?: string
@@ -35,8 +37,9 @@ export interface StorageFileRecord {
 }
 
 export interface StorageOperationRecord {
-  id: string
-  file_id: string
+  id: number // bigserial primary key
+  uuid_public: string // public UUID for API access
+  file_id: number // references storage_files.id
   operation: 'upload' | 'download' | 'delete' | 'copy' | 'move' | 'update_metadata' | 'image_process' | 'image_convert' | 'image_optimize'
   status: 'success' | 'failed' | 'pending'
   provider: string
@@ -56,8 +59,9 @@ export interface StorageOperationRecord {
 }
 
 export interface StorageFileShareRecord {
-  id: string
-  file_id: string
+  id: number // bigserial primary key
+  uuid_public: string // public UUID for API access
+  file_id: number // references storage_files.id
   shared_by: string
   shared_with: string
   can_read: boolean
@@ -76,7 +80,8 @@ export interface StorageFileShareRecord {
 }
 
 export interface StorageQuotaRecord {
-  id: string
+  id: number // bigserial primary key
+  uuid_public: string // public UUID for API access
   user_id: string
   entity_type: string
   entity_id: string
@@ -98,6 +103,7 @@ export interface FileListOptions {
   dataClassification?: string
   status?: string
   tags?: string[]
+  folderId?: number | null
   limit?: number
   offset?: number
   sortBy?: 'filename' | 'size' | 'created_at' | 'last_accessed_at'
@@ -118,11 +124,11 @@ export interface StorageStatsResult {
 }
 
 export class StorageFileRepository {
-  constructor(private knex: Knex) {}
+  constructor(private knex: Knex) { }
 
   // File Management Operations
-  
-  async createFile(fileData: Omit<StorageFileRecord, 'id' | 'created_at' | 'updated_at'>): Promise<StorageFileRecord> {
+
+  async createFile(fileData: Omit<StorageFileRecord, 'id' | 'uuid_public' | 'created_at' | 'updated_at'>): Promise<StorageFileRecord> {
     const [record] = await this.knex('storage_files')
       .insert({
         ...fileData,
@@ -131,15 +137,23 @@ export class StorageFileRepository {
         provider_metadata: fileData.provider_metadata ? JSON.stringify(fileData.provider_metadata) : null
       })
       .returning('*')
-    
+
     return this.parseFileRecord(record)
   }
 
-  async getFileById(id: string): Promise<StorageFileRecord | null> {
+  async getFileById(id: number): Promise<StorageFileRecord | null> {
     const record = await this.knex('storage_files')
       .where({ id })
       .first()
-    
+
+    return record ? this.parseFileRecord(record) : null
+  }
+
+  async getFileByUuidPublic(uuidPublic: string): Promise<StorageFileRecord | null> {
+    const record = await this.knex('storage_files')
+      .where({ uuid_public: uuidPublic, status: 'active' })
+      .first()
+
     return record ? this.parseFileRecord(record) : null
   }
 
@@ -147,13 +161,13 @@ export class StorageFileRepository {
     const record = await this.knex('storage_files')
       .where({ file_id: fileId, status: 'active' })
       .first()
-    
+
     return record ? this.parseFileRecord(record) : null
   }
 
-  async updateFile(id: string, updates: Partial<StorageFileRecord>): Promise<boolean> {
+  async updateFile(id: number, updates: Partial<StorageFileRecord>): Promise<boolean> {
     const updateData = { ...updates }
-    
+
     // Handle JSON fields
     if (updateData.tags) {
       updateData.tags = JSON.stringify(updateData.tags)
@@ -164,14 +178,14 @@ export class StorageFileRepository {
     if (updateData.provider_metadata) {
       updateData.provider_metadata = JSON.stringify(updateData.provider_metadata)
     }
-    
+
     const result = await this.knex('storage_files')
       .where({ id })
       .update({
         ...updateData,
         updated_at: this.knex.fn.now()
       })
-    
+
     return result > 0
   }
 
@@ -184,7 +198,7 @@ export class StorageFileRepository {
       })
   }
 
-  async deleteFile(id: string, softDelete = true): Promise<boolean> {
+  async deleteFile(id: number, softDelete = true): Promise<boolean> {
     if (softDelete) {
       const result = await this.knex('storage_files')
         .where({ id })
@@ -223,15 +237,22 @@ export class StorageFileRepository {
     if (options.dataClassification) {
       query = query.where('data_classification', options.dataClassification)
     }
+    if (options.folderId !== undefined) {
+      if (options.folderId === null) {
+        query = query.whereNull('folder_id')
+      } else {
+        query = query.where('folder_id', options.folderId)
+      }
+    }
     if (options.search) {
-      query = query.where(function() {
+      query = query.where(function () {
         this.where('filename', 'ilike', `%${options.search}%`)
           .orWhere('original_name', 'ilike', `%${options.search}%`)
       })
     }
     if (options.tags && options.tags.length > 0) {
       // Search for any of the provided tags
-      query = query.where(function() {
+      query = query.where(function () {
         options.tags!.forEach(tag => {
           this.orWhere('tags', 'like', `%"${tag}"%`)
         })
@@ -265,7 +286,7 @@ export class StorageFileRepository {
 
   // Operation Logging
 
-  async logOperation(operationData: Omit<StorageOperationRecord, 'id' | 'created_at'>): Promise<StorageOperationRecord> {
+  async logOperation(operationData: Omit<StorageOperationRecord, 'id' | 'uuid_public' | 'created_at'>): Promise<StorageOperationRecord> {
     const [record] = await this.knex('storage_operations')
       .insert({
         ...operationData,
@@ -273,16 +294,27 @@ export class StorageFileRepository {
         error_details: operationData.error_details ? JSON.stringify(operationData.error_details) : null
       })
       .returning('*')
-    
+
     return this.parseOperationRecord(record)
   }
 
-  async getOperationsByFileId(fileId: string, limit = 100): Promise<StorageOperationRecord[]> {
+  async getOperationsByFileId(fileId: number, limit = 100): Promise<StorageOperationRecord[]> {
     const records = await this.knex('storage_operations')
       .where({ file_id: fileId })
       .orderBy('created_at', 'desc')
       .limit(limit)
-    
+
+    return records.map(record => this.parseOperationRecord(record))
+  }
+
+  async getOperationsByFileUuid(fileUuid: string, limit = 100): Promise<StorageOperationRecord[]> {
+    const records = await this.knex('storage_operations as so')
+      .join('storage_files as sf', 'so.file_id', 'sf.id')
+      .where('sf.uuid_public', fileUuid)
+      .select('so.*')
+      .orderBy('so.created_at', 'desc')
+      .limit(limit)
+
     return records.map(record => this.parseOperationRecord(record))
   }
 
@@ -291,52 +323,79 @@ export class StorageFileRepository {
       .where({ user_id: userId })
       .orderBy('created_at', 'desc')
       .limit(limit)
-    
+
     return records.map(record => this.parseOperationRecord(record))
   }
 
   // File Sharing
 
-  async createShare(shareData: Omit<StorageFileShareRecord, 'id' | 'created_at' | 'updated_at'>): Promise<StorageFileShareRecord> {
+  async createShare(shareData: Omit<StorageFileShareRecord, 'id' | 'uuid_public' | 'created_at' | 'updated_at'>): Promise<StorageFileShareRecord> {
     const [record] = await this.knex('storage_file_shares')
       .insert(shareData)
       .returning('*')
-    
-    return record
+
+    return this.parseShareRecord(record)
   }
 
-  async getFileShares(fileId: string): Promise<StorageFileShareRecord[]> {
-    return await this.knex('storage_file_shares')
+  async getFileShares(fileId: number): Promise<StorageFileShareRecord[]> {
+    const records = await this.knex('storage_file_shares')
       .where({ file_id: fileId, is_active: true })
       .orderBy('created_at', 'desc')
+
+    return records.map(record => this.parseShareRecord(record))
+  }
+
+  async getFileSharesByUuid(fileUuid: string): Promise<StorageFileShareRecord[]> {
+    const records = await this.knex('storage_file_shares as sfs')
+      .join('storage_files as sf', 'sfs.file_id', 'sf.id')
+      .where('sf.uuid_public', fileUuid)
+      .where('sfs.is_active', true)
+      .select('sfs.*')
+      .orderBy('sfs.created_at', 'desc')
+
+    return records.map(record => this.parseShareRecord(record))
   }
 
   async getUserShares(userId: string): Promise<StorageFileShareRecord[]> {
-    return await this.knex('storage_file_shares')
+    const records = await this.knex('storage_file_shares')
       .where({ shared_with: userId, is_active: true })
       .orderBy('created_at', 'desc')
+
+    return records.map(record => this.parseShareRecord(record))
   }
 
   async getMyShares(userId: string): Promise<StorageFileShareRecord[]> {
-    return await this.knex('storage_file_shares')
+    const records = await this.knex('storage_file_shares')
       .where({ shared_by: userId, is_active: true })
       .orderBy('created_at', 'desc')
+
+    return records.map(record => this.parseShareRecord(record))
   }
 
-  async getShareById(shareId: string): Promise<StorageFileShareRecord | null> {
-    return await this.knex('storage_file_shares')
+  async getShareById(shareId: number): Promise<StorageFileShareRecord | null> {
+    const record = await this.knex('storage_file_shares')
       .where({ id: shareId })
       .first()
+
+    return record ? this.parseShareRecord(record) : null
   }
 
-  async revokeShare(shareId: string, userId: string): Promise<boolean> {
+  async getShareByUuidPublic(shareUuid: string): Promise<StorageFileShareRecord | null> {
+    const record = await this.knex('storage_file_shares')
+      .where({ uuid_public: shareUuid })
+      .first()
+
+    return record ? this.parseShareRecord(record) : null
+  }
+
+  async revokeShare(shareUuid: string, userId: string): Promise<boolean> {
     const result = await this.knex('storage_file_shares')
-      .where({ id: shareId, shared_by: userId })
+      .where({ uuid_public: shareUuid, shared_by: userId })
       .update({
         is_active: false,
         updated_at: this.knex.fn.now()
       })
-    
+
     return result > 0
   }
 
@@ -346,9 +405,9 @@ export class StorageFileRepository {
       .join('users as u', 'sfs.shared_by', 'u.id')
       .select(
         'sf.*',
-        'sfs.id as share_id',
+        'sfs.uuid_public as share_id',
         'sfs.can_read',
-        'sfs.can_write', 
+        'sfs.can_write',
         'sfs.can_delete',
         'sfs.can_share',
         'sfs.expires_at',
@@ -359,7 +418,7 @@ export class StorageFileRepository {
       .where('sfs.shared_with', userId)
       .where('sfs.is_active', true)
       .where('sf.status', 'active')
-      .where(function() {
+      .where(function () {
         this.whereNull('sfs.expires_at')
           .orWhere('sfs.expires_at', '>', new Date())
       })
@@ -372,10 +431,10 @@ export class StorageFileRepository {
       .join('users as u', 'sfs.shared_with', 'u.id')
       .select(
         'sf.*',
-        'sfs.id as share_id',
+        'sfs.uuid_public as share_id',
         'sfs.can_read',
         'sfs.can_write',
-        'sfs.can_delete', 
+        'sfs.can_delete',
         'sfs.can_share',
         'sfs.expires_at',
         'sfs.created_at as shared_at',
@@ -392,9 +451,11 @@ export class StorageFileRepository {
   // Quota Management
 
   async getUserQuota(userId: string): Promise<StorageQuotaRecord | null> {
-    return await this.knex('storage_quotas')
+    const record = await this.knex('storage_quotas')
       .where({ user_id: userId, entity_type: 'user', is_active: true })
       .first()
+
+    return record ? this.parseQuotaRecord(record) : null
   }
 
   async updateQuotaUsage(userId: string, sizeDelta: number, fileCountDelta: number): Promise<void> {
@@ -413,16 +474,25 @@ export class StorageFileRepository {
     if (!quota) return false
 
     return (quota.used_storage_bytes + additionalSize) > quota.max_storage_bytes ||
-           (quota.used_files + 1) > quota.max_files
+      (quota.used_files + 1) > quota.max_files
   }
 
   // Statistics and Analytics
 
-  async getStorageStats(userId?: string): Promise<StorageStatsResult> {
+  async getStorageStats(userId?: string, folderId?: number | null): Promise<StorageStatsResult> {
     let baseQuery = this.knex('storage_files').where({ status: 'active' })
-    
+
     if (userId) {
       baseQuery = baseQuery.where('created_by', userId)
+    }
+
+    // Filter by folder if specified
+    if (folderId !== undefined) {
+      if (folderId === null) {
+        baseQuery = baseQuery.whereNull('folder_id')
+      } else {
+        baseQuery = baseQuery.where('folder_id', folderId)
+      }
     }
 
     // Get basic counts and sizes
@@ -497,36 +567,76 @@ export class StorageFileRepository {
 
   // Cleanup Operations
 
-  async markFilesAsCorrupted(fileIds: string[]): Promise<number> {
+  async markFilesAsCorrupted(fileUuids: string[]): Promise<number> {
     const result = await this.knex('storage_files')
-      .whereIn('file_id', fileIds)
+      .whereIn('uuid_public', fileUuids)
       .update({
         status: 'corrupted',
         updated_at: this.knex.fn.now()
       })
-    
+
     return result
   }
 
   async findOrphanedFiles(): Promise<StorageFileRecord[]> {
     // Files that have been marked as deleted for more than 30 days
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    
+
     const records = await this.knex('storage_files')
       .where({ status: 'deleted' })
       .where('deleted_at', '<', thirtyDaysAgo)
-    
+
     return records.map(record => this.parseFileRecord(record))
   }
 
   async cleanupOldOperations(olderThanDays = 90): Promise<number> {
     const cutoffDate = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000)
-    
+
     const result = await this.knex('storage_operations')
       .where('created_at', '<', cutoffDate)
       .del()
-    
+
     return result
+  }
+
+  // UUID Mapping Helper Methods
+
+  /**
+   * Get internal bigserial ID from public UUID
+   */
+  async getInternalIdFromUuid(uuid: string): Promise<number | null> {
+    const result = await this.knex('storage_files')
+      .select('id')
+      .where('uuid_public', uuid)
+      .first()
+
+    return result ? result.id : null
+  }
+
+  /**
+   * Get public UUID from internal bigserial ID
+   */
+  async getUuidFromInternalId(id: number): Promise<string | null> {
+    const result = await this.knex('storage_files')
+      .select('uuid_public')
+      .where('id', id)
+      .first()
+
+    return result ? result.uuid_public : null
+  }
+
+  /**
+   * Batch get internal IDs from UUIDs
+   */
+  async getInternalIdsFromUuids(uuids: string[]): Promise<Record<string, number>> {
+    const results = await this.knex('storage_files')
+      .select('id', 'uuid_public')
+      .whereIn('uuid_public', uuids)
+
+    return results.reduce((acc, row) => {
+      acc[row.uuid_public] = row.id
+      return acc
+    }, {} as Record<string, number>)
   }
 
   // Private helper methods
@@ -534,22 +644,59 @@ export class StorageFileRepository {
   private parseFileRecord(record: any): StorageFileRecord {
     return {
       ...record,
+      id: parseInt(record.id), // Ensure bigserial is parsed as number
+      uuid_public: record.uuid_public,
       tags: record.tags ? JSON.parse(record.tags) : undefined,
       custom_metadata: record.custom_metadata ? JSON.parse(record.custom_metadata) : undefined,
       provider_metadata: record.provider_metadata ? JSON.parse(record.provider_metadata) : undefined,
       encrypted: Boolean(record.encrypted),
       access_count: parseInt(record.access_count),
-      size: parseInt(record.size)
+      size: parseInt(record.size),
+      folder_id: record.folder_id ? parseInt(record.folder_id) : null
     }
   }
 
   private parseOperationRecord(record: any): StorageOperationRecord {
     return {
       ...record,
+      id: parseInt(record.id), // Ensure bigserial is parsed as number
+      uuid_public: record.uuid_public,
+      file_id: parseInt(record.file_id), // Ensure foreign key is parsed as number
       metadata: record.metadata ? JSON.parse(record.metadata) : undefined,
       error_details: record.error_details ? JSON.parse(record.error_details) : undefined,
       bytes_transferred: record.bytes_transferred ? parseInt(record.bytes_transferred) : undefined,
       duration_ms: record.duration_ms ? parseInt(record.duration_ms) : undefined
+    }
+  }
+
+  private parseShareRecord(record: any): StorageFileShareRecord {
+    return {
+      ...record,
+      id: parseInt(record.id), // Ensure bigserial is parsed as number
+      uuid_public: record.uuid_public,
+      file_id: parseInt(record.file_id), // Ensure foreign key is parsed as number
+      can_read: Boolean(record.can_read),
+      can_write: Boolean(record.can_write),
+      can_delete: Boolean(record.can_delete),
+      can_share: Boolean(record.can_share),
+      requires_password: Boolean(record.requires_password),
+      download_count: parseInt(record.download_count),
+      is_active: Boolean(record.is_active),
+      max_downloads: record.max_downloads ? parseInt(record.max_downloads) : undefined
+    }
+  }
+
+  private parseQuotaRecord(record: any): StorageQuotaRecord {
+    return {
+      ...record,
+      id: parseInt(record.id), // Ensure bigserial is parsed as number
+      uuid_public: record.uuid_public,
+      max_storage_bytes: parseInt(record.max_storage_bytes),
+      max_files: parseInt(record.max_files),
+      max_file_size_bytes: parseInt(record.max_file_size_bytes),
+      used_storage_bytes: parseInt(record.used_storage_bytes),
+      used_files: parseInt(record.used_files),
+      is_active: Boolean(record.is_active)
     }
   }
 }
