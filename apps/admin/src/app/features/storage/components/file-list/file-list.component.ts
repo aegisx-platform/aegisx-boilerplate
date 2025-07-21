@@ -217,12 +217,12 @@ export interface FileListOptions {
                   <div>
                     <div class="font-medium text-primary cursor-pointer"
                          (click)="onFilePreview(file)">
-                      {{ file.filename }}
-                    </div>
-                    <div *ngIf="file.original_filename !== file.filename"
-                         class="text-sm text-gray-500">
                       {{ file.original_filename }}
                     </div>
+                    <!-- <div *ngIf="file.original_filename !== file.filename"
+                         class="text-sm text-gray-500">
+                      {{ file.original_filename }}
+                    </div> -->
                   </div>
                 </div>
               </td>

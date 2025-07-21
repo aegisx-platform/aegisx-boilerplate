@@ -21,6 +21,7 @@ import { MeterGroupModule } from 'primeng/metergroup';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { BreadcrumbModule } from 'primeng/breadcrumb';
+import { TooltipModule } from 'primeng/tooltip';
 
 import { StorageService, FileInfo, UploadProgress, StorageStats } from '../../services/storage.service';
 import { FileUploadComponent } from '../file-upload/file-upload.component';
@@ -60,6 +61,7 @@ interface FilterOptions {
     IconFieldModule,
     InputIconModule,
     BreadcrumbModule,
+    TooltipModule,
     FileUploadComponent,
     FilePreviewComponent,
     FileShareComponent,
@@ -87,6 +89,16 @@ interface FilterOptions {
 
           <p-tabpanel value="explorer">
           <div class="file-explorer-layout">
+            <!-- Breadcrumb -->
+            <p-breadcrumb [model]="breadcrumbItems" [home]="homeBreadcrumb">
+              <ng-template pTemplate="item" let-item>
+                <span class="breadcrumb-item" (click)="navigateToFolder(item.data)"
+                      [class.cursor-pointer]="item.data !== selectedFolder">
+                  <i [class]="item.icon" *ngIf="item.icon"></i>
+                  {{ item.label }}
+                </span>
+              </ng-template>
+            </p-breadcrumb>
             <p-splitter layout="horizontal" [panelSizes]="[25, 75]" styleClass="h-full" [style]="{ height: 'calc(100vh - 120px)' }">
               <!-- Left Panel - Folder Tree -->
               <ng-template pTemplate="start">
@@ -100,37 +112,32 @@ interface FilterOptions {
 
               <!-- Right Panel - File List -->
               <ng-template pTemplate="end">
-                <div class="file-panel"
+                <div class="file-panel border"
                      (dragover)="onDragOver($event)"
                      (dragleave)="onDragLeave($event)"
                      (drop)="onDrop($event)"
                      [class.drag-over]="isDragOver">
 
                   <!-- Breadcrumb Navigation -->
-                  <div class="breadcrumb-section p-3 border-bottom-1 border-gray-200 bg-gray-50">
+                  <div class="breadcrumb-section p-3   bg-gray-50">
                     <div  >
-                      <!-- Breadcrumb -->
-                      <p-breadcrumb [model]="breadcrumbItems" [home]="homeBreadcrumb">
-                        <ng-template pTemplate="item" let-item>
-                          <span class="breadcrumb-item" (click)="navigateToFolder(item.data)"
-                                [class.cursor-pointer]="item.data !== selectedFolder">
-                            <i [class]="item.icon" *ngIf="item.icon"></i>
-                            {{ item.label }}
-                          </span>
-                        </ng-template>
-                      </p-breadcrumb>
-
                       <!-- Folder Statistics -->
                       <div *ngIf="folderStats && !folderStatsLoading" class="folder-stats-section">
                         <!-- Quick Stats Row -->
-                        <div class="flex align-items-center gap-3 text-sm mb-3">
-                          <span class="font-semibold text-gray-700">
-                            {{ folderStats.totalFiles }} files
-                          </span>
-                          <span class="text-gray-500">•</span>
-                          <span class="text-gray-600">
-                            {{ formatFileSize(folderStats.totalSize) }}
-                          </span>
+                        <div class="flex align-items-center gap-4 text-sm mb-3">
+                          <div class="flex align-items-center gap-2">
+                            <i class="pi pi-file text-blue-500"></i>
+                            <span class="font-semibold text-gray-700">
+                              {{ folderStats.totalFiles }} files
+                            </span>
+                          </div>
+                          <span class="text-gray-400">•</span>
+                          <div class="flex align-items-center gap-2">
+                            <i class="pi pi-database text-green-500"></i>
+                            <span class="text-gray-600">
+                              {{ formatFileSize(folderStats.totalSize) }}
+                            </span>
+                          </div>
                         </div>
 
                         <!-- Meter Groups Row -->
@@ -140,7 +147,9 @@ interface FilterOptions {
                             <!-- <div class="text-xs text-gray-500 mb-2">File Types</div> -->
                             <p-meterGroup
                               [value]="getFileTypeMeterData()"
-                              labelPosition="end">
+                              labelPosition="end"
+                              pTooltip="Click to see file type breakdown"
+                              tooltipPosition="top">
                             </p-meterGroup>
                           </div>
 
@@ -157,9 +166,9 @@ interface FilterOptions {
 
                       <!-- Loading State -->
                       <div *ngIf="folderStatsLoading" class="folder-stats-loading">
-                        <div class="flex align-items-center gap-2 text-sm text-gray-500">
-                          <i class="pi pi-spin pi-spinner"></i>
-                          Loading folder statistics...
+                        <div class="flex align-items-center gap-3 text-sm text-gray-500 p-3 bg-gray-50 border-round">
+                          <i class="pi pi-spin pi-spinner text-blue-500"></i>
+                          <span>Loading folder statistics...</span>
                         </div>
                       </div>
                     </div>
@@ -289,8 +298,11 @@ interface FilterOptions {
     }
 
     .folder-stats-section {
-      padding-top: 0.75rem;
-      border-top: 1px solid var(--surface-border);
+      padding: 1rem;
+      border: 1px solid var(--surface-200);
+      border-radius: 8px;
+      margin-top: 0.75rem;
+      background: #fafafa;
     }
 
     .folder-stats-section .flex {
@@ -306,38 +318,51 @@ interface FilterOptions {
 
     /* MeterGroup styling */
     :host ::ng-deep .p-metergroup {
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.5rem;
       width: 100%;
       overflow: hidden;
+      border-radius: 6px;
     }
 
     :host ::ng-deep .p-metergroup .p-metergroup-meter {
-      height: 0.5rem;
-      border-radius: 0.25rem;
+      height: 0.75rem;
+      border-radius: 6px;
       width: 100%;
     }
 
     :host ::ng-deep .p-metergroup .p-metergroup-labels {
-      margin-top: 0.25rem;
-      gap: 0.5rem;
+      margin-top: 0.5rem;
+      gap: 1rem;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
     }
 
     :host ::ng-deep .p-metergroup .p-metergroup-labels .p-metergroup-label {
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       display: flex;
       align-items: center;
-      gap: 0.25rem;
+      gap: 0.5rem;
       white-space: nowrap;
+      padding: 0.25rem 0.5rem;
+      background: #ffffff;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    :host ::ng-deep .p-metergroup .p-metergroup-labels .p-metergroup-label:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
     }
 
     :host ::ng-deep .p-metergroup .p-metergroup-label-icon {
-      width: 0.5rem;
-      height: 0.5rem;
+      width: 0.625rem;
+      height: 0.625rem;
       border-radius: 50%;
       flex-shrink: 0;
+      border: 1px solid #ffffff;
     }
 
 
@@ -506,7 +531,11 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
   // Breadcrumb navigation
   breadcrumbItems: any[] = [];
-  homeBreadcrumb = { icon: 'pi pi-home', command: () => this.navigateToFolder(null) };
+  homeBreadcrumb = {
+    icon: 'pi pi-home',
+    command: () => this.navigateToFolder(null),
+    tooltip: 'Go to root folder'
+  };
 
   // Dialog states
   showUploadDialog = false;
@@ -582,8 +611,10 @@ export class FileManagerComponent implements OnInit, OnDestroy {
 
       this.breadcrumbItems.push({
         label: segment,
+        icon: 'pi pi-folder',
         data: isLast ? folder : { path: currentPath }, // For intermediate folders, we only have path
-        command: isLast ? undefined : () => this.navigateToPath(currentPath)
+        command: isLast ? undefined : () => this.navigateToPath(currentPath),
+        tooltip: `Navigate to ${segment} folder`
       });
     });
   }
@@ -833,7 +864,7 @@ export class FileManagerComponent implements OnInit, OnDestroy {
     });
 
     return Object.entries(groupedTypes).map(([label, { count, color }]) => ({
-      label,
+      label: `${label} (${count})`,
       value: Math.round((count / totalFiles) * 100),
       color,
       count
@@ -887,13 +918,13 @@ export class FileManagerComponent implements OnInit, OnDestroy {
   }
 
   private getFileTypeColor(mimeType: string): string {
-    if (mimeType.startsWith('image/')) return '#3b82f6'; // blue
-    if (mimeType.startsWith('video/')) return '#ef4444'; // red
-    if (mimeType.startsWith('audio/')) return '#8b5cf6'; // purple
-    if (mimeType === 'application/pdf') return '#f59e0b'; // yellow
-    if (mimeType.startsWith('application/')) return '#10b981'; // green
-    if (mimeType.startsWith('text/')) return '#06b6d4'; // cyan
-    return '#6b7280'; // gray
+    if (mimeType.startsWith('image/')) return '#3b82f6'; // bright blue
+    if (mimeType.startsWith('video/')) return '#ef4444'; // bright red
+    if (mimeType.startsWith('audio/')) return '#8b5cf6'; // bright purple
+    if (mimeType === 'application/pdf') return '#f59e0b'; // bright orange
+    if (mimeType.startsWith('application/')) return '#10b981'; // bright green
+    if (mimeType.startsWith('text/')) return '#06b6d4'; // bright cyan
+    return '#64748b'; // modern gray
   }
 
   private getClassificationColor(classification: string): string {
