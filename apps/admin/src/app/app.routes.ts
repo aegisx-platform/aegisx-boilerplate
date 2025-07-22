@@ -73,6 +73,10 @@ export const appRoutes: Route[] = [
         loadChildren: () => import('./features/storage/storage.routes').then(m => m.default)
       },
       {
+        path: 'notifications',
+        loadComponent: () => import('./features/notifications/components/notification-management/notification-management.component').then(m => m.NotificationManagementComponent)
+      },
+      {
         path: 'support',
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
       }
