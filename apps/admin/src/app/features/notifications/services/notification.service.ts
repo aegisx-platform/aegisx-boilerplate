@@ -65,18 +65,6 @@ export class NotificationService {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
 
-  // Queue management
-  getQueuedNotifications(): Observable<{ success: boolean; data: Notification[] }> {
-    return this.http.get<{ success: boolean; data: Notification[] }>(`${this.apiUrl}/queue/pending`);
-  }
-
-  processQueue(): Observable<any> {
-    return this.http.post(`${this.apiUrl}/queue/process`, {});
-  }
-
-  getScheduledNotifications(): Observable<{ success: boolean; data: Notification[] }> {
-    return this.http.get<{ success: boolean; data: Notification[] }>(`${this.apiUrl}/queue/scheduled`);
-  }
 
   // Template management
   createTemplate(request: CreateTemplateRequest): Observable<{ success: boolean; data: NotificationTemplate }> {
@@ -178,6 +166,35 @@ export class NotificationService {
 
   sendEmergencyNotification(request: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/healthcare/emergency`, request);
+  }
+
+  // Queue operations
+  getQueuedNotifications(priority?: string, limit: number = 50): Observable<{ success: boolean; data: { notifications: Notification[]; count: number } }> {
+    const params = new URLSearchParams();
+    if (priority) params.set('priority', priority);
+    params.set('limit', limit.toString());
+    
+    const queryString = params.toString();
+    const url = `${this.apiUrl}/queue/pending${queryString ? '?' + queryString : ''}`;
+    
+    return this.http.get<{ success: boolean; data: { notifications: Notification[]; count: number } }>(url);
+  }
+
+  getScheduledNotifications(beforeDate?: string): Observable<{ success: boolean; data: { notifications: Notification[]; count: number } }> {
+    const params = new URLSearchParams();
+    if (beforeDate) params.set('beforeDate', beforeDate);
+    
+    const queryString = params.toString();
+    const url = `${this.apiUrl}/queue/scheduled${queryString ? '?' + queryString : ''}`;
+    
+    return this.http.get<{ success: boolean; data: { notifications: Notification[]; count: number } }>(url);
+  }
+
+  processQueuedNotifications(priority?: string, limit: number = 10): Observable<{ success: boolean; data: { processed: number; successful: number; failed: number } }> {
+    const body: any = { limit };
+    if (priority) body.priority = priority;
+    
+    return this.http.post<{ success: boolean; data: { processed: number; successful: number; failed: number } }>(`${this.apiUrl}/queue/process`, body);
   }
 
   // Utility methods
