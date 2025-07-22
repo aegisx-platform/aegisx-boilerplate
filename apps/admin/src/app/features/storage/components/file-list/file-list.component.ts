@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import mime from 'mime';
 
 // PrimeNG imports
 import { TableModule } from 'primeng/table';
@@ -19,6 +20,7 @@ import { InputIconModule } from 'primeng/inputicon';
 import { CheckboxModule } from 'primeng/checkbox';
 import { MenuModule } from 'primeng/menu';
 import { TooltipModule } from 'primeng/tooltip';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { Table } from 'primeng/table';
 
 import { StorageService, FileInfo } from '../../services/storage.service';
@@ -50,13 +52,14 @@ export interface FileListOptions {
     InputIconModule,
     CheckboxModule,
     MenuModule,
-    TooltipModule
+    TooltipModule,
+    MultiSelectModule
   ],
   providers: [ConfirmationService],
   template: `
     <div class="file-list-container">
       <!-- Header with Search and Filters -->
-      <div class="file-list-header pl-4 pr-4 border-bottom-1 border-gray-200">
+      <div class="file-list-header pl-4 pr-4  mb-3 border-bottom-1 border-gray-200">
         <div class="flex flex-wrap align-items-center justify-content-between gap-3">
 
           <!-- Search -->
@@ -96,6 +99,28 @@ export interface FileListOptions {
               (onChange)="onFilterChange()"
               class="w-10rem"
             ></p-select>
+
+            <!-- Column Visibility Selector -->
+            <p-multiSelect
+              [(ngModel)]="selectedColumns"
+              [options]="columnOptions"
+              optionLabel="label"
+              optionValue="field"
+              placeholder="Columns"
+              (onChange)="onColumnVisibilityChange()"
+              [style]="{ minWidth: '10rem' }"
+              [showHeader]="false"
+              [showToggleAll]="true"
+              [filter]="false"
+              appendTo="body"
+            >
+              <ng-template pTemplate="selectedItems" let-value>
+                <div class="flex align-items-center gap-2">
+                  <i class="pi pi-table"></i>
+                  <span>Columns</span>
+                </div>
+              </ng-template>
+            </p-multiSelect>
           </div>
 
           <!-- Upload Button & Actions -->
@@ -177,18 +202,18 @@ export interface FileListOptions {
                   [binary]="true"
                 ></p-checkbox>
               </th>
-              <th pSortableColumn="filename" style="width: 35%">
+              <th pSortableColumn="filename" [style.width]="getColumnWidth('filename')">
                 File Name
                 <p-sortIcon field="filename"></p-sortIcon>
               </th>
-              <th style="width: 10%">Type</th>
-              <th pSortableColumn="size" style="width: 10%">
+              <th *ngIf="isColumnVisible('type')" [style.width]="getColumnWidth('type')">Type</th>
+              <th *ngIf="isColumnVisible('size')" pSortableColumn="size" [style.width]="getColumnWidth('size')">
                 Size
                 <p-sortIcon field="size"></p-sortIcon>
               </th>
-              <th style="width: 12%">Classification</th>
-              <!-- <th style="width: 15%">Tags</th> -->
-              <th pSortableColumn="created_at" style="width: 15%">
+              <th *ngIf="isColumnVisible('classification')" [style.width]="getColumnWidth('classification')">Classification</th>
+              <th *ngIf="isColumnVisible('tags')" [style.width]="getColumnWidth('tags')">Tags</th>
+              <th *ngIf="isColumnVisible('created')" pSortableColumn="created_at" [style.width]="getColumnWidth('created')">
                 Created
                 <p-sortIcon field="created_at"></p-sortIcon>
               </th>
@@ -214,32 +239,31 @@ export interface FileListOptions {
               <td class="file-name-cell">
                 <div class="flex align-items-center gap-2">
                   <i [class]="getFileIcon(file.mime_type)" class="file-icon"></i>
-                  <div>
-                    <div class="font-medium text-primary cursor-pointer"
-                         (click)="onFilePreview(file)">
+                  <div class="file-name-container">
+                    <div class="font-medium text-primary cursor-pointer file-name-text"
+                         (click)="onFilePreview(file)"
+                         [pTooltip]="file.original_filename"
+                         tooltipPosition="top"
+                         [showDelay]="500">
                       {{ file.original_filename }}
                     </div>
-                    <!-- <div *ngIf="file.original_filename !== file.filename"
-                         class="text-sm text-gray-500">
-                      {{ file.original_filename }}
-                    </div> -->
                   </div>
                 </div>
               </td>
 
-              <td>
+              <td *ngIf="isColumnVisible('type')">
                 <span class="text-sm bg-gray-100 px-2 py-1 border-round">
                   {{ getFileTypeDisplay(file.mime_type) }}
                 </span>
               </td>
 
-              <td>
+              <td *ngIf="isColumnVisible('size')">
                 <span class="font-mono text-sm">
                   {{ formatFileSize(file.size) }}
                 </span>
               </td>
 
-              <td>
+              <td *ngIf="isColumnVisible('classification')">
                 <p-tag
                   [value]="file.dataClassification || 'internal'"
                   [severity]="getClassificationSeverity(file.dataClassification)"
@@ -247,7 +271,7 @@ export interface FileListOptions {
                 ></p-tag>
               </td>
 
-              <!-- <td>
+              <td *ngIf="isColumnVisible('tags')">
                 <div class="flex flex-wrap gap-1" *ngIf="file.tags && file.tags.length > 0">
                   <p-tag
                     *ngFor="let tag of file.tags.slice(0, 3)"
@@ -259,9 +283,12 @@ export interface FileListOptions {
                     +{{ file.tags.length - 3 }} more
                   </span>
                 </div>
-              </td> -->
+                <span *ngIf="!file.tags || file.tags.length === 0" class="text-xs text-gray-400">
+                  No tags
+                </span>
+              </td>
 
-              <td>
+              <td *ngIf="isColumnVisible('created')">
                 <div class="text-sm">
                   {{ formatDate(file.created_at) }}
                 </div>
@@ -313,7 +340,7 @@ export interface FileListOptions {
           <!-- Empty State -->
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td [attr.colspan]="getColumnCount()" class="text-center py-8">
+              <td [attr.colspan]="getVisibleColumnCount()" class="text-center py-8">
                 <div class="flex flex-column align-items-center gap-3">
                   <i class="pi pi-inbox text-6xl text-gray-300"></i>
                   <div class="text-xl text-gray-500">No files found</div>
@@ -363,6 +390,19 @@ export interface FileListOptions {
 
     .file-name-cell {
       max-width: 300px;
+    }
+
+    .file-name-container {
+      flex: 1;
+      min-width: 0; /* Important for text truncation */
+      max-width: 100%;
+    }
+
+    .file-name-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: block;
     }
 
     .file-icon {
@@ -473,8 +513,32 @@ export class FileListComponent implements OnInit, OnDestroy, OnChanges {
 
   private selectedContextFile: FileInfo | null = null;
 
+  // Column visibility
+  columnOptions = [
+    { label: 'Type', field: 'type' },
+    { label: 'Size', field: 'size' },
+    { label: 'Classification', field: 'classification' },
+    { label: 'Tags', field: 'tags' },
+    { label: 'Created', field: 'created' }
+  ];
+
+  // Default visible columns (all except tags)
+  selectedColumns: string[] = ['size', 'created'];
+
+  // Column widths
+  columnWidths: Record<string, string> = {
+    filename: '35%',
+    type: '10%',
+    size: '10%',
+    classification: '12%',
+    tags: '15%',
+    created: '15%'
+  };
+
   ngOnInit() {
+    this.loadColumnsFromStorage();
     this.loadFiles();
+    this.updateColumnWidths();
   }
 
   ngOnDestroy() {
@@ -740,7 +804,58 @@ export class FileListComponent implements OnInit, OnDestroy, OnChanges {
 
   getFileTypeDisplay(mimeType: string): string {
     if (!mimeType) return 'Unknown';
-    return mimeType.split('/')[1]?.toUpperCase() || 'File';
+
+    // Common document types
+    if (mimeType === 'application/pdf') return 'PDF';
+    if (mimeType === 'application/msword' || mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return 'Word';
+    if (mimeType === 'application/vnd.ms-excel' || mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'Excel';
+    if (mimeType === 'application/vnd.ms-powerpoint' || mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return 'PowerPoint';
+
+    // Image types
+    if (mimeType.startsWith('image/jpeg') || mimeType.startsWith('image/jpg')) return 'JPEG';
+    if (mimeType.startsWith('image/png')) return 'PNG';
+    if (mimeType.startsWith('image/gif')) return 'GIF';
+    if (mimeType.startsWith('image/svg')) return 'SVG';
+    if (mimeType.startsWith('image/webp')) return 'WebP';
+    if (mimeType.startsWith('image/')) return 'Image';
+
+    // Video types
+    if (mimeType.startsWith('video/mp4')) return 'MP4';
+    if (mimeType.startsWith('video/avi')) return 'AVI';
+    if (mimeType.startsWith('video/mov') || mimeType.startsWith('video/quicktime')) return 'MOV';
+    if (mimeType.startsWith('video/')) return 'Video';
+
+    // Audio types
+    if (mimeType.startsWith('audio/mpeg') || mimeType.startsWith('audio/mp3')) return 'MP3';
+    if (mimeType.startsWith('audio/wav')) return 'WAV';
+    if (mimeType.startsWith('audio/')) return 'Audio';
+
+    // Archive types
+    if (mimeType.includes('zip')) return 'ZIP';
+    if (mimeType.includes('rar')) return 'RAR';
+    if (mimeType.includes('tar')) return 'TAR';
+    if (mimeType.includes('7z')) return '7Z';
+
+    // Text types
+    if (mimeType === 'text/plain') return 'Text';
+    if (mimeType === 'text/html') return 'HTML';
+    if (mimeType === 'text/css') return 'CSS';
+    if (mimeType === 'text/javascript' || mimeType === 'application/javascript') return 'JavaScript';
+    if (mimeType === 'application/json') return 'JSON';
+    if (mimeType === 'text/xml' || mimeType === 'application/xml') return 'XML';
+
+    // Other common types
+    if (mimeType === 'application/octet-stream') return 'Binary';
+
+    // Try to get extension from mime library
+    const extension = mime.getExtension(mimeType);
+    if (extension) {
+      // Return uppercase extension for known types
+      return extension.toUpperCase();
+    }
+
+    // Final fallback
+    return 'File';
   }
 
   getClassificationSeverity(classification: string): string {
@@ -771,5 +886,91 @@ export class FileListComponent implements OnInit, OnDestroy, OnChanges {
   // Upload request method
   requestUpload() {
     this.uploadRequested.emit();
+  }
+
+  // Column visibility methods
+  isColumnVisible(column: string): boolean {
+    return this.selectedColumns.includes(column);
+  }
+
+  onColumnVisibilityChange() {
+    // Save to localStorage
+    this.saveColumnsToStorage();
+    // Recalculate column widths when visibility changes
+    this.updateColumnWidths();
+  }
+
+  getColumnWidth(column: string): string {
+    return this.columnWidths[column] || 'auto';
+  }
+
+  getVisibleColumnCount(): number {
+    let count = 1; // filename is always visible
+    count += this.selectedColumns.length; // add visible optional columns
+
+    if (this.options.allowMultiSelect) count++;
+    if (this.options.showActions) count++;
+
+    return count;
+  }
+
+  updateColumnWidths() {
+    // Dynamically adjust column widths based on visible columns
+    const baseWidth = 100;
+    const fixedWidths = {
+      select: 3,  // checkbox column
+      actions: 15 // actions column
+    };
+
+    let availableWidth = baseWidth;
+    if (this.options.allowMultiSelect) availableWidth -= fixedWidths.select;
+    if (this.options.showActions) availableWidth -= fixedWidths.actions;
+
+    // Calculate proportional widths for visible columns
+    const visibleCount = this.selectedColumns.length + 1; // +1 for filename
+
+    // Filename gets more space
+    this.columnWidths['filename'] = `${Math.floor(availableWidth * 0.4)}%`;
+
+    // Distribute remaining width among other visible columns
+    const remainingWidth = availableWidth - Math.floor(availableWidth * 0.4);
+    const widthPerColumn = Math.floor(remainingWidth / this.selectedColumns.length);
+
+    this.selectedColumns.forEach(col => {
+      this.columnWidths[col] = `${widthPerColumn}%`;
+    });
+  }
+
+  // LocalStorage methods
+  private readonly STORAGE_KEY = 'aegisx_file_list_columns';
+
+  private saveColumnsToStorage() {
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.selectedColumns));
+    } catch (error) {
+      console.error('Failed to save column preferences to localStorage:', error);
+    }
+  }
+
+  private loadColumnsFromStorage() {
+    try {
+      const savedColumns = localStorage.getItem(this.STORAGE_KEY);
+      if (savedColumns) {
+        const columns = JSON.parse(savedColumns);
+        // Validate that saved columns are still valid options
+        this.selectedColumns = columns.filter((col: string) =>
+          this.columnOptions.some(option => option.field === col)
+        );
+
+        // If no valid columns were loaded, use defaults
+        if (this.selectedColumns.length === 0) {
+          this.selectedColumns = ['type', 'size', 'classification', 'created'];
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load column preferences from localStorage:', error);
+      // Use default columns on error
+      this.selectedColumns = ['type', 'size', 'classification', 'created'];
+    }
   }
 }

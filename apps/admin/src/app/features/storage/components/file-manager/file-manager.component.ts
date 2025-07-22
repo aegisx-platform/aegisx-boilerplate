@@ -89,16 +89,6 @@ interface FilterOptions {
 
           <p-tabpanel value="explorer">
           <div class="file-explorer-layout">
-            <!-- Breadcrumb -->
-            <p-breadcrumb [model]="breadcrumbItems" [home]="homeBreadcrumb">
-              <ng-template pTemplate="item" let-item>
-                <span class="breadcrumb-item" (click)="navigateToFolder(item.data)"
-                      [class.cursor-pointer]="item.data !== selectedFolder">
-                  <i [class]="item.icon" *ngIf="item.icon"></i>
-                  {{ item.label }}
-                </span>
-              </ng-template>
-            </p-breadcrumb>
             <p-splitter layout="horizontal" [panelSizes]="[20, 80]" styleClass="h-full" [style]="{ height: 'calc(100vh - 120px)' }">
               <!-- Left Panel - Folder Tree -->
               <ng-template pTemplate="start">
@@ -112,67 +102,60 @@ interface FilterOptions {
 
               <!-- Right Panel - File List -->
               <ng-template pTemplate="end">
+                <!-- Breadcrumb -->
+                <div class="custom-breadcrumb">
+                  <!-- Top Row: Path + Stats -->
+                  <div class="breadcrumb-top-row">
+                    <div class="breadcrumb-path">
+                      <span class="breadcrumb-item" (click)="navigateToFolder(null)"
+                            [class.cursor-pointer]="selectedFolder">
+                        <i class="pi pi-folder"></i>
+                      </span>
+                      <span *ngFor="let item of breadcrumbItems; let last = last" class="breadcrumb-segment">
+                        <span class="breadcrumb-separator">/</span>
+                        <span class="breadcrumb-item"
+                              (click)="navigateToFolder(item.data)"
+                              [class.cursor-pointer]="!last">
+                          {{ item.label }}
+                        </span>
+                      </span>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="breadcrumb-stats" *ngIf="folderStats && !folderStatsLoading">
+                      <div class="flex align-items-center gap-3 text-sm">
+                        <div class="flex align-items-center gap-2">
+                          <i class="pi pi-file text-blue-500"></i>
+                          <span class="font-semibold text-gray-700">
+                            {{ folderStats.totalFiles }} files
+                          </span>
+                        </div>
+                        <div class="flex align-items-center gap-2">
+                          <i class="pi pi-database text-green-500"></i>
+                          <span class="text-gray-600">
+                            {{ formatFileSize(folderStats.totalSize) }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Bottom Row: File Type Distribution -->
+                  <div *ngIf="folderStats && !folderStatsLoading && getFileTypeMeterData().length > 0" class="breadcrumb-meter-row">
+                    <p-meterGroup
+                      [value]="getFileTypeMeterData()"
+                      labelPosition="end"
+                      pTooltip="Click to see file type breakdown"
+                      tooltipPosition="top">
+                    </p-meterGroup>
+                  </div>
+                </div>
+
                 <div class="file-panel p-3"
                      (dragover)="onDragOver($event)"
                      (dragleave)="onDragLeave($event)"
                      (drop)="onDrop($event)"
                      [class.drag-over]="isDragOver">
-
-                  <!-- Breadcrumb Navigation -->
-                  <div class="breadcrumb-section ">
-
-                      <!-- Folder Statistics -->
-                      <div *ngIf="folderStats && !folderStatsLoading" class="p-3 mb-3 bg-gray-50 border-solid rounded-lg border border-gray-100">
-                        <!-- Quick Stats Row -->
-                        <div class="flex align-items-center gap-4 text-sm mb-3">
-                          <div class="flex align-items-center gap-2">
-                            <i class="pi pi-file text-blue-500"></i>
-                            <span class="font-semibold text-gray-700">
-                              {{ folderStats.totalFiles }} files
-                            </span>
-                          </div>
-                          <span class="text-gray-400">•</span>
-                          <div class="flex align-items-center gap-2">
-                            <i class="pi pi-database text-green-500"></i>
-                            <span class="text-gray-600">
-                              {{ formatFileSize(folderStats.totalSize) }}
-                            </span>
-                          </div>
-                        </div>
-
-                        <!-- Meter Groups Row -->
-                        <div *ngIf="getFileTypeMeterData().length > 0">
-                          <!-- File Type Distribution -->
-
-                            <!-- <div class="text-xs text-gray-500 mb-2">File Types</div> -->
-                            <p-meterGroup
-                              [value]="getFileTypeMeterData()"
-                              labelPosition="start"
-                              pTooltip="Click to see file type breakdown"
-                              tooltipPosition="top">
-                            </p-meterGroup>
-
-
-                          <!-- Classification Distribution (commented out) -->
-                          <!-- <div *ngIf="getClassificationMeterData().length > 0">
-                            <div class="text-xs text-gray-500 mb-2">Classifications</div>
-                            <p-meterGroup
-                              [value]="getClassificationMeterData()"
-                              labelPosition="end">
-                            </p-meterGroup>
-                          </div> -->
-
-                      </div>
-
-                      <!-- Loading State -->
-                      <div *ngIf="folderStatsLoading" class="folder-stats-loading">
-                        <div class="flex align-items-center gap-3 text-sm text-gray-500 p-3 bg-gray-50 border-round">
-                          <i class="pi pi-spin pi-spinner text-blue-500"></i>
-                          <span>Loading folder statistics...</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
                   <!-- File List -->
                   <div class="file-list-section flex-1">
@@ -291,54 +274,94 @@ interface FilterOptions {
       height: calc(100vh - 300px);
     }
 
-    .breadcrumb-section {
-      background: var(--surface-50);
-      border-bottom: 1px solid var(--surface-border);
-      min-height: 3rem;
+
+
+
+    /* Custom Breadcrumb Styling */
+    .custom-breadcrumb {
+      display: flex;
+      flex-direction: column;
+      background: #f8f8f8;
+      border-top-right-radius: 6px;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0;
+      font-size: 0.875rem;
+      color: #a0a0a0;
+      gap: 0.10rem;
     }
 
-    .folder-stats-section {
-      padding: 1rem;
-      border: 1px solid var(--surface-200);
-      border-radius: 8px;
-      margin-top: 0.75rem;
-      background: #fafafa;
+    .breadcrumb-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 2rem;
     }
 
-    .folder-stats-section .flex {
-      align-items: flex-start;
+    .breadcrumb-path {
+      display: flex;
+      align-items: center;
+      overflow-x: auto;
+      white-space: nowrap;
+      flex: 1;
+      margin-right: 1rem;
     }
 
-    @media (max-width: 768px) {
-      .folder-stats-section .flex {
-        flex-direction: column;
-        gap: 0.75rem;
-      }
+    .breadcrumb-stats {
+      flex-shrink: 0;
+      border-left: 1px solid #e5e7eb;
+      padding-left: 1rem;
     }
 
+    .breadcrumb-meter-row {
+      width: 100%;
+    }
 
+    /* Override meter group styling inside breadcrumb */
+    :host ::ng-deep .breadcrumb-meter-row .p-metergroup {
+      margin: 0;
+      gap: 0.1rem;
+    }
+
+    :host ::ng-deep .breadcrumb-meter-row .p-metergroup-label-list {
+      margin-top: 0.25rem;
+      font-size: 0.75rem;
+    }
 
     .breadcrumb-item {
       display: flex;
       align-items: center;
-      gap: 0.25rem;
-      font-weight: 500;
+      gap: 0.375rem;
+      font-weight: 400;
+      color: #5f6368;
+      transition: color 0.15s ease-in-out;
+      text-decoration: none;
+    }
+
+    .breadcrumb-item.cursor-pointer {
+      cursor: pointer;
     }
 
     .breadcrumb-item.cursor-pointer:hover {
-      color: var(--primary-color);
-      text-decoration: underline;
+      color: #1a73e8;
+      text-decoration: none;
     }
 
-    :host ::ng-deep .p-breadcrumb ul {
-      background: transparent;
-      border: none;
-      padding: 0;
-      margin: 0;
+    .breadcrumb-item i {
+      font-size: 0.875rem;
+      color: #5f6368;
     }
 
-    :host ::ng-deep .p-breadcrumb .p-breadcrumb-list .p-breadcrumb-item {
-      margin: 0;
+    .breadcrumb-segment {
+      display: flex;
+      align-items: center;
+    }
+
+    .breadcrumb-separator {
+      margin: 0 0.375rem;
+      color: #9aa0a6;
+      font-weight: 400;
+      font-size: 0.875rem;
     }
 
     .file-list-section {
@@ -413,21 +436,47 @@ interface FilterOptions {
       flex: 1;
       min-height: 0;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    :host ::ng-deep .p-metergroup-label-list {
+      display: flex;
+      flex-wrap: wrap;
+      margin: 0;
+      padding: 0;
+      list-style-type: none;
+      font-size: 12px;
+      color: gray;
+    }
+
+    /* Ensure table wrapper doesn't overflow */
+    :host ::ng-deep .main-tabs .p-tabs-panel .file-list-section .file-table-container .p-table-wrapper {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
     /* Force fixed height for scrollable table in tabs */
     :host ::ng-deep .main-tabs .p-tabs-panel .file-list-section .p-table-scrollable-wrapper {
-      height: 500px !important;
+      height: 420px !important;
     }
 
     :host ::ng-deep .main-tabs .p-tabs-panel .file-list-section .p-table-scrollable-body {
-      height: 440px !important;
+      height: 360px !important;
       overflow-y: auto !important;
     }
 
     :host ::ng-deep .main-tabs .p-tabs-panel .file-list-section .p-paginator {
-      position: relative;
+      position: sticky;
+      bottom: 0;
       z-index: 10;
+      background: var(--surface-ground);
+      border-top: 1px solid var(--surface-border);
+      padding: 0.75rem 1rem;
+      box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+      margin-top: auto;
     }
 
     /* Card styling - flat design with borders only */
@@ -464,6 +513,36 @@ interface FilterOptions {
     /* Ensure splitter takes full viewport height */
     :host ::ng-deep .main-tabs .p-tabs-panel .p-splitter {
       height: calc(100vh - 120px) !important;
+    }
+
+    /* Responsive pagination fixes */
+    :host ::ng-deep .p-paginator {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 0.75rem !important;
+    }
+
+    :host ::ng-deep .p-paginator .p-paginator-page,
+    :host ::ng-deep .p-paginator .p-paginator-next,
+    :host ::ng-deep .p-paginator .p-paginator-prev,
+    :host ::ng-deep .p-paginator .p-paginator-first,
+    :host ::ng-deep .p-paginator .p-paginator-last {
+      min-width: 2.5rem;
+      height: 2.5rem;
+    }
+
+    /* Hide some pagination elements on smaller screens */
+    @media (max-width: 768px) {
+      :host ::ng-deep .p-paginator .p-paginator-page-options,
+      :host ::ng-deep .p-paginator .p-paginator-rpp-dropdown {
+        display: none;
+      }
+    }
+
+    /* Ensure pagination doesn't overflow container */
+    :host ::ng-deep .file-list-section {
+      max-width: 100%;
+      overflow-x: auto;
     }
   `]
 })
