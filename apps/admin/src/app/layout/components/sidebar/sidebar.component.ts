@@ -1,8 +1,9 @@
 import { Component, OnInit, HostListener, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { ResponsiveService } from '../../../shared/services/responsive.service';
 import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
 
 interface MenuItem {
   label: string;
@@ -202,9 +203,11 @@ interface MenuItem {
           <!-- Settings Button -->
           <button
             class="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-            title="Settings"
+            title="Profile Settings"
+            [routerLink]="'/profile'"
+            (click)="onMenuItemClick()"
           >
-            <i class="pi pi-cog text-sm"></i>
+            <i class="pi pi-user text-sm"></i>
           </button>
         </div>
       </div>
@@ -216,7 +219,10 @@ export class SidebarComponent implements OnInit, OnDestroy {
   isMobileMenuOpen = false;
   isMobile = false;
   private responsiveSubscription?: Subscription;
+  private routerSubscription?: Subscription;
   private responsiveService = inject(ResponsiveService);
+  private router = inject(Router);
+  currentRoute = '';
 
   @HostListener('window:resize')
   onResize() {
@@ -225,6 +231,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.checkScreenSize();
+    this.currentRoute = this.router.url;
+    this.updateActiveStates();
 
     // Subscribe to responsive service for better state management
     this.responsiveSubscription = this.responsiveService.getResponsiveState().subscribe(state => {
@@ -233,10 +241,19 @@ export class SidebarComponent implements OnInit, OnDestroy {
         this.isMobileMenuOpen = false;
       }
     });
+
+    // Subscribe to router events to update active states
+    this.routerSubscription = this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe((event: NavigationEnd) => {
+        this.currentRoute = event.url;
+        this.updateActiveStates();
+      });
   }
 
   ngOnDestroy() {
     this.responsiveSubscription?.unsubscribe();
+    this.routerSubscription?.unsubscribe();
   }
 
   checkScreenSize() {
@@ -256,7 +273,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
         : 'fixed inset-y-0 left-0 z-50 w-64 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-0';
     } else {
       // Desktop: static positioning with width changes
-      classes = this.isCollapsed ? 'w-16' : 'w-64';
+      classes = this.isCollapsed ? 'w-20' : 'w-64';
     }
 
     return classes;
@@ -283,23 +300,53 @@ export class SidebarComponent implements OnInit, OnDestroy {
     }
   }
 
+  updateActiveStates() {
+    // Update dashboard items
+    this.dashboardItems.forEach(item => {
+      item.isActive = this.isRouteActive(item.route);
+    });
+
+    // Update page items
+    this.pageItems.forEach(item => {
+      item.isActive = this.isRouteActive(item.route);
+    });
+
+    // Update analytics items
+    this.analyticsItems.forEach(item => {
+      item.isActive = this.isRouteActive(item.route);
+    });
+  }
+
+  isRouteActive(route?: string): boolean {
+    if (!route) return false;
+
+    // For exact match routes like /dashboard
+    if (this.currentRoute === route) return true;
+
+    // For routes with children (like /storage, /profile, /api-keys)
+    // Check if current route starts with the menu route
+    if (this.currentRoute.startsWith(route + '/') || this.currentRoute.startsWith(route + '?')) {
+      return true;
+    }
+
+    return false;
+  }
+
   dashboardItems: MenuItem[] = [
     {
       label: 'Overview',
       icon: 'pi pi-home',
-      route: '/dashboard',
-      isActive: true,
+      route: '/dashboard'
     },
     { label: 'Analyze', icon: 'pi pi-chart-pie', route: '/analytics' },
   ];
 
   pageItems: MenuItem[] = [
-    { label: 'All charts', icon: 'pi pi-chart-bar', route: '/charts' },
-    { label: 'All projects', icon: 'pi pi-folder', route: '/projects' },
-    { label: 'Explore events', icon: 'pi pi-calendar', route: '/events' },
-    { label: 'Visual labels', icon: 'pi pi-tags', route: '/labels' },
-    { label: 'Live data feed', icon: 'pi pi-rss', route: '/feed' },
     { label: 'Manage access', icon: 'pi pi-users', route: '/access' },
+    { label: 'Roles & Permissions', icon: 'pi pi-shield', route: '/rbac' },
+    { label: 'API Keys', icon: 'pi pi-key', route: '/api-keys' },
+    { label: 'File Storage', icon: 'pi pi-cloud', route: '/storage' },
+    { label: 'Profile', icon: 'pi pi-user', route: '/profile' },
   ];
 
   analyticsItems: MenuItem[] = [

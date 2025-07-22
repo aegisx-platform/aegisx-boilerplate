@@ -1,0 +1,7 @@
+{
+  "keyId": "audit_key_ce81c38572b5f881",
+  "createdAt": "2025-07-17T17:58:11.851Z",
+  "algorithm": "RS256",
+  "keySize": 2048,
+  "status": "active"
+}

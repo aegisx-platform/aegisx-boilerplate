@@ -82,10 +82,17 @@ export default fp(async function (fastify: FastifyInstance) {
             await request.jwtVerify();
             request.authMethod = 'jwt';
             
+            // Note: request.user is already set by jwtVerify() with the JWT payload
+            // This contains the decoded JWT payload with user info and permissions
+            
             // JWT token already contains permissions, no need to query DB
             // Permissions are embedded in the token during login
-        } catch (err) {
-            reply.send(err);
+        } catch (err: any) {
+            return reply.code(401).send({
+                error: 'Unauthorized',
+                message: err.message || 'Invalid or expired JWT token',
+                statusCode: 401
+            });
         }
     });
 
@@ -117,8 +124,12 @@ export default fp(async function (fastify: FastifyInstance) {
             request.authMethod = 'api_key';
             request.apiKeyId = validation.apiKeyId;
             request.userPermissions = validation.user?.permissions;
-        } catch (err) {
-            reply.send(err);
+        } catch (err: any) {
+            return reply.code(401).send({
+                error: 'Unauthorized',
+                message: err.message || 'Invalid API key',
+                statusCode: 401
+            });
         }
     });
 
@@ -155,10 +166,17 @@ export default fp(async function (fastify: FastifyInstance) {
             await request.jwtVerify();
             request.authMethod = 'jwt';
             
+            // Set user context from JWT payload for RBAC middleware
+            // Note: request.user is already set by jwtVerify() with the JWT payload
+            
             // JWT token already contains permissions, no need to query DB
             // Permissions are embedded in the token during login
-        } catch (err) {
-            reply.send(err);
+        } catch (err: any) {
+            return reply.code(401).send({
+                error: 'Unauthorized',
+                message: err.message || 'Authentication failed - invalid token or API key',
+                statusCode: 401
+            });
         }
     });
 

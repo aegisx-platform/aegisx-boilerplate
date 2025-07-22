@@ -9,6 +9,7 @@ import sensible from './validation/sensible';
 import jwt from './security/jwt';
 import rateLimit from './security/rate-limit';
 import helmet from './security/helmet';
+import cors from './security/cors';
 import swagger from './docs/swagger';
 import rbac from './security/rbac';
 import underPressure from './monitoring/under-pressure';
@@ -48,6 +49,7 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
   await fastify.register(jwt);
   await fastify.register(rateLimit);
   await fastify.register(helmet);
+  await fastify.register(cors);
   await fastify.register(underPressure);
   await fastify.register(swagger);
   await fastify.register(rbac);

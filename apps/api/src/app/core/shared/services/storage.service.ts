@@ -224,7 +224,7 @@ export class StorageService implements IStorageService {
               operation: 'upload',
               status: 'success',
               provider: this.config.provider,
-              fileId: result.fileId,
+              fileId: (await this.databaseService.getFileMetadata(result.fileId))?.id || 0,
               userId: request.metadata?.createdBy,
               bytesTransferred: request.file.length,
               purpose: 'File upload'
@@ -317,7 +317,7 @@ export class StorageService implements IStorageService {
             operation: 'download',
             status: 'success',
             provider: this.config.provider,
-            fileId: request.fileId,
+            fileId: (await this.databaseService.getFileMetadata(request.fileId))?.id || 0,
             userId: request.userId,
             bytesTransferred: result.size,
             purpose: 'File download'
@@ -391,7 +391,7 @@ export class StorageService implements IStorageService {
             operation: 'delete',
             status: 'success',
             provider: this.config.provider,
-            fileId: fileId,
+            fileId: (databaseMetadata?.id || 0),
             bytesTransferred: metadata?.size || databaseMetadata?.size,
             purpose: 'File deletion'
           })
@@ -515,7 +515,7 @@ export class StorageService implements IStorageService {
             operation: 'update_metadata',
             status: 'success',
             provider: this.config.provider,
-            fileId: fileId,
+            fileId: (await this.databaseService.getFileMetadata(fileId))?.id || 0,
             purpose: 'File metadata update',
             metadata: updates
           })
@@ -568,7 +568,7 @@ export class StorageService implements IStorageService {
             operation: 'copy',
             status: 'success',
             provider: this.config.provider,
-            fileId: result.fileId,
+            fileId: (await this.databaseService.getFileMetadata(result.fileId))?.id || 0,
             purpose: `File copied from ${sourceId}`,
             metadata: { sourceId, destinationPath }
           })
@@ -601,7 +601,7 @@ export class StorageService implements IStorageService {
             operation: 'move',
             status: 'success',
             provider: this.config.provider,
-            fileId: sourceId,
+            fileId: (await this.databaseService.getFileMetadata(sourceId))?.id || 0,
             purpose: `File moved to ${destinationPath}`,
             metadata: { sourceId, destinationPath }
           })

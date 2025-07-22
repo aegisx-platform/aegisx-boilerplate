@@ -32,6 +32,24 @@ export const UserSchema = Type.Object({
     Type.String({ format: 'date-time' }),
     Type.Null()
   ]),
+  last_login_at: Type.Union([
+    Type.String({ format: 'date-time' }),
+    Type.Null()
+  ]),
+  created_at: Type.String({ format: 'date-time' }),
+  updated_at: Type.String({ format: 'date-time' })
+});
+
+// Profile schema with roles and permissions for detailed user info
+export const ProfileSchema = Type.Object({
+  id: Type.String({ format: 'uuid' }),
+  name: Type.String(),
+  username: Type.Union([Type.String(), Type.Null()]),
+  email: Type.String({ format: 'email' }),
+  roles: Type.Array(Type.String()),
+  permissions: Type.Array(Type.String()),
+  is_active: Type.Boolean(),
+  is_email_verified: Type.Boolean(),
   created_at: Type.String({ format: 'date-time' }),
   updated_at: Type.String({ format: 'date-time' })
 });
@@ -174,7 +192,9 @@ export const AuthSchemas = {
     tags: ['User Profile'],
     security: [{ bearerAuth: [] }],
     response: {
-      200: UserSchema,
+      200: Type.Object({
+        user: ProfileSchema
+      }),
       401: ErrorResponseSchema,
       404: ErrorResponseSchema
     }
@@ -186,7 +206,10 @@ export const AuthSchemas = {
     body: UpdateProfileRequestSchema,
     security: [{ bearerAuth: [] }],
     response: {
-      200: UserSchema,
+      200: Type.Object({
+        message: Type.String(),
+        user: UserSchema
+      }),
       401: ErrorResponseSchema,
       404: ErrorResponseSchema,
       400: ErrorResponseSchema

@@ -2,6 +2,13 @@
  * Storage API Schemas
  *
  * TypeBox schemas for storage API endpoints validation and documentation
+ * 
+ * Note: After migration to bigserial primary keys, the public API continues
+ * to use the 'file_id' string field for file access, which provides a stable
+ * public identifier independent of internal database IDs.
+ * 
+ * Internal bigserial IDs are used for database relationships and performance,
+ * while 'uuid_public' fields provide UUID-based public identifiers when needed.
  */
 
 import { Type, Static } from '@sinclair/typebox'
@@ -78,7 +85,12 @@ export const DownloadRequestSchema = Type.Object({
 
 // File ID Params Schema
 export const FileIdParamsSchema = Type.Object({
-  fileId: Type.String({ minLength: 1, description: 'File identifier' })
+  fileId: Type.String({ minLength: 1, description: 'File identifier (provider-specific string)' })
+})
+
+// UUID Public Params Schema (for operations that need UUID-based access)
+export const UuidPublicParamsSchema = Type.Object({
+  uuid: Type.String({ format: 'uuid', description: 'Public UUID identifier' })
 })
 
 // File Info Response Schema
@@ -199,7 +211,7 @@ export const ShareFileRequestSchema = Type.Object({
 // Share Response Schema
 export const ShareResponseSchema = Type.Object({
   success: Type.Boolean(),
-  shareId: Type.String(),
+  shareId: Type.String({ format: 'uuid', description: 'Share UUID identifier' }),
   fileId: Type.String(),
   sharedWith: Type.String(),
   permissions: Type.Object({
@@ -274,7 +286,7 @@ export const SharePermissionsSchema = Type.Object({
 
 // Shared File Info Schema
 export const SharedFileInfoSchema = Type.Object({
-  shareId: Type.String({ description: 'Unique share identifier' }),
+  shareId: Type.String({ format: 'uuid', description: 'Unique share UUID identifier' }),
   fileId: Type.String({ description: 'File identifier' }),
   permissions: SharePermissionsSchema,
   expiresAt: Type.Optional(Type.String({ format: 'date-time', description: 'Share expiration date' })),
@@ -327,14 +339,133 @@ export const MySharesResponseSchema = Type.Object({
 
 // Revoke Share Request Params Schema
 export const RevokeShareParamsSchema = Type.Object({
-  shareId: Type.String({ minLength: 1, description: 'Share ID to revoke' })
+  shareId: Type.String({ format: 'uuid', minLength: 1, description: 'Share UUID to revoke' })
 })
 
 // Revoke Share Response Schema
 export const RevokeShareResponseSchema = Type.Object({
   success: Type.Boolean(),
   message: Type.String(),
-  shareId: Type.String()
+  shareId: Type.String({ format: 'uuid' })
+})
+
+//Folder Schemas
+
+// Folder Status enum
+export const FolderStatusSchema = Type.Union([
+  Type.Literal('active'),
+  Type.Literal('archived'), 
+  Type.Literal('deleted')
+])
+
+// Create Folder Request Schema
+export const CreateFolderRequestSchema = Type.Object({
+  name: Type.String({ minLength: 1, maxLength: 255, description: 'Folder name' }),
+  path: Type.Optional(Type.String({ description: 'Parent folder path' })),
+  parentId: Type.Optional(Type.Number({ description: 'Parent folder ID' })),
+  description: Type.Optional(Type.String({ maxLength: 1000, description: 'Folder description' })),
+  metadata: Type.Optional(Type.Record(Type.String(), Type.Any(), { description: 'Custom metadata' })),
+  icon: Type.Optional(Type.String({ maxLength: 100, description: 'Folder icon name' })),
+  color: Type.Optional(Type.String({ pattern: '^#[0-9A-Fa-f]{6}$', description: 'Folder color (hex)' })),
+  dataClassification: Type.Optional(DataClassificationSchema),
+  inheritPermissions: Type.Optional(Type.Boolean({ default: true, description: 'Inherit parent permissions' }))
+})
+
+// Folder Response Schema
+export const FolderResponseSchema = Type.Object({
+  id: Type.Number({ description: 'Folder unique identifier' }),
+  name: Type.String({ description: 'Folder name' }),
+  path: Type.String({ description: 'Full folder path' }),
+  parentId: Type.Optional(Type.Number({ description: 'Parent folder ID' })),
+  description: Type.Optional(Type.String({ description: 'Folder description' })),
+  metadata: Type.Optional(Type.Record(Type.String(), Type.Any(), { description: 'Custom metadata' })),
+  icon: Type.Optional(Type.String({ description: 'Folder icon name' })),
+  color: Type.Optional(Type.String({ description: 'Folder color (hex)' })),
+  dataClassification: DataClassificationSchema,
+  inheritPermissions: Type.Boolean({ description: 'Inherits parent permissions' }),
+  fileCount: Type.Number({ description: 'Number of files in folder' }),
+  subfolderCount: Type.Number({ description: 'Number of subfolders' }),
+  totalSize: Type.Number({ description: 'Total size in bytes' }),
+  createdAt: Type.String({ format: 'date-time' }),
+  updatedAt: Type.String({ format: 'date-time' }),
+  lastAccessedAt: Type.Optional(Type.String({ format: 'date-time' })),
+  status: FolderStatusSchema,
+  deletedAt: Type.Optional(Type.String({ format: 'date-time' }))
+})
+
+// List Folders Request Schema
+export const ListFoldersRequestSchema = Type.Object({
+  parentId: Type.Optional(Type.Union([Type.Number(), Type.Null()], { description: 'Parent folder ID (null for root)' })),
+  path: Type.Optional(Type.String({ description: 'Filter by path' })),
+  recursive: Type.Optional(Type.Boolean({ default: false, description: 'Include subfolders recursively' })),
+  includeFiles: Type.Optional(Type.Boolean({ default: false, description: 'Include files in response' })),
+  includeStats: Type.Optional(Type.Boolean({ default: true, description: 'Include folder statistics' })),
+  status: Type.Optional(FolderStatusSchema),
+  sortBy: Type.Optional(Type.Union([
+    Type.Literal('name'),
+    Type.Literal('created_at'),
+    Type.Literal('updated_at'),
+    Type.Literal('size')
+  ])),
+  sortOrder: Type.Optional(Type.Union([
+    Type.Literal('asc'),
+    Type.Literal('desc')
+  ])),
+  limit: Type.Optional(Type.Number({ minimum: 1, maximum: 1000, default: 50 })),
+  offset: Type.Optional(Type.Number({ minimum: 0, default: 0 }))
+})
+
+// List Folders Response Schema
+export const ListFoldersResponseSchema = Type.Object({
+  folders: Type.Array(FolderResponseSchema),
+  files: Type.Optional(Type.Array(FileListItemSchema, { description: 'Files (if includeFiles=true)' })),
+  total: Type.Number({ description: 'Total number of folders' }),
+  hasMore: Type.Boolean(),
+  pagination: Type.Object({
+    limit: Type.Number(),
+    offset: Type.Number(),
+    total: Type.Number()
+  })
+})
+
+// Folder Tree Node Schema (for tree view)
+export const FolderTreeNodeSchema: any = Type.Object({
+  folder: FolderResponseSchema,
+  children: Type.Optional(Type.Array(Type.Any(), { description: 'Child folders' })),
+  files: Type.Optional(Type.Array(FileListItemSchema, { description: 'Files in folder' }))
+})
+
+// Folder Tree Response Schema
+export const FolderTreeResponseSchema = Type.Object({
+  tree: Type.Array(FolderTreeNodeSchema),
+  totalFolders: Type.Number(),
+  totalFiles: Type.Number(),
+  totalSize: Type.Number()
+})
+
+// Update Folder Request Schema
+export const UpdateFolderRequestSchema = Type.Object({
+  name: Type.Optional(Type.String({ minLength: 1, maxLength: 255 })),
+  description: Type.Optional(Type.String({ maxLength: 1000 })),
+  metadata: Type.Optional(Type.Record(Type.String(), Type.Any())),
+  icon: Type.Optional(Type.String({ maxLength: 100 })),
+  color: Type.Optional(Type.String({ pattern: '^#[0-9A-Fa-f]{6}$' })),
+  dataClassification: Type.Optional(DataClassificationSchema),
+  inheritPermissions: Type.Optional(Type.Boolean())
+})
+
+// Delete Folder Response Schema
+export const DeleteFolderResponseSchema = Type.Object({
+  success: Type.Boolean(),
+  folderId: Type.Number(),
+  deletedFolders: Type.Number({ description: 'Number of folders deleted' }),
+  deletedFiles: Type.Number({ description: 'Number of files deleted' }),
+  message: Type.Optional(Type.String())
+})
+
+// Folder ID Params Schema
+export const FolderIdParamsSchema = Type.Object({
+  folderId: Type.String({ pattern: '^[0-9]+$', description: 'Folder identifier (numeric string)' })
 })
 
 // TypeScript types derived from schemas
@@ -361,6 +492,18 @@ export type SharedFilesResponse = Static<typeof SharedFilesResponseSchema>
 export type MySharesResponse = Static<typeof MySharesResponseSchema>
 export type RevokeShareParams = Static<typeof RevokeShareParamsSchema>
 export type RevokeShareResponse = Static<typeof RevokeShareResponseSchema>
+export type UuidPublicParams = Static<typeof UuidPublicParamsSchema>
+
+// Folder types
+export type CreateFolderRequest = Static<typeof CreateFolderRequestSchema>
+export type FolderResponse = Static<typeof FolderResponseSchema>
+export type ListFoldersRequest = Static<typeof ListFoldersRequestSchema>
+export type ListFoldersResponse = Static<typeof ListFoldersResponseSchema>
+export type FolderTreeNode = Static<typeof FolderTreeNodeSchema>
+export type FolderTreeResponse = Static<typeof FolderTreeResponseSchema>
+export type UpdateFolderRequest = Static<typeof UpdateFolderRequestSchema>
+export type DeleteFolderResponse = Static<typeof DeleteFolderResponseSchema>
+export type FolderIdParams = Static<typeof FolderIdParamsSchema>
 
 // === MULTIPART UPLOAD BODY SCHEMA ===
 // For Swagger documentation with @aegisx/fastify-multipart

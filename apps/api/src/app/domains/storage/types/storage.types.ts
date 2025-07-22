@@ -1,13 +1,14 @@
 /**
  * Storage Domain Types
- * 
+ *
  * TypeScript interfaces for storage domain business logic
  */
 
 import { ThumbnailInfo, ThumbnailSize } from '../../../core/shared/types/storage.types'
 
 export interface StorageFileMetadata {
-  id: string
+  id: number // bigserial primary key
+  uuid_public: string // public UUID for API access
   fileId: string
   filename: string
   originalName: string
@@ -30,8 +31,9 @@ export interface StorageFileMetadata {
 }
 
 export interface StorageOperation {
-  id: string
-  fileId: string
+  id: number // bigserial primary key
+  uuid_public: string // public UUID for API access
+  fileId: number // references storage_files.id
   operation: 'upload' | 'download' | 'delete' | 'copy' | 'move' | 'update_metadata' | 'image_process' | 'image_convert' | 'image_optimize'
   status: 'success' | 'failed' | 'pending'
   provider: string
@@ -50,8 +52,9 @@ export interface StorageOperation {
 }
 
 export interface FileShare {
-  id: string
-  fileId: string
+  id: number // bigserial primary key
+  uuid_public: string // public UUID for API access
+  fileId: number // references storage_files.id
   sharedBy: string
   sharedWith: string
   permissions: {
@@ -71,7 +74,8 @@ export interface FileShare {
 }
 
 export interface StorageQuota {
-  id: string
+  id: number // bigserial primary key
+  uuid_public: string // public UUID for API access
   userId: string
   entityType: string
   entityId: string
@@ -120,6 +124,8 @@ export interface FileSearchOptions {
   status?: string
   tags?: string[]
   search?: string
+  folderId?: number
+  path?: string
   sortBy?: 'filename' | 'size' | 'created_at' | 'last_accessed_at'
   sortOrder?: 'asc' | 'desc'
   limit?: number
@@ -175,6 +181,7 @@ export interface ApiUploadRequest {
   tags?: string[]
   customMetadata?: Record<string, any>
   path?: string
+  folderId?: number
   encrypt?: boolean
   overwrite?: boolean
   generateThumbnail?: boolean
@@ -236,11 +243,113 @@ export interface ApiErrorResponse {
   }
 }
 
+// Folder types
+export interface StorageFolder {
+  id: number // bigserial primary key (already correct)
+  name: string
+  path: string
+  parentId?: number | null
+  description?: string
+  metadata?: Record<string, any>
+  icon?: string
+  color?: string
+  dataClassification: 'public' | 'internal' | 'confidential' | 'restricted'
+  inheritPermissions: boolean
+  customPermissions?: Record<string, any>
+  fileCount: number
+  subfolderCount: number
+  totalSize: number
+  createdBy?: string
+  updatedBy?: string
+  createdAt: Date
+  updatedAt: Date
+  lastAccessedAt?: Date
+  status: 'active' | 'archived' | 'deleted'
+  deletedAt?: Date
+}
+
+export interface CreateFolderOptions {
+  name: string
+  path?: string
+  parentId?: number
+  description?: string
+  metadata?: Record<string, any>
+  icon?: string
+  color?: string
+  dataClassification?: 'public' | 'internal' | 'confidential' | 'restricted'
+  inheritPermissions?: boolean
+  customPermissions?: Record<string, any>
+}
+
+export interface FolderListOptions {
+  parentId?: number | null
+  path?: string
+  recursive?: boolean
+  includeFiles?: boolean
+  includeStats?: boolean
+  status?: 'active' | 'archived' | 'deleted'
+  sortBy?: 'name' | 'created_at' | 'updated_at' | 'size'
+  sortOrder?: 'asc' | 'desc'
+  limit?: number
+  offset?: number
+}
+
+export interface FolderTreeNode {
+  folder: StorageFolder
+  children?: FolderTreeNode[]
+  files?: StorageFileMetadata[]
+}
+
+// API Request/Response for folders
+export interface ApiCreateFolderRequest {
+  name: string
+  path?: string
+  parentId?: number
+  description?: string
+  metadata?: Record<string, any>
+  icon?: string
+  color?: string
+  dataClassification?: 'public' | 'internal' | 'confidential' | 'restricted'
+  inheritPermissions?: boolean
+}
+
+export interface ApiFolderResponse {
+  id: number
+  name: string
+  path: string
+  parentId?: number | null
+  description?: string
+  metadata?: Record<string, any>
+  icon?: string
+  color?: string
+  dataClassification: string
+  fileCount: number
+  subfolderCount: number
+  totalSize: number
+  createdAt: string
+  updatedAt: string
+  status: string
+}
+
+export interface ApiFolderListResponse {
+  folders: ApiFolderResponse[]
+  total: number
+  hasMore: boolean
+  pagination: {
+    limit: number
+    offset: number
+    total: number
+  }
+}
+
 // Event types for storage operations
 export interface StorageEventData {
   operation: string
-  fileId?: string
+  fileId?: number // internal bigserial ID
+  fileUuid?: string // public UUID for external events
+  folderId?: number
   filename?: string
+  folderName?: string
   userId?: string
   provider?: string
   size?: number

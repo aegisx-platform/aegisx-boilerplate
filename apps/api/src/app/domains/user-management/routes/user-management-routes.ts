@@ -1,7 +1,6 @@
 import { FastifyInstance, RouteGenericInterface } from 'fastify';
 import { UserManagementController } from '../controllers/user-management-controller';
 import { UserManagementService } from '../services/user-management-service';
-import { UserRepositoryImpl } from '../../auth/repositories/user-repository';
 import { UserManagementSchemas } from '../schemas/user-management-schemas';
 import {
   CreateUserRequest,
@@ -53,13 +52,12 @@ interface BulkActionRoute extends RouteGenericInterface {
  * All routes require authentication and appropriate permissions.
  */
 export async function userManagementRoutes(fastify: FastifyInstance) {
-  // Initialize repository
-  const userRepository = new UserRepositoryImpl(fastify);
-  
-  // Initialize service
-  const userManagementService = new UserManagementService(fastify, userRepository);
+  // Initialize service (UserManagementService doesn't actually need UserRepository)
+  fastify.log.info('Initializing UserManagementService');
+  const userManagementService = new UserManagementService(fastify);
   
   // Initialize controller
+  fastify.log.info('Initializing UserManagementController');
   const userManagementController = new UserManagementController(fastify, userManagementService);
 
   // Bind controller methods

@@ -91,6 +91,7 @@ export default fp(async function (fastify: FastifyInstance) {
             type: 'apiKey',
             name: 'X-API-Key',
             in: 'header',
+            description: 'API key for authentication.',
           },
         },
       },

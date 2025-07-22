@@ -25,11 +25,29 @@ export class RoleRepository implements RoleRepositoryInterface {
   }
 
   async findAll(activeOnly = true): Promise<Role[]> {
-    const query = this.knex('roles');
+    const knex = this.knex; // Store reference for closure
+    const query = this.knex('roles')
+      .select(
+        'roles.*',
+        this.knex.raw('COUNT(DISTINCT user_roles.user_id) as user_count')
+      )
+      .leftJoin('user_roles', function() {
+        this.on('roles.id', '=', 'user_roles.role_id')
+          .andOn('user_roles.is_active', '=', knex.raw('?', [true]));
+      })
+      .groupBy('roles.id');
+
     if (activeOnly) {
-      query.where({ is_active: true });
+      query.where('roles.is_active', true);
     }
-    return query.orderBy('display_name');
+
+    const roles = await query.orderBy('roles.display_name');
+
+    // Convert count to number and ensure proper type
+    return roles.map(role => ({
+      ...role,
+      user_count: parseInt(role.user_count as string, 10) || 0
+    })) as Role[];
   }
 
   async findRoleWithPermissions(roleId: string): Promise<RoleWithPermissions | null> {
