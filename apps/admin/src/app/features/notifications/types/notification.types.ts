@@ -18,6 +18,11 @@ export interface Notification {
   tags?: string[];
   createdAt: string;
   updatedAt: string;
+  // Flat properties from API response
+  recipientEmail?: string;
+  recipientPhone?: string;
+  recipientName?: string;
+  subject?: string;
 }
 
 export interface NotificationRecipient {
@@ -213,14 +218,13 @@ export interface ListNotificationsParams {
 export interface NotificationListResponse {
   success: boolean;
   data: Notification[];
-  files: Notification[];
-  total: number;
-  notifications: Notification[];
   pagination: {
+    total: number;
     page: number;
     limit: number;
-    totalCount: number;
     totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
   };
 }
 

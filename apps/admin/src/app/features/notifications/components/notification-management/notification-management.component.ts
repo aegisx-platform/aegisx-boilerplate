@@ -261,10 +261,28 @@ import { NotificationBatchComponent } from '../notification-batch/notification-b
           </p-tabpanel>
           <!-- Notifications Tab -->
           <p-tabpanel value="notifications">
-            <app-notification-list
-              (notificationSelected)="onNotificationSelected($event)"
-              (refreshRequested)="refreshData()">
-            </app-notification-list>
+            <div class="notification-tab-container">
+              <div class="mb-4">
+                <div class="flex align-items-center justify-content-between">
+                  <div>
+                    <h2 class="text-2xl font-bold m-0 text-gray-800">Notifications</h2>
+                    <p class="text-gray-600 mt-1 mb-0">Manage and monitor all notifications</p>
+                  </div>
+                  <div class="ml-auto">
+                    <p-button
+                      icon="pi pi-plus"
+                      label="Add"
+                      severity="primary"
+                      (click)="showCreateDialog()">
+                    </p-button>
+                  </div>
+                </div>
+              </div>
+              <app-notification-list
+                (notificationSelected)="onNotificationSelected($event)"
+                (refreshRequested)="refreshData()">
+              </app-notification-list>
+            </div>
           </p-tabpanel>
 
           <!-- Templates Tab -->

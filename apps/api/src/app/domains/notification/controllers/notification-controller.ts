@@ -223,30 +223,35 @@ export class DatabaseNotificationController implements NotificationController {
         this.notificationService.getNotificationCounts(filters),
       ]);
 
+      const finalLimit = filters.limit || 20;
+      const finalOffset = filters.offset || 0;
+      const totalPages = Math.ceil(totalCount / finalLimit);
+      const currentPage = Math.floor(finalOffset / finalLimit) + 1;
+
       reply.send({
         success: true,
-        data: {
-          notifications: notifications.map(n => ({
-            id: n.id,
-            type: n.type,
-            channel: n.channel,
-            status: n.status,
-            priority: n.priority,
-            recipientEmail: n.recipient.email,
-            subject: n.subject,
-            attempts: n.attempts,
-            scheduledAt: n.scheduledAt,
-            sentAt: n.sentAt,
-            deliveredAt: n.deliveredAt,
-            failedAt: n.failedAt,
-            tags: n.tags,
-          })),
-          pagination: {
-            total: totalCount,
-            limit: filters.limit || 20,
-            offset: filters.offset || 0,
-            hasMore: (filters.offset || 0) + notifications.length < totalCount,
-          },
+        data: notifications.map(n => ({
+          id: n.id,
+          type: n.type,
+          channel: n.channel,
+          status: n.status,
+          priority: n.priority,
+          recipientEmail: n.recipient.email,
+          subject: n.subject,
+          attempts: n.attempts,
+          scheduledAt: n.scheduledAt,
+          sentAt: n.sentAt,
+          deliveredAt: n.deliveredAt,
+          failedAt: n.failedAt,
+          tags: n.tags,
+        })),
+        pagination: {
+          total: totalCount,
+          page: currentPage,
+          limit: finalLimit,
+          totalPages: totalPages,
+          hasNext: currentPage < totalPages,
+          hasPrev: currentPage > 1,
         },
       });
     } catch (error) {

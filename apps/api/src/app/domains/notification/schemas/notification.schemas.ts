@@ -233,28 +233,28 @@ export const ListNotificationsQuerySchema = Type.Object({
 // List Notifications Response Schema
 export const ListNotificationsResponseSchema = Type.Object({
   success: Type.Boolean(),
-  data: Type.Object({
-    notifications: Type.Array(Type.Object({
-      id: Type.String(),
-      type: Type.String(),
-      channel: Type.String(),
-      status: Type.String(),
-      priority: Type.String(),
-      recipientEmail: Type.String(),
-      subject: Type.String(),
-      attempts: Type.Integer(),
-      scheduledAt: Type.Optional(Type.String({ format: 'date-time' })),
-      sentAt: Type.Optional(Type.String({ format: 'date-time' })),
-      deliveredAt: Type.Optional(Type.String({ format: 'date-time' })),
-      failedAt: Type.Optional(Type.String({ format: 'date-time' })),
-      tags: Type.Array(Type.String())
-    })),
-    pagination: Type.Object({
-      total: Type.Integer(),
-      limit: Type.Integer(),
-      offset: Type.Integer(),
-      hasMore: Type.Boolean()
-    })
+  data: Type.Array(Type.Object({
+    id: Type.String(),
+    type: Type.String(),
+    channel: Type.String(),
+    status: Type.String(),
+    priority: Type.String(),
+    recipientEmail: Type.String(),
+    subject: Type.String(),
+    attempts: Type.Integer(),
+    scheduledAt: Type.Optional(Type.String({ format: 'date-time' })),
+    sentAt: Type.Optional(Type.String({ format: 'date-time' })),
+    deliveredAt: Type.Optional(Type.String({ format: 'date-time' })),
+    failedAt: Type.Optional(Type.String({ format: 'date-time' })),
+    tags: Type.Array(Type.String())
+  })),
+  pagination: Type.Object({
+    total: Type.Integer(),
+    page: Type.Integer(),
+    limit: Type.Integer(),
+    totalPages: Type.Integer(),
+    hasNext: Type.Boolean(),
+    hasPrev: Type.Boolean()
   })
 });
 

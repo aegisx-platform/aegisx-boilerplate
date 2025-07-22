@@ -12,7 +12,7 @@ import { NotificationStats } from '../../types/notification.types';
       <p>Analytics and reporting component - Coming soon...</p>
       <div *ngIf="stats" class="mt-4">
         <p>Total notifications: {{ stats.totalCount }}</p>
-        <p>Success rate: {{ stats.deliveryMetrics?.successRate || 0 }}%</p>
+        <p>Success rate: {{ stats.deliveryMetrics.successRate || 0 }}%</p>
       </div>
     </div>
   `

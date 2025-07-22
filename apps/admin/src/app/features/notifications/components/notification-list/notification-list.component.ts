@@ -149,9 +149,9 @@ import {
 
         <ng-template pTemplate="header">
           <tr>
-            <th pSortableColumn="createdAt" style="width: 150px">
-              Created
-              <p-sortIcon field="createdAt"></p-sortIcon>
+            <th pSortableColumn="sentAt" style="width: 150px">
+              Sent
+              <p-sortIcon field="sentAt"></p-sortIcon>
             </th>
             <th style="width: 100px">Type</th>
             <th style="width: 100px">Channel</th>
@@ -170,7 +170,7 @@ import {
           <tr [class.notification-failed]="notification.status === 'failed'">
             <td>
               <span class="text-sm">
-                {{ notification.createdAt | date:'short' }}
+                {{ notification.sentAt | date:'short' }}
               </span>
             </td>
             <td>
@@ -187,26 +187,26 @@ import {
             </td>
             <td>
               <div class="recipient-info">
-                <div *ngIf="notification.recipient.email" class="text-sm">
+                <div *ngIf="notification.recipientEmail" class="text-sm">
                   <i class="pi pi-envelope text-xs mr-1"></i>
-                  {{ notification.recipient.email }}
+                  {{ notification.recipientEmail }}
                 </div>
-                <div *ngIf="notification.recipient.phone" class="text-sm">
+                <div *ngIf="notification.recipientPhone" class="text-sm">
                   <i class="pi pi-phone text-xs mr-1"></i>
-                  {{ notification.recipient.phone }}
+                  {{ notification.recipientPhone }}
                 </div>
-                <div *ngIf="notification.recipient.name" class="text-sm text-gray-600">
-                  {{ notification.recipient.name }}
+                <div *ngIf="notification.recipientName" class="text-sm text-gray-600">
+                  {{ notification.recipientName }}
                 </div>
               </div>
             </td>
             <td>
               <div class="content-preview">
-                <div *ngIf="notification.content.subject" class="font-medium text-sm mb-1">
-                  {{ notification.content.subject }}
+                <div *ngIf="notification.subject" class="font-medium text-sm mb-1">
+                  {{ notification.subject }}
                 </div>
                 <div class="text-sm text-gray-600 text-truncate" style="max-width: 300px">
-                  {{ notification.content.text || notification.content.html || 'No content' }}
+                  {{ notification.content || 'No content' }}
                 </div>
               </div>
             </td>
@@ -320,17 +320,17 @@ import {
           <div class="field mb-3">
             <label class="font-semibold mb-2 block">Recipient</label>
             <div class="recipient-details bg-gray-50 p-3 border-round">
-              <div *ngIf="selectedNotification.recipient.name" class="mb-2">
+              <div *ngIf="selectedNotification.recipientName" class="mb-2">
                 <i class="pi pi-user mr-2"></i>
-                {{ selectedNotification.recipient.name }}
+                {{ selectedNotification.recipientName }}
               </div>
-              <div *ngIf="selectedNotification.recipient.email">
+              <div *ngIf="selectedNotification.recipientEmail">
                 <i class="pi pi-envelope mr-2"></i>
-                {{ selectedNotification.recipient.email }}
+                {{ selectedNotification.recipientEmail }}
               </div>
-              <div *ngIf="selectedNotification.recipient.phone">
+              <div *ngIf="selectedNotification.recipientPhone">
                 <i class="pi pi-phone mr-2"></i>
-                {{ selectedNotification.recipient.phone }}
+                {{ selectedNotification.recipientPhone }}
               </div>
             </div>
           </div>
@@ -339,12 +339,12 @@ import {
           <div class="field mb-3">
             <label class="font-semibold mb-2 block">Content</label>
             <div class="content-details bg-gray-50 p-3 border-round">
-              <div *ngIf="selectedNotification.content.subject" class="mb-2">
-                <strong>Subject:</strong> {{ selectedNotification.content.subject }}
+              <div *ngIf="selectedNotification.subject" class="mb-2">
+                <strong>Subject:</strong> {{ selectedNotification.subject }}
               </div>
-              <div *ngIf="selectedNotification.content.text">
+              <div *ngIf="selectedNotification.content">
                 <strong>Message:</strong>
-                <p class="mt-1 mb-0 white-space-pre-wrap">{{ selectedNotification.content.text }}</p>
+                <p class="mt-1 mb-0 white-space-pre-wrap">{{ selectedNotification.content }}</p>
               </div>
             </div>
           </div>
@@ -517,7 +517,7 @@ export class NotificationListComponent implements OnInit, OnDestroy {
     const params: ListNotificationsParams = {
       page: event ? Math.floor(event.first / event.rows) + 1 : 1,
       limit: event?.rows || this.pageSize,
-      sortBy: event?.sortField || 'createdAt',
+      sortBy: event?.sortField || 'sentAt',
       sortOrder: event?.sortOrder === 1 ? 'asc' : 'desc'
     };
 
@@ -538,8 +538,8 @@ export class NotificationListComponent implements OnInit, OnDestroy {
 
     this.notificationService.listNotifications(params).subscribe({
       next: (response) => {
-        this.notifications = response.files || [];
-        this.totalRecords = response.total || 0;
+        this.notifications = response.data || [];
+        this.totalRecords = response.pagination?.total || 0;
         this.loading = false;
       },
       error: (error) => {
@@ -691,7 +691,7 @@ export class NotificationListComponent implements OnInit, OnDestroy {
     
     timeline.push({
       status: 'Created',
-      date: notification.createdAt,
+      date: notification.sentAt,
       icon: 'pi pi-plus'
     });
 
