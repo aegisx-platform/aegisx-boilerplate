@@ -194,7 +194,7 @@ export class NotificationService {
   }
 
   getChannelIcon(channel: string): string {
-    const icons = {
+    const icons: Record<string, string> = {
       'email': 'pi pi-envelope',
       'sms': 'pi pi-mobile',
       'push': 'pi pi-bell',
@@ -206,7 +206,7 @@ export class NotificationService {
   }
 
   getPriorityIcon(priority: string): string {
-    const icons = {
+    const icons: Record<string, string> = {
       'low': 'pi pi-angle-down',
       'normal': 'pi pi-minus',
       'high': 'pi pi-angle-up',
@@ -217,7 +217,7 @@ export class NotificationService {
   }
 
   getPriorityColor(priority: string): string {
-    const colors = {
+    const colors: Record<string, string> = {
       'low': 'secondary',
       'normal': 'info',
       'high': 'primary',

@@ -12,7 +12,6 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
-import { CalendarModule } from 'primeng/calendar';
 import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -62,7 +61,6 @@ import { NotificationBatchComponent } from '../notification-batch/notification-b
     TagModule,
     SelectModule,
     InputTextModule,
-    CalendarModule,
     DialogModule,
     ToastModule,
     ConfirmDialogModule,
@@ -350,13 +348,11 @@ import { NotificationBatchComponent } from '../notification-batch/notification-b
             <!-- Schedule -->
             <div class="field col-12 md:col-6">
               <label for="scheduledAt" class="block mb-2">Schedule At</label>
-              <p-calendar 
+              <input 
+                pInputText
                 formControlName="scheduledAt" 
-                [showTime]="true"
-                dateFormat="dd/mm/yy"
-                placeholder="Send immediately"
-                styleClass="w-full">
-              </p-calendar>
+                placeholder="Send immediately (YYYY-MM-DD HH:MM)"
+                class="w-full">
             </div>
           </div>
         </form>

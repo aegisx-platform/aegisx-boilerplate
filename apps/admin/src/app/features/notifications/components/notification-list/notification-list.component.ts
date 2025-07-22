@@ -10,7 +10,6 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
-import { CalendarModule } from 'primeng/calendar';
 import { TooltipModule } from 'primeng/tooltip';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
@@ -43,7 +42,6 @@ import {
     InputTextModule,
     SelectModule,
     TagModule,
-    CalendarModule,
     TooltipModule,
     IconFieldModule,
     InputIconModule,
@@ -112,15 +110,13 @@ import {
           </p-select>
 
           <!-- Date Range -->
-          <p-calendar 
-            [(ngModel)]="dateRange" 
-            selectionMode="range" 
-            dateFormat="dd/mm/yy"
-            placeholder="Date range"
-            [readonlyInput]="true"
-            (onSelect)="onFilterChange()"
-            styleClass="w-15rem">
-          </p-calendar>
+          <input
+            pInputText
+            [(ngModel)]="dateRangeText"
+            placeholder="Date range (dd/mm/yy - dd/mm/yy)"
+            (blur)="onDateRangeChange()"
+            class="w-15rem"
+          />
 
           <!-- Refresh Button -->
           <p-button 
@@ -245,7 +241,7 @@ import {
                   icon="pi pi-refresh" 
                   [text]="true" 
                   size="small"
-                  severity="warning"
+                  severity="warn"
                   (click)="retryNotification(notification)"
                   pTooltip="Retry"
                   tooltipPosition="top">
@@ -473,6 +469,7 @@ export class NotificationListComponent implements OnInit, OnDestroy {
   selectedChannel: NotificationChannel | null = null;
   selectedPriority: NotificationPriority | null = null;
   dateRange: Date[] | null = null;
+  dateRangeText = '';
 
   // Filter options
   statusOptions = [
@@ -569,6 +566,29 @@ export class NotificationListComponent implements OnInit, OnDestroy {
 
   onFilterChange() {
     this.table.reset();
+  }
+
+  onDateRangeChange() {
+    // Simple date range parsing - can be enhanced
+    if (this.dateRangeText.includes('-')) {
+      const dates = this.dateRangeText.split('-').map(d => d.trim());
+      if (dates.length === 2) {
+        try {
+          const startDate = new Date(dates[0]);
+          const endDate = new Date(dates[1]);
+          if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+            this.dateRange = [startDate, endDate];
+            this.onFilterChange();
+          }
+        } catch (error) {
+          // Invalid date format
+          this.dateRange = null;
+        }
+      }
+    } else {
+      this.dateRange = null;
+      this.onFilterChange();
+    }
   }
 
   refreshList() {
