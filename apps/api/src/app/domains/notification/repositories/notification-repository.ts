@@ -411,19 +411,22 @@ export class KnexNotificationRepository implements NotificationRepository {
       id: result.id,
       name: result.name,
       type: result.type,
-      channels: JSON.parse(result.channels),
+      channels: typeof result.channels === 'string' ? JSON.parse(result.channels) : result.channels,
       subject: result.subject,
       content: {
         text: result.content_text,
         html: result.content_html,
       },
-      variables: JSON.parse(result.variables || '[]'),
+      variables: typeof result.variables === 'string' ? JSON.parse(result.variables || '[]') : result.variables || [],
+      active: result.active,
       metadata: {
         version: result.version,
         createdAt: result.created_at,
         updatedAt: result.updated_at,
         createdBy: result.created_by,
       },
+      createdAt: result.created_at,
+      updatedAt: result.updated_at,
     };
   }
 
@@ -500,7 +503,7 @@ export class KnexNotificationRepository implements NotificationRepository {
 
     return {
       userId: result.user_id,
-      channels: JSON.parse(result.channels),
+      channels: typeof result.channels === 'string' ? JSON.parse(result.channels) : result.channels,
       quietHours: result.quiet_hours_start && result.quiet_hours_end ? {
         start: result.quiet_hours_start,
         end: result.quiet_hours_end,
@@ -511,7 +514,7 @@ export class KnexNotificationRepository implements NotificationRepository {
         digest: result.digest,
         digestInterval: result.digest_interval,
       },
-      typePreferences: result.type_preferences ? JSON.parse(result.type_preferences) : {},
+      typePreferences: result.type_preferences ? (typeof result.type_preferences === 'string' ? JSON.parse(result.type_preferences) : result.type_preferences) : {},
       createdAt: result.created_at,
       updatedAt: result.updated_at,
     };
@@ -605,7 +608,7 @@ export class KnexNotificationRepository implements NotificationRepository {
       totalCount: result.total_count,
       successCount: result.success_count,
       failureCount: result.failure_count,
-      errors: JSON.parse(result.errors || '[]'),
+      errors: typeof result.errors === 'string' ? JSON.parse(result.errors || '[]') : result.errors || [],
     };
   }
 

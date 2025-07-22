@@ -87,8 +87,8 @@ export class NotificationService {
     return this.http.get<{ success: boolean; data: NotificationTemplate }>(`${this.apiUrl}/templates/${id}`);
   }
 
-  listTemplates(): Observable<{ success: boolean; data: NotificationTemplate[] }> {
-    return this.http.get<{ success: boolean; data: NotificationTemplate[] }>(`${this.apiUrl}/templates`);
+  listTemplates(): Observable<{ success: boolean; data: { templates: NotificationTemplate[]; count: number } }> {
+    return this.http.get<{ success: boolean; data: { templates: NotificationTemplate[]; count: number } }>(`${this.apiUrl}/templates`);
   }
 
   updateTemplate(id: string, request: Partial<CreateTemplateRequest>): Observable<{ success: boolean; data: NotificationTemplate }> {

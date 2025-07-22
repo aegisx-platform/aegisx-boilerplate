@@ -210,12 +210,15 @@ export interface NotificationTemplate {
     html?: string;
   };
   variables: TemplateVariable[];
+  active: boolean;
   metadata: {
     version: string;
     createdAt: Date;
     updatedAt: Date;
     createdBy: string;
   };
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface TemplateVariable {
