@@ -538,8 +538,8 @@ export class NotificationListComponent implements OnInit, OnDestroy {
 
     this.notificationService.listNotifications(params).subscribe({
       next: (response) => {
-        this.notifications = response.notifications;
-        this.totalRecords = response.pagination.totalCount;
+        this.notifications = response.files || [];
+        this.totalRecords = response.total || 0;
         this.loading = false;
       },
       error: (error) => {

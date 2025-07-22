@@ -22,7 +22,7 @@ import {
 })
 export class NotificationService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/notifications`;
+  private apiUrl = `${environment.apiUrl}/v1/notifications`;
 
   // Core notification operations
   createNotification(request: CreateNotificationRequest): Observable<{ success: boolean; data: Notification }> {
@@ -35,7 +35,7 @@ export class NotificationService {
 
   listNotifications(params?: ListNotificationsParams): Observable<NotificationListResponse> {
     let httpParams = new HttpParams();
-    
+
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {

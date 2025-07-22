@@ -106,16 +106,29 @@ export interface NotificationBatch {
 }
 
 export interface NotificationStats {
+  period: {
+    from: string;
+    to: string;
+  };
   totalCount: number;
-  sentCount: number;
-  deliveredCount: number;
-  failedCount: number;
-  successRate: number;
-  averageDeliveryTime: number;
+  deliveryMetrics: {
+    totalSent: number;
+    totalDelivered: number;
+    totalFailed: number;
+    averageDeliveryTime: number;
+    successRate: number;
+  };
+  channelStats: {
+    channel: string;
+    sent: number;
+    delivered: number;
+    failed: number;
+    successRate: number;
+  }[];
   channelBreakdown: ChannelStats[];
   typeBreakdown: TypeStats[];
   priorityBreakdown: PriorityStats[];
-  trendsData: {
+  trendsData?: {
     hourly: number[];
     daily: number[];
     weekly: number[];
@@ -198,6 +211,10 @@ export interface ListNotificationsParams {
 }
 
 export interface NotificationListResponse {
+  success: boolean;
+  data: Notification[];
+  files: Notification[];
+  total: number;
   notifications: Notification[];
   pagination: {
     page: number;
