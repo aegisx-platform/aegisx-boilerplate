@@ -6,6 +6,7 @@ import authDomain from './auth';
 import rbacDomain from './rbac';
 import userManagementDomain from './user-management';
 import auditLogDomain from './audit-log';
+import configManagementDomain from './config-management';
 
 const domainsPlugin: FastifyPluginAsync = async (fastify) => {
   // Load all domain modules
@@ -13,6 +14,7 @@ const domainsPlugin: FastifyPluginAsync = async (fastify) => {
   await fastify.register(rbacDomain);
   await fastify.register(userManagementDomain);
   await fastify.register(auditLogDomain);
+  await fastify.register(configManagementDomain);
   
   // Notification domain is now registered at API layer for proper versioning
 
