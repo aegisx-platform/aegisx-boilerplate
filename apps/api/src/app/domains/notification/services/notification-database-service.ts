@@ -286,6 +286,36 @@ export class DatabaseNotificationService implements NotificationDatabaseService 
         attempts: notification.attempts + 1,
       });
 
+      // For development/testing: simulate delivery confirmation
+      // In production, this should be triggered by email service webhooks
+      setTimeout(async () => {
+        try {
+          await this.repository.update(id, { 
+            status: 'delivered',
+            deliveredAt: new Date(),
+          });
+          
+          this.fastify.log.info('Notification marked as delivered', {
+            notificationId: id,
+            channel: notification.channel,
+          });
+
+          // Emit delivery event
+          if (this.fastify.eventBus) {
+            await this.fastify.eventBus.publish('notification.delivered', {
+              notificationId: id,
+              channel: notification.channel,
+              timestamp: new Date(),
+            });
+          }
+        } catch (error) {
+          this.fastify.log.error('Failed to update delivery status', {
+            notificationId: id,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }, 2000 + Math.random() * 3000); // Simulate 2-5 second delivery delay
+
       this.fastify.log.info('Notification processed successfully', {
         notificationId: id,
         channel: notification.channel,

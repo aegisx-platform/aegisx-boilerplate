@@ -112,11 +112,11 @@ export interface NotificationStats {
   };
   totalCount: number;
   deliveryMetrics: {
-    totalSent: number;
-    totalDelivered: number;
-    totalFailed: number;
     averageDeliveryTime: number;
     successRate: number;
+    totalDelivered: number;
+    totalFailed: number;
+    totalSent: number;
   };
   channelStats: {
     channel: string;
@@ -125,9 +125,9 @@ export interface NotificationStats {
     failed: number;
     successRate: number;
   }[];
-  channelBreakdown: ChannelStats[];
-  typeBreakdown: TypeStats[];
-  priorityBreakdown: PriorityStats[];
+  channelBreakdown?: ChannelStats[];
+  typeBreakdown?: TypeStats[];
+  priorityBreakdown?: PriorityStats[];
   trendsData?: {
     hourly: number[];
     daily: number[];
