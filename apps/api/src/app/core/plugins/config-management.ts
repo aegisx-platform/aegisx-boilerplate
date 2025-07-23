@@ -32,7 +32,7 @@ export default fp<ConfigManagementPluginOptions>(
     await fastify.after();
 
     const defaultOptions: ConfigManagementPluginOptions = {
-      enableRoutes: true,
+      enableRoutes: false, // Routes handled by API layer instead
       enableHotReload: true,
       enableTemplates: true,
       encryptionEnabled: process.env.CONFIG_ENCRYPTION_ENABLED === 'true',
@@ -243,6 +243,6 @@ export default fp<ConfigManagementPluginOptions>(
   },
   {
     name: 'config-management-plugin',
-    dependencies: ['env-plugin', 'knex-plugin', 'cache-plugin'],
+    dependencies: ['env-plugin', 'knex-plugin', 'redis-plugin', 'event-bus'],
   }
 );

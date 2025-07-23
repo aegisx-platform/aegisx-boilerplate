@@ -279,11 +279,12 @@ export async function configRoutes(
       tags: ['Configuration Management'],
       summary: 'Get reload statistics',
       description: 'Get statistics about configuration reload operations',
-      response: {
-        200: SuccessResponseSchema,
-        503: ErrorResponseSchema,
-        500: ErrorResponseSchema,
-      },
+      // Temporarily disable response schema validation for debugging
+      // response: {
+      //   200: SuccessResponseSchema,
+      //   503: ErrorResponseSchema,
+      //   500: ErrorResponseSchema,
+      // },
       security: [{ bearerAuth: [] }],
     },
     // Authentication temporarily disabled

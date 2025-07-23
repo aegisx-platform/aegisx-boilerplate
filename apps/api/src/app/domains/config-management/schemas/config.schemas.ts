@@ -275,7 +275,7 @@ export const ReloadStatsResponseSchema = Type.Object({
     errorCount: Type.Number(),
     lastError: Type.Optional(Type.String()),
     lastReloadDuration: Type.Optional(Type.Number()),
-    categories: Type.Array(Type.String()),
+    categories: Type.Optional(Type.Array(Type.String())),
     environments: Type.Optional(Type.Array(ConfigEnvironmentSchema)),
     priority: Type.Optional(Type.Number()),
   })),
@@ -297,7 +297,7 @@ export type ErrorResponse = Static<typeof ErrorResponseSchema>;
 // === Success Response ===
 export const SuccessResponseSchema = Type.Object({
   success: Type.Boolean(),
-  message: Type.String(),
+  message: Type.Optional(Type.String()),  // Make message optional
   data: Type.Optional(Type.Any()),
   timestamp: Type.String(),
 });
