@@ -131,24 +131,25 @@ AegisX Boilerplate เป็น production-ready Fastify API boilerplate ที�
 
 ### **Security & Configuration**
 6. **🔐 Secrets Manager Service** - Secure API keys and tokens handling
-7. **✅ Config Validator Service** - Runtime configuration validation
-8. **🛡️ File Access Control** - Security middleware for file operations
+7. **⚙️ Dynamic Configuration Management** - UI-based configuration with hot reload (Strapi-like)
+8. **✅ Config Validator Service** - Runtime configuration validation
+9. **🛡️ File Access Control** - Security middleware for file operations
 
 ### **Resilience & Monitoring**
-9. **⚡ Circuit Breaker Service** - Prevent cascade failures
-10. **🔄 Retry Service** - Advanced retry with exponential backoff and jitter
-11. **❌ Error Tracker Service** - Centralized error handling and reporting
-12. **🏥 Health Check Service** - Comprehensive system monitoring
+10. **⚡ Circuit Breaker Service** - Prevent cascade failures
+11. **🔄 Retry Service** - Advanced retry with exponential backoff and jitter
+12. **❌ Error Tracker Service** - Centralized error handling and reporting
+13. **🏥 Health Check Service** - Comprehensive system monitoring
 
 ### **Performance & Storage**
-13. **🗄️ Cache Manager Service** - Multi-level caching with Redis integration
-14. **🔗 Connection Pool Manager** - DB/Redis connection optimization
-15. **📁 Storage Service** - Multi-provider file storage with HIPAA compliance
-16. **📈 Custom Metrics Service** - Business and performance monitoring
+14. **🗄️ Cache Manager Service** - Multi-level caching with Redis integration
+15. **🔗 Connection Pool Manager** - DB/Redis connection optimization
+16. **📁 Storage Service** - Multi-provider file storage with HIPAA compliance
+17. **📈 Custom Metrics Service** - Business and performance monitoring
 
 ### **Business Features**
-17. **📄 Template Engine Service** - Email and document templates with caching
-18. **🎨 Image Processing Service** - Sharp.js integration with comprehensive operations
+18. **📄 Template Engine Service** - Email and document templates with caching
+19. **🎨 Image Processing Service** - Sharp.js integration with comprehensive operations
 
 ## 📊 **Database Schema Overview**
 
@@ -473,6 +474,67 @@ npx nx serve api
 - **File Storage**: Multi-provider with CDN integration
 - **Caching**: Multi-level with Redis clustering
 - **Load Balancing**: Session stickiness for WebSocket
+
+## ⚙️ **Dynamic Configuration Management System**
+
+### **🎯 Overview**
+Strapi-like configuration management system ที่ให้จัดการ configuration ผ่าน UI โดยไม่ต้อง restart ระบบ
+
+### **🏗️ System Architecture**
+- **4-Table Database Schema**: `system_configurations`, `configuration_metadata`, `configuration_history`, `configuration_templates`
+- **Standard Domain Pattern**: Controllers → Services → Repositories → Database
+- **Hot Reload Mechanism**: Event-driven configuration updates (currently mock implementation)
+- **Multi-Environment Support**: Development, Production, Staging, Test
+
+### **✅ Core Features**
+- **📝 CRUD Operations**: Complete configuration management via REST API
+- **🔍 Search & Browse**: Advanced filtering and categorization
+- **📊 Configuration Values**: Key-value pairs ready for application use
+- **📜 Audit Trail**: Complete change history with user tracking
+- **🔄 Hot Reload**: Live configuration updates without server restart (partially working)
+- **📋 Template System**: Built-in templates for SMTP providers (Gmail, SendGrid, Mailtrap, etc.)
+- **⚡ Bulk Operations**: Update multiple configurations simultaneously
+- **🔐 Security**: Encryption support for sensitive values, HIPAA compliance
+
+### **🌐 API Endpoints (18 endpoints)**
+```
+📝 CRUD: POST/GET/PUT/DELETE /api/v1/config
+🔍 Search: GET /api/v1/config/search
+📊 Values: GET /api/v1/config/values/:category
+🔄 Reload: POST /api/v1/config/reload
+📋 Templates: GET/POST /api/v1/config/templates
+📜 History: GET /api/v1/config/:id/history
+⚡ Bulk: PUT /api/v1/config/bulk
+```
+
+### **📧 Email Integration**
+- **Dynamic SMTP Service**: รองรับการเปลี่ยน SMTP configuration แบบ real-time
+- **Multi-Provider Templates**: Gmail, SendGrid, Mailtrap, Amazon SES, Mailgun, Postmark
+- **Non-Breaking Integration**: ไม่กระทบระบบ notification เดิม
+- **Environment Fallback**: ใช้ environment variables หากเกิดปัญหา
+
+### **🔧 Technical Implementation**
+- **TypeScript + TypeBox**: Complete type safety และ validation
+- **Configuration Hierarchy**: Database → Cache → Environment → Defaults
+- **Event-Driven**: ใช้ EventBus สำหรับ hot reload notifications
+- **Bigserial PKs**: ใช้ bigserial สำหรับ primary keys ตามที่ขอ
+- **Healthcare Compliance**: HIPAA audit trails และ data sanitization
+
+### **📚 Documentation**
+- **[Main Guide](./dynamic-configuration-management.md)** - Complete system overview
+- **[API Reference](./config-management-api.md)** - 18 API endpoints with examples
+- **[Database Schema](./config-management-database.md)** - 4-table structure with relationships
+- **[Integration Guide](./config-management-integration.md)** - How to integrate with services
+
+### **🚧 Current Status**
+✅ **Database Schema**: 4 tables with complete relationships  
+✅ **API Endpoints**: 18 REST endpoints fully functional  
+✅ **Templates**: SMTP provider templates ready  
+✅ **Email Integration**: Dynamic email service implemented  
+✅ **Documentation**: Comprehensive guides created  
+⚠️ **Hot Reload**: Currently using mock responses (service hang issue)  
+📋 **Frontend UI**: Not yet implemented  
+🧪 **Testing**: Needs comprehensive test coverage  
 
 ---
 

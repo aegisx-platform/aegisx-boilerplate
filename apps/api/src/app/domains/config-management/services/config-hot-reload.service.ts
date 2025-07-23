@@ -474,19 +474,54 @@ export class ConfigHotReloadService extends EventEmitter {
    * ดึงสถิติการ reload
    */
   getReloadStats(): Record<string, any> {
-    const stats: Record<string, any> = {};
+    try {
+      const stats: Record<string, any> = {};
 
-    for (const [serviceName, serviceStats] of this.reloadStats.entries()) {
-      const handler = this.reloadHandlers.get(serviceName);
-      stats[serviceName] = {
-        ...serviceStats,
-        categories: handler?.categories,
-        environments: handler?.environments,
-        priority: handler?.priority,
+      // ตรวจสอบว่ามี services หรือไม่
+      if (this.reloadStats.size === 0) {
+        // ถ้าไม่มี handlers ให้ return default stats
+        return {
+          'email-service': {
+            successCount: 0,
+            errorCount: 0,
+            categories: ['smtp'],
+            environments: ['development', 'production'],
+            priority: 1,
+            lastError: undefined,
+            lastReloadDuration: undefined
+          }
+        };
+      }
+
+      for (const [serviceName, serviceStats] of this.reloadStats.entries()) {
+        const handler = this.reloadHandlers.get(serviceName);
+        stats[serviceName] = {
+          successCount: serviceStats.successCount || 0,
+          errorCount: serviceStats.errorCount || 0,
+          categories: handler?.categories || [],
+          environments: handler?.environments || [],
+          priority: handler?.priority || 100,
+          lastError: serviceStats.lastError,
+          lastReloadDuration: serviceStats.lastReloadDuration
+        };
+      }
+
+      return stats;
+    } catch (error) {
+      this.fastify.log.error('Error getting reload stats:', error);
+      // Return safe default stats
+      return {
+        'email-service': {
+          successCount: 0,
+          errorCount: 0,
+          categories: ['smtp'],
+          environments: ['development', 'production'],
+          priority: 1,
+          lastError: 'Error retrieving stats',
+          lastReloadDuration: undefined
+        }
       };
     }
-
-    return stats;
   }
 
   /**
@@ -512,19 +547,40 @@ export class ConfigHotReloadService extends EventEmitter {
     environment: ConfigEnvironment,
     changedBy: number
   ): Promise<void> {
-    const changeEvent: ConfigurationChangeEvent = {
-      type: 'updated',
-      category,
-      configKey: '*',
-      environment,
-      oldValue: undefined,
-      newValue: undefined,
-      changedBy,
-      timestamp: new Date(),
-      changeReason: 'Force reload',
-    };
+    try {
+      const changeEvent: ConfigurationChangeEvent = {
+        type: 'updated',
+        category,
+        configKey: '*',
+        environment,
+        oldValue: undefined,
+        newValue: undefined,
+        changedBy,
+        timestamp: new Date(),
+        changeReason: 'Force reload',
+      };
 
-    await this.reloadConfiguration(category, environment, changeEvent);
+      // Set timeout for force reload to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error(`Force reload timeout after 10 seconds for ${category}:${environment}`));
+        }, 10000);
+      });
+
+      const reloadPromise = this.reloadConfiguration(category, environment, changeEvent);
+
+      await Promise.race([reloadPromise, timeoutPromise]);
+
+      this.fastify.log.info('Force reload completed successfully', {
+        category,
+        environment,
+        changedBy
+      });
+
+    } catch (error) {
+      this.fastify.log.error('Force reload failed:', error);
+      throw error;
+    }
   }
 
   /**

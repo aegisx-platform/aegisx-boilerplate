@@ -79,15 +79,15 @@ export class DynamicEmailService {
         return;
       }
 
-      // Map database config to our format
+      // Map database config to our format (adjust field names to match database)
       const config: DynamicEmailConfig = {
         host: smtpConfig.host || 'localhost',
         port: parseInt(smtpConfig.port || '587'),
         secure: smtpConfig.secure === 'true' || smtpConfig.secure === true,
-        username: smtpConfig.username,
-        password: smtpConfig.password,
-        fromName: smtpConfig.fromName || 'AegisX System',
-        fromEmail: smtpConfig.fromEmail || 'noreply@aegisx.com',
+        username: smtpConfig.auth_user, // Changed from username
+        password: smtpConfig.auth_pass, // Changed from password
+        fromName: smtpConfig.from_name || 'AegisX System', // Changed from fromName
+        fromEmail: smtpConfig.from_email || 'noreply@aegisx.com', // Changed from fromEmail
         requireAuth: smtpConfig.requireAuth !== 'false',
         connectionTimeout: parseInt(smtpConfig.connectionTimeout || '60000'),
         greetingTimeout: parseInt(smtpConfig.greetingTimeout || '30000'),
@@ -261,15 +261,15 @@ export class DynamicEmailService {
       handler: async (config: Record<string, any>) => {
         this.fastify.log.info('Received SMTP configuration hot reload event');
         
-        // Map config to our format
+        // Map config to our format (adjust field names to match database)
         const emailConfig: DynamicEmailConfig = {
           host: config.host || 'localhost',
           port: parseInt(config.port || '587'),
           secure: config.secure === 'true' || config.secure === true,
-          username: config.username,
-          password: config.password,
-          fromName: config.fromName || 'AegisX System',
-          fromEmail: config.fromEmail || 'noreply@aegisx.com',
+          username: config.auth_user, // Changed from username
+          password: config.auth_pass, // Changed from password
+          fromName: config.from_name || 'AegisX System', // Changed from fromName
+          fromEmail: config.from_email || 'noreply@aegisx.com', // Changed from fromEmail
           requireAuth: config.requireAuth !== 'false',
           connectionTimeout: parseInt(config.connectionTimeout || '60000'),
           greetingTimeout: parseInt(config.greetingTimeout || '30000'),

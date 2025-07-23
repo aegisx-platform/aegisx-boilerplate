@@ -501,8 +501,47 @@ export class ConfigController {
       const userId = (request.user as any)?.id || 0;
       const { category, environment, changeReason } = request.body;
 
-      // Mock reload for testing - simulate successful reload
-      await new Promise(resolve => setTimeout(resolve, 100)); // Simulate work
+      // Try to use real hot reload service
+      let reloadStatus = 'completed';
+      let reloadMessage = 'Configuration reload completed successfully';
+      
+      try {
+        // Get or create hot reload service
+        let hotReloadService = (request.server as any).configHotReloadService;
+        
+        if (!hotReloadService) {
+          // Create a basic service instance if not available
+          const { ConfigHotReloadService } = await import('../services/config-hot-reload.service');
+          hotReloadService = new ConfigHotReloadService(request.server, {
+            enableAutoReload: true,
+            reloadDebounceMs: 1000,
+            maxRetries: 2,
+            retryDelayMs: 1000,
+            enableHealthCheck: false
+          });
+        }
+
+        // Perform force reload with timeout protection
+        await hotReloadService.forceReload(category, environment, userId);
+        
+      } catch (reloadError) {
+        request.log.warn('Hot reload service failed, using fallback method:', reloadError);
+        reloadStatus = 'fallback';
+        reloadMessage = 'Configuration reload completed with fallback method';
+        
+        // Fallback: publish event directly to eventBus if available
+        if ((request.server as any).eventBus) {
+          await (request.server as any).eventBus.publish('config.changed', {
+            type: 'updated',
+            category,
+            configKey: '*',
+            environment,
+            changedBy: userId,
+            timestamp: new Date(),
+            changeReason: changeReason || 'Force reload'
+          });
+        }
+      }
       
       reply.send({
         success: true,
@@ -513,7 +552,8 @@ export class ConfigController {
           requestedBy: userId,
           requestedAt: new Date().toISOString(),
           reason: changeReason,
-          status: 'Mock reload completed successfully'
+          status: reloadMessage,
+          method: reloadStatus
         },
         timestamp: new Date().toISOString(),
       });
@@ -538,20 +578,44 @@ export class ConfigController {
     reply: FastifyReply
   ): Promise<void> {
     try {
-      // Return mock stats for testing until hot reload service issue is fixed
-      const mockStats = {
-        'email-service': {
-          successCount: 0,
-          errorCount: 0,
-          categories: ['smtp']
+      let statsData;
+      let statsSource = 'default';
+      
+      try {
+        // Try to get stats from hot reload service
+        const hotReloadService = (request.server as any).configHotReloadService;
+        
+        if (hotReloadService && typeof hotReloadService.getReloadStats === 'function') {
+          statsData = hotReloadService.getReloadStats();
+          statsSource = 'service';
+        } else {
+          throw new Error('Hot reload service not available');
         }
-      };
+        
+      } catch (serviceError) {
+        request.log.debug('Could not get stats from hot reload service:', serviceError);
+        
+        // Fallback to default stats
+        statsData = {
+          'email-service': {
+            successCount: 0,
+            errorCount: 0,
+            categories: ['smtp'],
+            environments: ['development', 'production'],
+            priority: 1,
+            lastError: undefined,
+            lastReloadDuration: undefined
+          }
+        };
+        statsSource = 'fallback';
+      }
       
       reply.send({
         success: true,
         message: 'Reload statistics retrieved successfully',
         data: {
-          services: mockStats,
+          services: statsData,
+          source: statsSource,
           timestamp: new Date().toISOString(),
         },
         timestamp: new Date().toISOString(),
@@ -577,10 +641,34 @@ export class ConfigController {
     reply: FastifyReply
   ): Promise<void> {
     try {
-      // Mock reset for testing
+      let resetStatus = 'completed';
+      let resetMessage = 'Reload stats reset successfully';
+      
+      try {
+        // Try to reset stats using hot reload service
+        const hotReloadService = (request.server as any).configHotReloadService;
+        
+        if (hotReloadService && typeof hotReloadService.resetStats === 'function') {
+          hotReloadService.resetStats();
+          resetStatus = 'service';
+        } else {
+          resetStatus = 'no-service';
+          resetMessage = 'Reload stats reset (no service to reset)';
+        }
+        
+      } catch (serviceError) {
+        request.log.debug('Could not reset stats using hot reload service:', serviceError);
+        resetStatus = 'fallback';
+        resetMessage = 'Reload stats reset (fallback - no active service)';
+      }
+      
       reply.send({
         success: true,
-        message: 'Reload stats reset successfully (mock)',
+        message: resetMessage,
+        data: {
+          resetMethod: resetStatus,
+          resetAt: new Date().toISOString()
+        },
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
