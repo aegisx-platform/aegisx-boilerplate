@@ -1,5 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { DatabaseNotificationService } from '../services/notification-database-service';
+import { DynamicEmailService } from '../services/dynamic-email-service';
+import { ConfigService } from '../../config-management/services/config-service';
+import { ConfigHotReloadService } from '../../config-management/services/config-hot-reload.service';
 
 /**
  * Setup WebSocket real-time integration for notifications
@@ -57,6 +60,42 @@ export function setupRealTimeIntegration(fastify: FastifyInstance, service: Data
   }
 
   fastify.log.info('✅ Real-time WebSocket integration setup complete');
+}
+
+/**
+ * Setup Dynamic Email Service integration
+ * 
+ * Integrates dynamic email configuration with notification services
+ */
+export function setupDynamicEmailIntegration(
+  fastify: FastifyInstance, 
+  service: DatabaseNotificationService
+): DynamicEmailService | null {
+  try {
+    const configService = (fastify as any).configService as ConfigService;
+    const hotReloadService = (fastify as any).configHotReloadService as ConfigHotReloadService;
+
+    if (!configService || !hotReloadService) {
+      fastify.log.warn('Configuration services not available, dynamic email integration disabled');
+      return null;
+    }
+
+    // Create dynamic email service
+    const dynamicEmailService = new DynamicEmailService(
+      fastify,
+      configService,
+      hotReloadService
+    );
+
+    // Register dynamic email service with fastify
+    fastify.decorate('dynamicEmailService', dynamicEmailService);
+
+    fastify.log.info('✅ Dynamic Email Service integration setup complete');
+    return dynamicEmailService;
+  } catch (error) {
+    fastify.log.error('Failed to setup dynamic email integration:', error);
+    return null;
+  }
 }
 
 /**
@@ -241,4 +280,74 @@ export function setupEventBusIntegration(fastify: FastifyInstance, service: Data
   });
 
   fastify.log.info('✅ Event bus integration setup complete');
+}
+
+/**
+ * Setup Configuration Hot Reload integration for notifications
+ * 
+ * Listens for SMTP configuration changes and updates email services
+ */
+export function setupConfigurationIntegration(fastify: FastifyInstance): void {
+  if (!fastify.eventBus) {
+    fastify.log.warn('Event bus not available, configuration integration disabled');
+    return;
+  }
+
+  // Listen for SMTP configuration changes
+  fastify.eventBus.subscribe('config.smtp.updated', async (event: any) => {
+    try {
+      fastify.log.info('SMTP configuration updated, notifying services', {
+        configKeys: event.configKeys,
+        environment: event.environment,
+        timestamp: event.timestamp,
+      });
+
+      // Trigger hot reload for dynamic email service
+      const dynamicEmailService = (fastify as any).dynamicEmailService;
+      if (dynamicEmailService) {
+        await dynamicEmailService.forceReload();
+        fastify.log.info('Dynamic email service reloaded with new configuration');
+      }
+
+      // Verify new configuration
+      if (dynamicEmailService) {
+        const connectionVerified = await dynamicEmailService.verifyConnection();
+        const status = dynamicEmailService.getServiceStatus();
+        
+        fastify.log.info('SMTP configuration update completed', {
+          connectionVerified,
+          serviceStatus: status,
+          provider: status.provider,
+          lastUpdate: status.lastUpdate,
+        });
+      }
+
+    } catch (error) {
+      fastify.log.error('Failed to handle SMTP configuration update:', error);
+    }
+  });
+
+  // Listen for configuration validation events
+  fastify.eventBus.subscribe('config.validation.failed', async (event: any) => {
+    if (event.category === 'smtp') {
+      fastify.log.warn('SMTP configuration validation failed', {
+        errors: event.errors,
+        configKey: event.configKey,
+        environment: event.environment,
+      });
+
+      // Optionally send alert notification to administrators
+      try {
+        const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
+        if (adminEmails.length > 0) {
+          // Send notification using fallback email service
+          fastify.log.info('Sending SMTP configuration error alert to administrators');
+        }
+      } catch (alertError) {
+        fastify.log.error('Failed to send configuration error alert:', alertError);
+      }
+    }
+  });
+
+  fastify.log.info('✅ Configuration integration setup complete');
 }

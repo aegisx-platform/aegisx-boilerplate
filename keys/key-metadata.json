@@ -1,7 +1,7 @@
 {
-  "keyId": "audit_key_e575266fc1d7c06e",
-  "createdAt": "2025-07-17T14:20:46.854Z",
-  "algorithm": "RSASHA256",
+  "keyId": "audit_key_18357abfe30967fa",
+  "createdAt": "2025-07-20T04:04:44.185Z",
+  "algorithm": "RS256",
   "keySize": 2048,
   "status": "active"
 }

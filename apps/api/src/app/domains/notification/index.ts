@@ -32,6 +32,7 @@ export * from './types/batch.types';
 declare module 'fastify' {
   interface FastifyInstance {
     notificationDatabase: DatabaseNotificationService;
+    dynamicEmailService?: import('./services/dynamic-email-service').DynamicEmailService;
   }
 }
 

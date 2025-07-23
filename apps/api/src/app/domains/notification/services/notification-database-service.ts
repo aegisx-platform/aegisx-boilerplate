@@ -14,6 +14,7 @@ import {
 } from '../../../core/shared/types/notification.types';
 import { NotificationRepository, NotificationFilters } from '../repositories/notification-repository';
 import { EmailService, defaultEmailConfig } from './email-service';
+import { DynamicEmailService } from './dynamic-email-service';
 
 export interface NotificationDatabaseService {
   // Core notification operations
@@ -142,12 +143,50 @@ export interface NotificationDatabaseService {
 
 export class DatabaseNotificationService implements NotificationDatabaseService {
   private emailService: EmailService;
+  private dynamicEmailService?: DynamicEmailService;
 
   constructor(
     protected fastify: FastifyInstance,
     protected repository: NotificationRepository
   ) {
     this.emailService = new EmailService(fastify, defaultEmailConfig);
+    // Try to get dynamic email service if available
+    this.initializeDynamicEmailService();
+  }
+
+  private initializeDynamicEmailService(): void {
+    try {
+      this.dynamicEmailService = (this.fastify as any).dynamicEmailService;
+      if (this.dynamicEmailService) {
+        this.fastify.log.info('Dynamic email service initialized in notification service');
+      } else {
+        this.fastify.log.info('Dynamic email service not available, using static email service');
+      }
+    } catch (error) {
+      this.fastify.log.warn('Failed to initialize dynamic email service:', error);
+    }
+  }
+
+  /**
+   * Refresh dynamic email service (used when configuration is updated)
+   */
+  public refreshDynamicEmailService(): void {
+    this.initializeDynamicEmailService();
+  }
+
+  /**
+   * Get current email service status
+   */
+  public getEmailServiceStatus(): {
+    hasDynamicService: boolean;
+    hasStaticService: boolean;
+    dynamicServiceStatus?: any;
+  } {
+    return {
+      hasDynamicService: !!this.dynamicEmailService,
+      hasStaticService: !!this.emailService,
+      dynamicServiceStatus: this.dynamicEmailService?.getServiceStatus(),
+    };
   }
 
   // Core notification operations
@@ -789,7 +828,20 @@ export class DatabaseNotificationService implements NotificationDatabaseService 
     try {
       switch (notification.channel) {
         case 'email':
-          await this.emailService.sendEmail(notification);
+          // Use dynamic email service if available, otherwise fallback to static email service
+          if (this.dynamicEmailService) {
+            this.fastify.log.info('Sending email via dynamic email service', {
+              notificationId: notification.id,
+              to: notification.recipient.email,
+            });
+            await this.dynamicEmailService.sendEmail(notification);
+          } else {
+            this.fastify.log.info('Sending email via static email service', {
+              notificationId: notification.id,
+              to: notification.recipient.email,
+            });
+            await this.emailService.sendEmail(notification);
+          }
           break;
         case 'sms':
           await this.simulateSMSSending(notification);

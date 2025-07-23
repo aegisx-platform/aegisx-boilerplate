@@ -9,7 +9,7 @@ export const appRoutes: Route[] = [
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent),
     canActivate: [GuestGuard]
   },
-  
+
   // Protected routes (require authentication)
   {
     path: '',
@@ -77,12 +77,16 @@ export const appRoutes: Route[] = [
         loadComponent: () => import('./features/notifications/components/notification-management/notification-management.component').then(m => m.NotificationManagementComponent)
       },
       {
+        path: 'configuration',
+        loadChildren: () => import('./features/configuration/configuration.routes').then(m => m.default)
+      },
+      {
         path: 'support',
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
       }
     ]
   },
-  
+
   // Catch all route
   {
     path: '**',

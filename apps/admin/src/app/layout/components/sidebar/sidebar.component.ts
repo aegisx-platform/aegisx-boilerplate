@@ -347,6 +347,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     { label: 'API Keys', icon: 'pi pi-key', route: '/api-keys' },
     { label: 'File Storage', icon: 'pi pi-cloud', route: '/storage' },
     { label: 'Notifications', icon: 'pi pi-bell', route: '/notifications' },
+    { label: 'Configuration', icon: 'pi pi-cog', route: '/configuration' },
     { label: 'Profile', icon: 'pi pi-user', route: '/profile' },
   ];
 

@@ -28,6 +28,7 @@ import customMetrics from './custom-metrics';
 // import notification from './notification'; // Disabled: Using domain-based notification instead
 import fileAccessControl from './security/file-access-control';
 import websocket from './websocket';
+import configManagement from './config-management';
 
 const corePlugins: FastifyPluginAsync = async (fastify) => {
   // Load core plugins in specific order
@@ -54,6 +55,7 @@ const corePlugins: FastifyPluginAsync = async (fastify) => {
   await fastify.register(rbac);
   await fastify.register(eventBus);
   await fastify.register(audit);
+  await fastify.register(configManagement);
   await fastify.register(fileAccessControl);
   await fastify.register(websocket);
   await fastify.register(healthCheck);
