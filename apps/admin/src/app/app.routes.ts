@@ -73,6 +73,10 @@ export const appRoutes: Route[] = [
         loadChildren: () => import('./features/storage/storage.routes').then(m => m.default)
       },
       {
+        path: 'configuration',
+        loadChildren: () => import('./features/configuration/configuration.routes').then(m => m.default)
+      },
+      {
         path: 'support',
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
       }
