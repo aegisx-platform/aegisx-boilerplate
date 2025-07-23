@@ -50,20 +50,31 @@ export class BatchWorkerService {
   private batchQueue?: IQueueService;
   private isProcessorStarted = false;
   private workerProcesses: Map<string, NodeJS.Timeout> = new Map();
+  private cancellationFlags: Map<string, boolean> = new Map();
+  private activeBatches: Map<string, { jobId: string; startTime: number; notificationIds: string[] }> = new Map();
 
   constructor(
     fastify: FastifyInstance,
     repository: NotificationRepository,
     config: BatchWorkerConfig
   ) {
+    console.error('🚀 BatchWorkerService constructor called');
+    console.error('🚀 config:', config);
+    
     this.fastify = fastify;
     this.repository = repository;
     this.config = config;
+    
+    console.error('🚀 About to initialize batch queue');
     this.initializeBatchQueue();
   }
 
   private async initializeBatchQueue(): Promise<void> {
+    console.error('🔧 initializeBatchQueue called');
+    console.error('🔧 config.enabled:', this.config.enabled);
+    
     if (!this.config.enabled) {
+      console.error('🔧 Batch worker service disabled by config');
       this.fastify.log.info('Batch worker service disabled');
       return;
     }
@@ -111,16 +122,33 @@ export class BatchWorkerService {
   }
 
   private async startBatchProcessors(): Promise<void> {
-    if (!this.batchQueue || this.isProcessorStarted) return;
+    console.error('🔥 startBatchProcessors called');
+    console.error('🔥 batchQueue exists:', !!this.batchQueue);
+    console.error('🔥 isProcessorStarted:', this.isProcessorStarted);
+    console.error('🔥 config.enabled:', this.config.enabled);
+    
+    if (!this.batchQueue || this.isProcessorStarted) {
+      console.error('🔥 Exiting early - processors already started or no queue');
+      return;
+    }
 
+    console.error('🔥 Starting batch processors...');
     try {
       // Bulk notification processor
       this.batchQueue.process(
         'bulk-notification',
         this.config.workerConcurrency,
         async (job) => {
+          console.error('🟢 Processing bulk notification job:', job.id);
+          this.fastify.log.info('Processing bulk notification job', { jobId: job.id });
+          
           const batchJob: BatchJob = job.data;
-          return await this.processBulkNotifications(batchJob);
+          console.error('🟢 Batch job data:', batchJob);
+          
+          const result = await this.processBulkNotifications(batchJob);
+          console.error('🟢 Batch processing completed:', result);
+          
+          return result;
         }
       );
 
@@ -159,6 +187,10 @@ export class BatchWorkerService {
 
       this.isProcessorStarted = true;
 
+      console.error('🎉 Batch processors started successfully!');
+      console.error('🎉 workerConcurrency:', this.config.workerConcurrency);
+      console.error('🎉 processingInterval:', this.config.processingInterval);
+      
       this.fastify.log.info('Batch processors started', {
         workerConcurrency: this.config.workerConcurrency,
         processingInterval: this.config.processingInterval,
@@ -282,9 +314,17 @@ export class BatchWorkerService {
       channel: batchJob.channel,
     });
 
+    // Track active batch
+    this.activeBatches.set(batchJob.id, {
+      jobId: batchJob.id,
+      startTime: Date.now(),
+      notificationIds: [...batchJob.notifications]
+    });
+
     const results = {
       processed: 0,
       failed: 0,
+      cancelled: 0,
       errors: [] as string[],
     };
 
@@ -293,11 +333,33 @@ export class BatchWorkerService {
     const chunks = this.chunkArray(batchJob.notifications, concurrency);
 
     for (const chunk of chunks) {
+      // Check for cancellation before processing chunk
+      if (this.isBatchCancelled(batchJob.id)) {
+        this.fastify.log.info('Batch processing cancelled by user', { batchId: batchJob.id });
+        results.cancelled = batchJob.notifications.length - results.processed;
+        break;
+      }
+
       // Process chunk concurrently
       const chunkPromises = chunk.map(async (notificationId) => {
         try {
+          // Check cancellation before each notification
+          if (this.isBatchCancelled(batchJob.id)) {
+            results.cancelled++;
+            return;
+          }
+
           await this.processNotification(notificationId);
           results.processed++;
+
+          // Remove from active batch tracking
+          const batchInfo = this.activeBatches.get(batchJob.id);
+          if (batchInfo) {
+            const index = batchInfo.notificationIds.indexOf(notificationId);
+            if (index > -1) {
+              batchInfo.notificationIds.splice(index, 1);
+            }
+          }
 
           // Add delay between items if configured
           if (batchJob.processingOptions.delayBetweenItems) {
@@ -307,8 +369,8 @@ export class BatchWorkerService {
           results.failed++;
           results.errors.push(`${notificationId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
 
-          // Retry failed items if configured
-          if (batchJob.processingOptions.retryFailedItems) {
+          // Retry failed items if configured and not cancelled
+          if (batchJob.processingOptions.retryFailedItems && !this.isBatchCancelled(batchJob.id)) {
             await this.queueRetryNotification(notificationId, batchJob.channel);
           }
         }
@@ -317,6 +379,10 @@ export class BatchWorkerService {
       await Promise.all(chunkPromises);
     }
 
+    // Clean up active batch tracking
+    this.activeBatches.delete(batchJob.id);
+    this.cancellationFlags.delete(batchJob.id);
+
     // Update batch statistics
     await this.updateBatchStatistics(batchJob, results);
 
@@ -324,6 +390,7 @@ export class BatchWorkerService {
       batchId: batchJob.id,
       processed: results.processed,
       failed: results.failed,
+      cancelled: results.cancelled,
     });
 
     return results;
@@ -505,25 +572,69 @@ export class BatchWorkerService {
   // Helper methods
   private async processNotification(notificationId: string): Promise<void> {
     try {
+      console.error('📧 Processing real notification:', notificationId);
+      
       this.fastify.log.info('Processing notification in batch', {
         notificationId,
         processedBy: 'batch_worker',
       });
 
-      // Simulate processing delay
-      await this.delay(100);
+      // Get the actual notification record from database
+      const notification = await this.repository.findById(notificationId);
+      
+      if (!notification) {
+        console.error('❌ Notification not found:', notificationId);
+        throw new Error(`Notification not found: ${notificationId}`);
+      }
 
-      // Log successful processing
-      this.fastify.log.info('Notification processed successfully', {
-        notificationId,
-        status: 'sent',
+      console.error('📧 Found notification:', {
+        id: notification.id,
+        type: notification.type,
+        channel: notification.channel,
+        recipientEmail: notification.recipient.email
       });
 
+      // Send the actual notification through the notification service
+      if (this.fastify.notificationDatabase) {
+        console.error('📧 Sending through notification service...');
+        
+        // Update status to processing
+        await this.repository.updateStatus(notificationId, 'processing');
+        
+        // Process the notification by ID
+        await this.fastify.notificationDatabase.processNotification(notificationId);
+        
+        console.error('✅ Notification sent successfully:', notificationId);
+        
+        this.fastify.log.info('Notification processed successfully', {
+          notificationId,
+          status: 'sent',
+          channel: notification.channel,
+          recipientEmail: notification.recipient.email
+        });
+      } else {
+        console.error('❌ Notification service not available');
+        throw new Error('Notification service not available');
+      }
+
     } catch (error) {
+      console.error('❌ Failed to process notification:', error);
+      
       this.fastify.log.error('Failed to process notification', {
         notificationId,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
+      
+      // Update status to failed
+      if (this.repository) {
+        await this.repository.updateStatus(notificationId, 'failed', {
+          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          errorCode: 'BATCH_PROCESSING_ERROR',
+          channel: 'email',
+          retryable: true
+        });
+      }
+      
       throw error;
     }
   }
@@ -544,6 +655,32 @@ export class BatchWorkerService {
   }
 
   private async updateBatchStatistics(batchJob: BatchJob, results: any): Promise<void> {
+    // Update database batch status
+    try {
+      const finalStatus = results.failed === 0 && results.cancelled === 0 ? 'completed' : 'failed';
+      
+      console.error('🔄 Updating batch status in database');
+      console.error('🔄 batchId:', batchJob.id);
+      console.error('🔄 finalStatus:', finalStatus);
+      console.error('🔄 results:', results);
+      
+      await this.repository.updateBatchStatus(batchJob.id, finalStatus, {
+        processed: results.processed,
+        failed: results.failed,
+        cancelled: results.cancelled,
+        completedAt: new Date()
+      });
+      
+      console.error('✅ Batch status updated successfully');
+      
+    } catch (error) {
+      console.error('❌ Failed to update batch status:', error);
+      this.fastify.log.error('Failed to update batch status in database', { 
+        batchId: batchJob.id, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+
     // Update internal batch statistics
     try {
       if (this.fastify.metrics && typeof this.fastify.metrics.recordCounter === 'function') {
@@ -656,7 +793,26 @@ export class BatchWorkerService {
       maxConcurrency?: number;
     } = {}
   ): Promise<string> {
+    console.error('🟠🟠🟠 createBulkNotificationBatch called in BatchWorkerService 🟠🟠🟠');
+    console.error('🟠 notificationCount:', notifications.length);
+    console.error('🟠 options:', options);
+    console.error('🟠 queueInitialized:', !!this.batchQueue);
+    console.error('🟠 configEnabled:', this.config.enabled);
+    console.error('🟠 config:', this.config);
+
+    this.fastify.log.info('createBulkNotificationBatch called', { 
+      notificationCount: notifications.length,
+      options,
+      queueInitialized: !!this.batchQueue,
+      configEnabled: this.config.enabled
+    });
+
     if (!this.batchQueue) {
+      console.error('🔴 Batch queue not initialized!');
+      this.fastify.log.error('Batch queue not initialized', { 
+        configEnabled: this.config.enabled,
+        config: this.config
+      });
       throw new Error('Batch queue not initialized');
     }
 
@@ -676,11 +832,60 @@ export class BatchWorkerService {
       }
     };
 
-    await this.batchQueue.add('bulk-notification', batchJob, {
-      priority: this.getPriorityValue(batchJob.priority),
-      attempts: this.config.maxRetryAttempts,
-      backoff: { type: 'exponential', delay: 2000 },
-    });
+    console.error('🟣 Adding batch job to queue', batchJob.id);
+    this.fastify.log.info('Adding batch job to queue', { batchId: batchJob.id });
+
+    try {
+      await this.batchQueue.add('bulk-notification', batchJob, {
+        priority: this.getPriorityValue(batchJob.priority),
+        attempts: this.config.maxRetryAttempts,
+        backoff: { type: 'exponential', delay: 2000 },
+      });
+
+      console.error('🟢 Batch job added to queue successfully', batchJob.id);
+      this.fastify.log.info('Batch job added to queue successfully', { batchId: batchJob.id });
+    } catch (queueError) {
+      console.error('🔴 Failed to add batch job to queue:', queueError);
+      this.fastify.log.error('Failed to add batch job to queue', { 
+        batchId: batchJob.id, 
+        error: queueError instanceof Error ? queueError.message : 'Unknown error' 
+      });
+      throw queueError;
+    }
+
+    // Create batch record in database
+    console.error('🟦 About to create batch record in database', batchJob.id);
+    try {
+      console.error('🟦 Calling repository.createBatchRecord');
+      this.fastify.log.info('Creating batch record in database', { batchId: batchJob.id });
+      
+      const created = await this.repository.createBatchRecord(batchJob.id, {
+        type: batchJob.type,
+        notificationCount: notifications.length,
+        channel: options.channel,
+        priority: batchJob.priority,
+        source: 'manual_api_call',
+        processingOptions: batchJob.processingOptions
+      });
+      
+      console.error('🟦 Repository.createBatchRecord returned:', created);
+      
+      if (created) {
+        console.error('🟢 Batch record created successfully in database', batchJob.id);
+        this.fastify.log.info('Batch record created successfully in database', { batchId: batchJob.id });
+      } else {
+        console.error('🔴 Failed to create batch record in database', batchJob.id);
+        this.fastify.log.error('Failed to create batch record in database', { batchId: batchJob.id });
+      }
+    } catch (dbError) {
+      console.error('🔴 Database error creating batch record:', dbError);
+      this.fastify.log.error('Error creating batch record in database', { 
+        batchId: batchJob.id, 
+        error: dbError instanceof Error ? dbError.message : 'Unknown error',
+        stack: dbError instanceof Error ? dbError.stack : undefined
+      });
+      // Don't throw error, continue with batch creation
+    }
 
     this.fastify.log.info('Manual bulk batch created', {
       batchId: batchJob.id,
@@ -703,10 +908,14 @@ export class BatchWorkerService {
 
     return {
       id: batchId,
-      status: await job.getState(),
-      progress: job.progressValue,
-      attempts: job.attemptsMade,
-      data: job.data,
+      status: this.mapStatusToSchema(await job.getState()),
+      progress: job.progressValue || 0,
+      attempts: job.attemptsMade || 0,
+      data: job.data || {
+        type: 'bulk_notification',
+        notifications: [],
+        priority: 'normal'
+      },
       processedOn: job.processedOn,
       finishedOn: job.finishedOn,
       failedReason: job.failedReason,
@@ -733,6 +942,284 @@ export class BatchWorkerService {
     }
 
     return await this.batchQueue.getMetrics();
+  }
+
+  // Map database/queue statuses to schema-compliant statuses
+  private mapStatusToSchema(status: string): string {
+    const statusMap: Record<string, string> = {
+      'pending': 'waiting',
+      'created': 'waiting', 
+      'queued': 'waiting',
+      'processing': 'active',
+      'active': 'active',
+      'completed': 'completed',
+      'finished': 'completed',
+      'failed': 'failed',
+      'error': 'failed',
+      'cancelled': 'paused',
+      'paused': 'paused',
+      'delayed': 'delayed'
+    };
+    
+    return statusMap[status.toLowerCase()] || 'waiting';
+  }
+
+  async getAllBatches(filters?: { status?: string; limit?: number; offset?: number }): Promise<any> {
+    try {
+      this.fastify.log.info('Getting all batches with filters', { filters });
+      
+      // Get batch records from database
+      const batches = await this.repository.listBatchRecords(filters);
+      this.fastify.log.info('Retrieved batch records from database', { count: batches?.length || 0 });
+      
+      if (!batches || batches.length === 0) {
+        return {
+          items: [],
+          total: 0
+        };
+      }
+      
+      // For each batch, try to get current status from queue if available
+      const enrichedBatches = await Promise.all(batches.map(async (batch) => {
+        try {
+          const queueStatus = await this.getBatchStatus(batch.id);
+          
+          // Prefer database status over queue status for completed/failed batches
+          const metadata = batch.metadata || {};
+          const dbStatus = this.mapStatusToSchema(batch.status || 'pending');
+          
+          if (queueStatus && (dbStatus === 'waiting' || dbStatus === 'active')) {
+            // Use queue data only for active/waiting jobs
+            return {
+              id: batch.id,
+              status: this.mapStatusToSchema(queueStatus.status),
+              progress: queueStatus.progress || 0,
+              attempts: queueStatus.attempts || 0,
+              data: queueStatus.data || {
+                type: 'bulk_notification',
+                notifications: [],
+                priority: 'normal'
+              },
+              processedOn: queueStatus.processedOn,
+              finishedOn: queueStatus.finishedOn,
+              createdAt: batch.createdAt,
+              startedAt: batch.startedAt,
+              completedAt: batch.completedAt
+            };
+          } else {
+            // Use database data for completed/failed batches or when queue job not found
+            return {
+              id: batch.id,
+              status: dbStatus,
+              progress: batch.status === 'completed' ? 100 : (batch.status === 'failed' ? 0 : 0),
+              attempts: 0,
+              data: {
+                type: metadata.type || 'bulk_notification',
+                notifications: metadata.notifications || [],
+                priority: metadata.priority || 'normal',
+                channel: metadata.channel
+              },
+              createdAt: batch.createdAt,
+              startedAt: batch.startedAt,
+              completedAt: batch.completedAt
+            };
+          }
+        } catch (queueError) {
+          this.fastify.log.warn('Failed to get queue status for batch, using database data', { 
+            batchId: batch.id, 
+            error: queueError instanceof Error ? queueError.message : 'Unknown error' 
+          });
+          
+          // Fall back to database data if queue check fails
+          const metadata = batch.metadata || {};
+          
+          return {
+            id: batch.id,
+            status: batch.status || 'created',
+            progress: batch.status === 'completed' ? 100 : 0,
+            attempts: 0,
+            data: {
+              type: metadata.type || 'bulk_notification',
+              notifications: metadata.notifications || [],
+              priority: metadata.priority || 'normal',
+              channel: metadata.channel
+            },
+            createdAt: batch.createdAt,
+            startedAt: batch.startedAt,
+            completedAt: batch.completedAt
+          };
+        }
+      }));
+
+      this.fastify.log.info('Successfully enriched batch data', { count: enrichedBatches.length });
+
+      return {
+        items: enrichedBatches,
+        total: enrichedBatches.length
+      };
+    } catch (error) {
+      this.fastify.log.error('Error getting all batches', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      // Return empty result instead of throwing
+      return { 
+        items: [], 
+        total: 0 
+      };
+    }
+  }
+
+  // Real batch cancellation methods
+  async cancelBatch(batchId: string): Promise<boolean> {
+    if (!this.batchQueue) {
+      this.fastify.log.warn('Cannot cancel batch - queue not initialized', { batchId });
+      return false;
+    }
+
+    try {
+      // Get the job from queue
+      const job = await this.batchQueue.getJob(batchId);
+      if (!job) {
+        this.fastify.log.warn('Batch job not found in queue', { batchId });
+        return false;
+      }
+
+      const jobState = await job.getState();
+      this.fastify.log.info('Attempting to cancel batch', { batchId, currentState: jobState });
+
+      switch (jobState) {
+        case 'waiting':
+        case 'delayed':
+          // Remove job from queue before it starts
+          await job.remove();
+          await this.updateBatchStatus(batchId, 'cancelled', { reason: 'Cancelled by user', previousState: jobState });
+          this.fastify.log.info('Batch job removed from queue', { batchId });
+          return true;
+
+        case 'active':
+          // Set cancellation flag for graceful shutdown
+          this.cancellationFlags.set(batchId, true);
+          
+          // Try to discard the job
+          await job.discard();
+          
+          // Stop processing notifications in this batch
+          await this.stopProcessingNotifications(batchId);
+          
+          await this.updateBatchStatus(batchId, 'cancelled', { 
+            reason: 'Cancelled during processing', 
+            previousState: jobState,
+            partiallyProcessed: true
+          });
+          
+          this.fastify.log.info('Active batch job cancelled', { batchId });
+          return true;
+
+        case 'completed':
+        case 'failed':
+          this.fastify.log.warn('Cannot cancel batch - already completed', { batchId, state: jobState });
+          return false;
+
+        default:
+          this.fastify.log.warn('Unknown batch state for cancellation', { batchId, state: jobState });
+          return false;
+      }
+    } catch (error) {
+      this.fastify.log.error('Error cancelling batch', { 
+        batchId, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+      return false;
+    }
+  }
+
+  private async stopProcessingNotifications(batchId: string): Promise<void> {
+    try {
+      const batchInfo = this.activeBatches.get(batchId);
+      if (!batchInfo) {
+        this.fastify.log.warn('No active batch info found', { batchId });
+        return;
+      }
+
+      this.fastify.log.info('Stopping notification processing for batch', { 
+        batchId, 
+        remainingNotifications: batchInfo.notificationIds.length 
+      });
+
+      // Cancel remaining notifications that haven't been processed
+      const cancelPromises = batchInfo.notificationIds.map(async (notificationId) => {
+        try {
+          await this.repository.updateStatus(notificationId, 'cancelled', {
+            cancelledBy: 'batch_cancellation',
+            batchId,
+            timestamp: new Date()
+          });
+        } catch (error) {
+          this.fastify.log.error('Failed to cancel notification', { 
+            notificationId, 
+            batchId, 
+            error: error instanceof Error ? error.message : 'Unknown error' 
+          });
+        }
+      });
+
+      await Promise.allSettled(cancelPromises);
+
+      // Clean up active batch tracking
+      this.activeBatches.delete(batchId);
+      this.cancellationFlags.delete(batchId);
+
+      this.fastify.log.info('Finished stopping notification processing', { batchId });
+    } catch (error) {
+      this.fastify.log.error('Error stopping notification processing', { 
+        batchId, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  }
+
+  private async updateBatchStatus(batchId: string, status: string, metadata?: any): Promise<void> {
+    try {
+      // Update status in database
+      await this.repository.updateBatchStatus(batchId, status as any, metadata);
+
+      // Emit event for real-time updates
+      if (this.fastify.eventBus) {
+        await this.fastify.eventBus.publish('batch_status_changed', {
+          batchId,
+          status,
+          metadata,
+          timestamp: new Date()
+        });
+      }
+
+      // Record audit log
+      if (this.fastify.auditLog) {
+        await this.fastify.auditLog.log({
+          action: `batch_${status}`,
+          resource: 'notification_batch',
+          resourceId: batchId,
+          metadata: {
+            ...metadata,
+            service: 'batch_worker'
+          }
+        });
+      }
+
+      this.fastify.log.info('Batch status updated', { batchId, status, metadata });
+    } catch (error) {
+      this.fastify.log.error('Failed to update batch status', { 
+        batchId, 
+        status, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  }
+
+  private isBatchCancelled(batchId: string): boolean {
+    return this.cancellationFlags.get(batchId) === true;
   }
 
   // Graceful shutdown

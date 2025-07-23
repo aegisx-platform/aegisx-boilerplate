@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox';
+import { CreateNotificationSchema } from './notification.schemas';
 
 // TypeBox schemas for batch operations
 export const BatchCreateSchema = Type.Object({
@@ -30,6 +31,13 @@ export const BatchCreateSchema = Type.Object({
       description: 'Maximum concurrent notifications to process' 
     }))
   }))
+});
+
+// Schema for bulk create with notification objects
+export const BulkBatchCreateSchema = Type.Object({
+  name: Type.Optional(Type.String({ description: 'Batch name' })),
+  notifications: Type.Array(CreateNotificationSchema, { description: 'Array of notification objects to create and batch' }),
+  metadata: Type.Optional(Type.Object({}, { additionalProperties: true }))
 });
 
 export const BatchCreateResponseSchema = Type.Object({

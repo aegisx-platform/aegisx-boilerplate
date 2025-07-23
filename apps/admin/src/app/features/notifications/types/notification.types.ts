@@ -108,6 +108,18 @@ export interface NotificationBatch {
   completedAt?: string;
   estimatedCompletion?: string;
   errors: string[];
+  // API response fields
+  progress?: number;
+  attempts?: number;
+  data?: {
+    type: string;
+    notifications: string[];
+    priority: string;
+    channel?: string;
+  };
+  processedOn?: number;
+  finishedOn?: number;
+  failedReason?: string;
 }
 
 export interface NotificationStats {
@@ -186,7 +198,7 @@ export type NotificationType =
   | 'custom';
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent' | 'critical';
 export type NotificationStatus = 'queued' | 'processing' | 'sent' | 'delivered' | 'failed' | 'cancelled';
-export type BatchStatus = 'created' | 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'paused';
+export type BatchStatus = 'created' | 'queued' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'paused' | 'waiting' | 'active';
 
 // API Request/Response types
 export interface CreateNotificationRequest {

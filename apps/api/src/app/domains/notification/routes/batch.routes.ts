@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import { DatabaseBatchController } from '../controllers/batch-controller';
 import {
   BatchCreateSchema,
+  BulkBatchCreateSchema,
   BatchCreateResponseSchema,
   BatchStatusResponseSchema,
   BatchListQuerySchema,
@@ -20,12 +21,14 @@ export async function batchRoutes(
   options: FastifyPluginOptions,
   controller: DatabaseBatchController
 ): Promise<void> {
+  console.log('=== BATCH ROUTES FUNCTION CALLED ===');
+  fastify.log.info('Registering batch routes');
 
-  // Create bulk notification batch
+  // Create bulk notification batch (legacy - for existing notification IDs)
   fastify.post('/bulk', {
     schema: {
       summary: 'Create Bulk Notification Batch',
-      description: 'Create a batch job to process multiple notifications efficiently with configurable options',
+      description: 'Create a batch job to process multiple existing notifications efficiently with configurable options',
       tags: ['Batch Processing'],
       body: BatchCreateSchema,
       response: {
@@ -35,6 +38,32 @@ export async function batchRoutes(
       }
     }
   }, controller.createBulkBatch.bind(controller));
+
+  // Create bulk notification batch with notification objects
+  console.log('=== REGISTERING /bulk-create ROUTE ===');
+  fastify.post('/bulk-create', {
+    schema: {
+      summary: 'Create Bulk Notification Batch with Objects',
+      description: 'Create notifications and batch them in one operation',
+      tags: ['Batch Processing'],
+      body: BulkBatchCreateSchema,
+      response: {
+        200: BatchCreateResponseSchema,
+        400: BatchErrorResponseSchema,
+        500: BatchErrorResponseSchema
+      }
+    },
+    preHandler: async (request, reply) => {
+      console.error('🔥🔥🔥 BULK-CREATE PRE-HANDLER CALLED 🔥🔥🔥');
+      console.error('PreHandler - Request method:', request.method);
+      console.error('PreHandler - Request URL:', request.url);
+      console.error('PreHandler - timestamp:', new Date().toISOString());
+      
+      request.log.error('🔥 bulk-create preHandler called - SHOULD BE VISIBLE');
+    }
+  }, controller.createBulkBatchWithObjects.bind(controller));
+  
+  console.log('=== /bulk-create ROUTE REGISTERED ===');
 
   // Get batch status
   fastify.get('/:batchId/status', {

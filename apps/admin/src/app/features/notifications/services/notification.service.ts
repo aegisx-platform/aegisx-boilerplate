@@ -102,7 +102,7 @@ export class NotificationService {
 
   // Batch operations
   createBatch(request: CreateBatchRequest): Observable<{ success: boolean; data: { batchId: string } }> {
-    return this.http.post<{ success: boolean; data: { batchId: string } }>(`${this.apiUrl}/batch/bulk`, request);
+    return this.http.post<{ success: boolean; data: { batchId: string } }>(`${this.apiUrl}/batch/bulk-create`, request);
   }
 
   getBatchStatus(batchId: string): Observable<{ success: boolean; data: NotificationBatch }> {

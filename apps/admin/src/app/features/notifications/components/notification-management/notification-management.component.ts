@@ -81,9 +81,9 @@ import { NotificationBatchComponent } from '../notification-batch/notification-b
   ],
   providers: [MessageService, ConfirmationService],
   template: `
-    <div class="file-manager-container">
+    <div class="file-manager-container h-full flex flex-column">
       <!-- Main Navigation Tabs -->
-      <p-tabs [(value)]="activeTabValue" class="main-tabs">
+      <p-tabs [(value)]="activeTabValue" class="main-tabs flex-1 flex flex-column">
         <p-tablist>
           <p-tab value="analytics">Analytics</p-tab>
           <p-tab value="notifications">Notifications</p-tab>
@@ -92,10 +92,10 @@ import { NotificationBatchComponent } from '../notification-batch/notification-b
           <p-tab value="batch">Batch Jobs</p-tab>
         </p-tablist>
 
-        <p-tabpanels>
+        <p-tabpanels class="flex-1 overflow-hidden">
           <!-- Analytics Tab -->
-          <p-tabpanel value="analytics">
-            <div class="notification-analytics-container">
+          <p-tabpanel value="analytics" class="h-full">
+            <div class="notification-analytics-container h-full overflow-y-auto p-4">
               <div class="analytics-header flex align-items-center justify-content-between mb-4">
                 <div>
                   <h2 class="text-2xl font-bold m-0 text-gray-800">Notification Analytics</h2>
@@ -260,7 +260,7 @@ import { NotificationBatchComponent } from '../notification-batch/notification-b
             </div>
           </p-tabpanel>
           <!-- Notifications Tab -->
-          <p-tabpanel value="notifications">
+          <p-tabpanel value="notifications" class="h-full">
             <div class="notification-tab-container">
               <div class="mb-4">
                 <div class="flex align-items-center justify-content-between">
@@ -286,26 +286,32 @@ import { NotificationBatchComponent } from '../notification-batch/notification-b
           </p-tabpanel>
 
           <!-- Templates Tab -->
-          <p-tabpanel value="templates">
-            <app-notification-templates
-              (templateSelected)="onTemplateSelected($event)"
-              (refreshRequested)="refreshData()">
-            </app-notification-templates>
+          <p-tabpanel value="templates" class="h-full">
+            <div class="notification-tab-container">
+              <app-notification-templates
+                (templateSelected)="onTemplateSelected($event)"
+                (refreshRequested)="refreshData()">
+              </app-notification-templates>
+            </div>
           </p-tabpanel>
 
           <!-- Queue Status Tab -->
-          <p-tabpanel value="queue">
-            <app-notification-queue
-              (refreshRequested)="refreshData()">
-            </app-notification-queue>
+          <p-tabpanel value="queue" class="h-full">
+            <div class="notification-tab-container">
+              <app-notification-queue
+                (refreshRequested)="refreshData()">
+              </app-notification-queue>
+            </div>
           </p-tabpanel>
 
           <!-- Batch Jobs Tab -->
-          <p-tabpanel value="batch">
-            <app-notification-batch
-              (batchSelected)="onBatchSelected($event)"
-              (refreshRequested)="refreshData()">
-            </app-notification-batch>
+          <p-tabpanel value="batch" class="h-full">
+            <div class="notification-tab-container">
+              <app-notification-batch
+                (batchSelected)="onBatchSelected($event)"
+                (refreshRequested)="refreshData()">
+              </app-notification-batch>
+            </div>
           </p-tabpanel>
 
         </p-tabpanels>
@@ -486,32 +492,62 @@ import { NotificationBatchComponent } from '../notification-batch/notification-b
     <p-confirmDialog></p-confirmDialog>
   `,
   styles: [`
+    :host {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+
     .file-manager-container {
+      display: flex;
+      flex-direction: column;
       height: 100%;
       overflow: hidden;
     }
 
     .main-tabs {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    :host ::ng-deep .main-tabs {
+      display: flex;
+      flex-direction: column;
       height: 100%;
     }
 
     :host ::ng-deep .main-tabs .p-tabs-panels {
-      height: calc(100vh - 120px);
-      padding: 0;
+      flex: 1;
       overflow: hidden;
+      padding: 0;
     }
 
     :host ::ng-deep .main-tabs .p-tabs-panel {
       height: 100%;
       padding: 0;
-      overflow-y: auto;
+      overflow: hidden;
+    }
+
+    :host ::ng-deep .main-tabs .p-tabs-panelcontent {
+      height: 100%;
+      padding: 0;
+      overflow: hidden;
     }
 
     /* Analytics Tab Styles - matching storage */
     .notification-analytics-container {
-      padding: 1.5rem;
       height: 100%;
       overflow-y: auto;
+    }
+
+    /* Content Containers for each tab to enable scrolling */
+    .notification-tab-container {
+      height: 100%;
+      overflow-y: auto;
+      padding: 1.5rem;
     }
 
     .analytics-header h2 {

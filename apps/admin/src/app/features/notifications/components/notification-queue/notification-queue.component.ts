@@ -55,7 +55,7 @@ interface QueueMetrics {
   ],
   providers: [MessageService, ConfirmationService],
   template: `
-    <div class="main-container h-full max-h-screen overflow-y-auto p-6 pb-20">
+    <div class="main-container">
       <!-- Queue Overview Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div class="bg-white rounded-lg border p-4 sm:p-6 hover:shadow-md transition-shadow flex-1">
@@ -595,6 +595,7 @@ export class NotificationQueueComponent implements OnInit, OnDestroy {
     this.loadingQueued = true;
     try {
       const response = await this.notificationService.getQueuedNotifications(undefined, 100).toPromise();
+      console.log('Queue API response:', response);
       if (response?.success && response.data) {
         this.queuedNotifications = response.data.notifications || [];
       }
@@ -610,6 +611,7 @@ export class NotificationQueueComponent implements OnInit, OnDestroy {
     this.loadingScheduled = true;
     try {
       const response = await this.notificationService.getScheduledNotifications().toPromise();
+      console.log('Scheduled API response:', response);
       if (response?.success && response.data) {
         this.scheduledNotifications = response.data.notifications || [];
       }
@@ -777,4 +779,5 @@ export class NotificationQueueComponent implements OnInit, OnDestroy {
     };
     return mapping[priority] || 'secondary';
   }
+
 }

@@ -74,6 +74,9 @@ export interface NotificationRepository {
   getBatch(id: string): Promise<NotificationBatch | null>;
   updateBatchStatus(id: string, status: NotificationBatch['status'], metadata?: any): Promise<boolean>;
   getBatchNotifications(batchId: string): Promise<Notification[]>;
+  createBatchRecord(batchId: string, metadata: any): Promise<boolean>;
+  getBatchRecord(batchId: string): Promise<any>;
+  listBatchRecords(filters?: { status?: string; limit?: number; offset?: number }): Promise<any[]>;
 
   // Healthcare specific
   createHealthcareNotification(data: {
@@ -138,7 +141,10 @@ export interface NotificationRepository {
 }
 
 export class KnexNotificationRepository implements NotificationRepository {
-  constructor(private knex: Knex) {}
+  constructor(
+    private knex: Knex,
+    private fastify?: any
+  ) {}
 
   // Notification CRUD
   async create(notification: Omit<Notification, 'errors'>): Promise<Notification> {
@@ -493,6 +499,147 @@ export class KnexNotificationRepository implements NotificationRepository {
     return templates.filter(Boolean) as NotificationTemplate[];
   }
 
+  // Batch operations support
+  async createBatchRecord(batchId: string, metadata: any): Promise<boolean> {
+    try {
+      console.error('🔵 createBatchRecord - attempting database insert');
+      console.error('🔵 batchId:', batchId);
+      console.error('🔵 metadata:', metadata);
+      
+      const insertData = {
+        id: batchId,
+        name: metadata.name || `Batch #${batchId.slice(-8)}`,
+        status: 'pending',
+        total_count: metadata.notificationCount || 0,
+        created_by: 'api',
+        created_at: new Date()
+      };
+      
+      console.error('🔵 insertData:', insertData);
+      
+      const result = await this.knex('notification_batches').insert(insertData);
+      console.error('🔵 Insert result:', result);
+      
+      if (this.fastify?.log) {
+        this.fastify.log.info('Batch record created successfully', { batchId, metadata });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('🔴 Database insert error:', error);
+      
+      if (this.fastify?.log) {
+        this.fastify.log.error('Failed to create batch record', { batchId, error });
+      }
+      return false;
+    }
+  }
+
+  async updateBatchStatus(batchId: string, status: string, metadata?: any): Promise<boolean> {
+    try {
+      console.error('🔧 updateBatchStatus called');
+      console.error('🔧 batchId:', batchId);
+      console.error('🔧 status:', status);
+      console.error('🔧 metadata:', metadata);
+      
+      const updateData: any = {
+        status
+      };
+
+      // Only update metadata if provided
+      if (metadata) {
+        updateData.errors = JSON.stringify(metadata);
+      }
+
+      // Update timestamps based on status
+      if (status === 'processing') {
+        updateData.started_at = new Date();
+      } else if (['completed', 'failed'].includes(status)) {
+        updateData.completed_at = new Date();
+        if (metadata) {
+          updateData.success_count = metadata.processed || 0;
+          updateData.failure_count = metadata.failed || 0;
+        }
+      }
+
+      console.error('🔧 updateData:', updateData);
+
+      const updated = await this.knex('notification_batches')
+        .where('id', batchId)
+        .update(updateData);
+
+      console.error('🔧 Update result:', updated);
+
+      return updated > 0;
+    } catch (error) {
+      console.error('🔧 Update error:', error);
+      if (this.fastify?.log) {
+        this.fastify.log.error('Failed to update batch status', { batchId, status, error });
+      }
+      return false;
+    }
+  }
+
+  async getBatchRecord(batchId: string): Promise<any> {
+    try {
+      const result = await this.knex('notification_batches')
+        .where('id', batchId)
+        .first();
+
+      if (!result) return null;
+
+      return {
+        id: result.id,
+        status: result.status,
+        metadata: result.metadata ? JSON.parse(result.metadata) : {},
+        createdAt: result.created_at,
+        startedAt: result.started_at,
+        completedAt: result.completed_at,
+        updatedAt: result.updated_at
+      };
+    } catch (error) {
+      if (this.fastify?.log) {
+        this.fastify.log.error('Failed to get batch record', { batchId, error });
+      }
+      return null;
+    }
+  }
+
+  async listBatchRecords(filters?: { status?: string; limit?: number; offset?: number }): Promise<any[]> {
+    try {
+      let query = this.knex('notification_batches');
+
+      if (filters?.status) {
+        query = query.where('status', filters.status);
+      }
+
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      if (filters?.offset) {
+        query = query.offset(filters.offset);
+      }
+
+      const results = await query.orderBy('created_at', 'desc');
+
+      return results.map(result => ({
+        id: result.id,
+        status: result.status,
+        metadata: result.metadata ? JSON.parse(result.metadata) : {},
+        createdAt: result.created_at,
+        startedAt: result.started_at,
+        completedAt: result.completed_at,
+        updatedAt: result.updated_at
+      }));
+    } catch (error) {
+      if (this.fastify?.log) {
+        this.fastify.log.error('Failed to list batch records', { error });
+      }
+      return [];
+    }
+  }
+
   // User preferences
   async getUserPreferences(userId: string): Promise<NotificationPreferences | null> {
     const result = await this.knex('notification_preferences')
@@ -612,18 +759,6 @@ export class KnexNotificationRepository implements NotificationRepository {
     };
   }
 
-  async updateBatchStatus(id: string, status: NotificationBatch['status'], metadata?: any): Promise<boolean> {
-    const updates: any = { status, updated_at: new Date() };
-    
-    if (status === 'processing') updates.started_at = new Date();
-    if (status === 'completed' || status === 'failed') updates.completed_at = new Date();
-
-    const updated = await this.knex('notification_batches')
-      .where('id', id)
-      .update(updates);
-
-    return updated > 0;
-  }
 
   async getBatchNotifications(batchId: string): Promise<Notification[]> {
     const notificationIds = await this.knex('notification_batch_items')

@@ -16,7 +16,7 @@ export default async function notificationV1Routes(fastify: FastifyInstance) {
   }
 
   // Initialize notification queue service with Bull + RabbitMQ integration
-  const repository = new KnexNotificationRepository(fastify.knex);
+  const repository = new KnexNotificationRepository(fastify.knex, fastify);
   
   // Create configuration from environment variables
   const queueConfig = {
@@ -54,7 +54,7 @@ export default async function notificationV1Routes(fastify: FastifyInstance) {
 
   // Initialize controllers
   const controller = new DatabaseNotificationController(service);
-  const batchController = new DatabaseBatchController(batchWorkerService);
+  const batchController = new DatabaseBatchController(batchWorkerService, fastify);
 
   // Register notification routes with controller
   await fastify.register(async function(fastify) {
@@ -62,8 +62,11 @@ export default async function notificationV1Routes(fastify: FastifyInstance) {
   }, { prefix: '/notifications' });
 
   // Register batch routes with controller
+  console.log('=== REGISTERING BATCH ROUTES ===');
   await fastify.register(async function(fastify) {
+    console.log('=== INSIDE BATCH ROUTE REGISTRATION ===');
     await batchRoutes(fastify, {}, batchController);
+    console.log('=== BATCH ROUTES REGISTERED ===');
   }, { prefix: '/notifications/batch' });
 
   // Setup integrations if available
