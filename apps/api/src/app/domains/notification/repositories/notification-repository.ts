@@ -54,6 +54,18 @@ export interface NotificationRepository {
     occurredAt: Date;
   }>>;
 
+  // Error management
+  getAllErrorsWithDetails(filters: {
+    channel?: string;
+    type?: string;
+    retryable?: boolean;
+    dateFrom?: Date;
+    dateTo?: Date;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ errors: any[]; total: number }>;
+  getErrorStatistics(days: number, groupBy: string): Promise<any[]>;
+
   // Template management
   createTemplate(template: Omit<NotificationTemplate, 'id' | 'metadata'>): Promise<NotificationTemplate>;
   findTemplateById(id: string): Promise<NotificationTemplate | null>;
@@ -384,6 +396,143 @@ export class KnexNotificationRepository implements NotificationRepository {
       retryable: row.retryable,
       occurredAt: row.occurred_at,
     }));
+  }
+
+  // Error management methods
+  async getAllErrorsWithDetails(filters: {
+    channel?: string;
+    type?: string;
+    retryable?: boolean;
+    dateFrom?: Date;
+    dateTo?: Date;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ errors: any[]; total: number }> {
+    try {
+      console.log('🔍 Repository getAllErrorsWithDetails called with filters:', filters);
+      
+      let query = this.knex('notification_errors as ne')
+        .join('notifications as n', 'ne.notification_id', 'n.id')
+        .select(
+          'ne.id',
+          'ne.notification_id as notificationId',
+          'ne.channel',
+          'ne.error_message as errorMessage',
+          'ne.error_code as errorCode',
+          'ne.retryable',
+          'ne.occurred_at as occurredAt',
+          'n.type',
+          'n.subject',
+          'n.recipient_email as recipientEmail',
+          'n.priority',
+          'n.attempts'
+        );
+
+      // Apply filters
+      if (filters.channel) {
+        query = query.where('ne.channel', filters.channel);
+      }
+      if (filters.type) {
+        query = query.where('n.type', filters.type);
+      }
+      if (filters.retryable !== undefined) {
+        query = query.where('ne.retryable', filters.retryable);
+      }
+      if (filters.dateFrom) {
+        query = query.where('ne.occurred_at', '>=', filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        query = query.where('ne.occurred_at', '<=', filters.dateTo);
+      }
+
+      // Get total count - create a separate clean query for counting
+      let countQuery = this.knex('notification_errors as ne')
+        .join('notifications as n', 'ne.notification_id', 'n.id');
+
+      // Apply same filters to count query
+      if (filters.channel) {
+        countQuery = countQuery.where('ne.channel', filters.channel);
+      }
+      if (filters.type) {
+        countQuery = countQuery.where('n.type', filters.type);
+      }
+      if (filters.retryable !== undefined) {
+        countQuery = countQuery.where('ne.retryable', filters.retryable);
+      }
+      if (filters.dateFrom) {
+        countQuery = countQuery.where('ne.occurred_at', '>=', filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        countQuery = countQuery.where('ne.occurred_at', '<=', filters.dateTo);
+      }
+
+      const countResult = await countQuery.count('* as total').first();
+      console.log('🔍 Count result:', countResult);
+      const total = parseInt(countResult?.total?.toString() || '0');
+      console.log('🔍 Parsed total:', total);
+
+      // Apply pagination
+      if (filters.limit) {
+        query = query.limit(filters.limit);
+      }
+      if (filters.offset) {
+        query = query.offset(filters.offset);
+      }
+
+      // Order by most recent first
+      query = query.orderBy('ne.occurred_at', 'desc');
+
+      console.log('🔍 Main query SQL:', query.toString());
+      const errors = await query;
+      console.log('🔍 Errors result:', errors);
+
+      return { errors, total };
+    } catch (error) {
+      console.error('🔴 Repository getAllErrorsWithDetails error:', error);
+      throw error;
+    }
+  }
+
+  async getErrorStatistics(days: number = 7, groupBy: string = 'date'): Promise<any[]> {
+    const dateFrom = new Date();
+    dateFrom.setDate(dateFrom.getDate() - days);
+
+    let query = this.knex('notification_errors as ne')
+      .join('notifications as n', 'ne.notification_id', 'n.id')
+      .where('ne.occurred_at', '>=', dateFrom);
+
+    if (groupBy === 'date') {
+      return await query
+        .select(this.knex.raw('DATE(ne.occurred_at) as date'))
+        .count('* as errorCount')
+        .groupBy(this.knex.raw('DATE(ne.occurred_at)'))
+        .orderBy('date', 'desc');
+    } else if (groupBy === 'channel') {
+      return await query
+        .select('ne.channel')
+        .count('* as errorCount')
+        .groupBy('ne.channel')
+        .orderBy('errorCount', 'desc');
+    } else if (groupBy === 'type') {
+      return await query
+        .select('n.type')
+        .count('* as errorCount')
+        .groupBy('n.type')
+        .orderBy('errorCount', 'desc');
+    } else if (groupBy === 'retryable') {
+      return await query
+        .select('ne.retryable')
+        .count('* as errorCount')
+        .groupBy('ne.retryable')
+        .orderBy('ne.retryable', 'desc');
+    }
+
+    // Default to date grouping
+    return await query
+      .select(this.knex.raw('DATE(ne.occurred_at) as date'))
+      .count('* as errorCount')
+      .groupBy(this.knex.raw('DATE(ne.occurred_at)'))
+      .orderBy('date', 'desc');
   }
 
   // Template management

@@ -475,4 +475,55 @@ export async function notificationRoutes(
       }
     }
   }, controller.getNotificationErrors.bind(controller));
+
+  // Error management routes
+  fastify.get('/errors', {
+    schema: {
+      tags: ['Error Management'],
+      summary: 'List all notification errors with filtering',
+      querystring: {
+        type: 'object',
+        properties: {
+          channel: { type: 'string', enum: ['email', 'sms', 'push', 'slack', 'webhook', 'in-app'] },
+          type: { type: 'string' },
+          retryable: { type: 'string', enum: ['true', 'false'] },
+          dateFrom: { type: 'string', format: 'date-time' },
+          dateTo: { type: 'string', format: 'date-time' },
+          limit: { type: 'integer', minimum: 1, maximum: 100, default: 50 },
+          offset: { type: 'integer', minimum: 0, default: 0 }
+        }
+      }
+    }
+  }, controller.listAllErrors.bind(controller));
+
+  fastify.get('/errors/statistics', {
+    schema: {
+      tags: ['Error Management'],
+      summary: 'Get error statistics and analytics',
+      querystring: {
+        type: 'object',
+        properties: {
+          days: { type: 'integer', minimum: 1, maximum: 365, default: 7 },
+          groupBy: { type: 'string', enum: ['date', 'channel', 'type', 'retryable'], default: 'date' }
+        }
+      }
+    }
+  }, controller.getErrorStatistics.bind(controller));
+
+  fastify.get('/errors/export', {
+    schema: {
+      tags: ['Error Management'],
+      summary: 'Export error data as CSV or JSON',
+      querystring: {
+        type: 'object',
+        properties: {
+          format: { type: 'string', enum: ['json', 'csv'], default: 'json' },
+          channel: { type: 'string', enum: ['email', 'sms', 'push', 'slack', 'webhook', 'in-app'] },
+          type: { type: 'string' },
+          dateFrom: { type: 'string', format: 'date-time' },
+          dateTo: { type: 'string', format: 'date-time' }
+        }
+      }
+    }
+  }, controller.exportErrors.bind(controller));
 }

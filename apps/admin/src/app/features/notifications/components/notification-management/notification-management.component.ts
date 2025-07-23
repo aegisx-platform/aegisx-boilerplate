@@ -46,6 +46,7 @@ import { NotificationListComponent } from '../notification-list/notification-lis
 import { NotificationTemplatesComponent } from '../notification-templates/notification-templates.component';
 import { NotificationQueueComponent } from '../notification-queue/notification-queue.component';
 import { NotificationBatchComponent } from '../notification-batch/notification-batch.component';
+import { NotificationErrorLogsComponent } from '../notification-error-logs/notification-error-logs.component';
 
 @Component({
   selector: 'app-notification-management',
@@ -77,7 +78,8 @@ import { NotificationBatchComponent } from '../notification-batch/notification-b
     NotificationListComponent,
     NotificationTemplatesComponent,
     NotificationQueueComponent,
-    NotificationBatchComponent
+    NotificationBatchComponent,
+    NotificationErrorLogsComponent
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -90,6 +92,7 @@ import { NotificationBatchComponent } from '../notification-batch/notification-b
           <p-tab value="templates">Templates</p-tab>
           <p-tab value="queue">Queue</p-tab>
           <p-tab value="batch">Batch Jobs</p-tab>
+          <p-tab value="error-logs">Error Logs</p-tab>
         </p-tablist>
 
         <p-tabpanels class="flex-1 overflow-hidden">
@@ -311,6 +314,13 @@ import { NotificationBatchComponent } from '../notification-batch/notification-b
                 (batchSelected)="onBatchSelected($event)"
                 (refreshRequested)="refreshData()">
               </app-notification-batch>
+            </div>
+          </p-tabpanel>
+
+          <!-- Error Logs Tab -->
+          <p-tabpanel value="error-logs" class="h-full">
+            <div class="notification-tab-container">
+              <app-notification-error-logs></app-notification-error-logs>
             </div>
           </p-tabpanel>
 

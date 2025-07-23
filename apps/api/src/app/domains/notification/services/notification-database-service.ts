@@ -120,6 +120,24 @@ export interface NotificationDatabaseService {
     retryable: boolean;
     occurredAt: Date;
   }>>;
+
+  // Error management
+  getAllErrors(filters: {
+    channel?: string;
+    type?: string;
+    retryable?: boolean;
+    dateFrom?: Date;
+    dateTo?: Date;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ errors: any[]; total: number }>;
+  getErrorStatistics(days: number, groupBy: string): Promise<any>;
+  exportErrors(filters: {
+    channel?: string;
+    type?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+  }, format: string): Promise<string>;
 }
 
 export class DatabaseNotificationService implements NotificationDatabaseService {
@@ -633,6 +651,129 @@ export class DatabaseNotificationService implements NotificationDatabaseService 
     occurredAt: Date;
   }>> {
     return this.repository.getErrors(notificationId);
+  }
+
+  // Error management methods
+  async getAllErrors(filters: {
+    channel?: string;
+    type?: string;
+    retryable?: boolean;
+    dateFrom?: Date;
+    dateTo?: Date;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ errors: any[]; total: number }> {
+    try {
+      console.log('🔧 Service getAllErrors called with filters:', filters);
+      
+      // Use repository to get filtered errors with notification details
+      const result = await this.repository.getAllErrorsWithDetails(filters);
+      
+      console.log('🔧 Repository returned result:', { 
+        errorsCount: result.errors.length, 
+        total: result.total,
+        firstError: result.errors[0]
+      });
+      
+      this.fastify.log.info('Retrieved all errors with filters', {
+        filtersApplied: filters,
+        resultCount: result.errors.length,
+        totalCount: result.total
+      });
+
+      return result;
+    } catch (error) {
+      console.error('🔴 Service getAllErrors error:', error);
+      this.fastify.log.error('Failed to get all errors', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        filters 
+      });
+      throw error;
+    }
+  }
+
+  async getErrorStatistics(days: number = 7, groupBy: string = 'date'): Promise<any> {
+    try {
+      const statistics = await this.repository.getErrorStatistics(days, groupBy);
+      
+      this.fastify.log.info('Retrieved error statistics', {
+        days,
+        groupBy,
+        statisticsCount: statistics.length
+      });
+
+      return statistics;
+    } catch (error) {
+      this.fastify.log.error('Failed to get error statistics', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        days,
+        groupBy 
+      });
+      throw error;
+    }
+  }
+
+  async exportErrors(filters: {
+    channel?: string;
+    type?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+  }, format: string = 'json'): Promise<string> {
+    try {
+      // Get all errors matching filters (no limit for export)
+      const { errors } = await this.repository.getAllErrorsWithDetails({
+        ...filters,
+        limit: undefined,
+        offset: undefined
+      });
+
+      if (format === 'csv') {
+        // Convert to CSV format
+        const csvHeaders = ['ID', 'Notification ID', 'Channel', 'Type', 'Error Message', 'Error Code', 'Retryable', 'Occurred At', 'Recipient Email'];
+        const csvRows = errors.map(error => [
+          error.id,
+          error.notificationId,
+          error.channel,
+          error.type || '',
+          `"${error.errorMessage.replace(/"/g, '""')}"`, // Escape quotes
+          error.errorCode || '',
+          error.retryable ? 'Yes' : 'No',
+          error.occurredAt.toISOString(),
+          error.recipientEmail || ''
+        ]);
+
+        const csvContent = [csvHeaders.join(','), ...csvRows.map(row => row.join(','))].join('\n');
+        
+        this.fastify.log.info('Exported errors as CSV', {
+          filters,
+          errorCount: errors.length
+        });
+
+        return csvContent;
+      } else {
+        // Return as JSON
+        const jsonData = {
+          exportedAt: new Date().toISOString(),
+          filters,
+          errorCount: errors.length,
+          errors
+        };
+
+        this.fastify.log.info('Exported errors as JSON', {
+          filters,
+          errorCount: errors.length
+        });
+
+        return JSON.stringify(jsonData, null, 2);
+      }
+    } catch (error) {
+      this.fastify.log.error('Failed to export errors', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        filters,
+        format 
+      });
+      throw error;
+    }
   }
 
   // Private helper methods

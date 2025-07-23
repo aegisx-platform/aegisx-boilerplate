@@ -151,6 +151,22 @@ export class NotificationService {
     return this.http.get<{ success: boolean; data: any[] }>(`${this.apiUrl}/${id}/errors`);
   }
 
+  // Error management
+  getErrorLogs(params: any): Observable<{ success: boolean; data: any }> {
+    return this.http.get<{ success: boolean; data: any }>(`${this.apiUrl}/errors`, { params });
+  }
+
+  getErrorStatistics(params: any): Observable<{ success: boolean; data: any }> {
+    return this.http.get<{ success: boolean; data: any }>(`${this.apiUrl}/errors/statistics`, { params });
+  }
+
+  exportErrors(params: any): Observable<string> {
+    return this.http.get(`${this.apiUrl}/errors/export`, { 
+      params, 
+      responseType: 'text' 
+    });
+  }
+
   // Healthcare specific
   createHealthcareNotification(request: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/healthcare`, request);

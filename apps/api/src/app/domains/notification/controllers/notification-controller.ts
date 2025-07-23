@@ -60,6 +60,11 @@ export interface NotificationController {
 
   // Error tracking
   getNotificationErrors(request: FastifyRequest, reply: FastifyReply): Promise<void>;
+  
+  // Error management
+  listAllErrors(request: FastifyRequest, reply: FastifyReply): Promise<void>;
+  getErrorStatistics(request: FastifyRequest, reply: FastifyReply): Promise<void>;
+  exportErrors(request: FastifyRequest, reply: FastifyReply): Promise<void>;
 }
 
 export class DatabaseNotificationController implements NotificationController {
@@ -1174,6 +1179,117 @@ export class DatabaseNotificationController implements NotificationController {
       reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Failed to retrieve notification errors',
+      });
+    }
+  }
+
+  // Error management - List all errors with filtering
+  async listAllErrors(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      console.log('📋 Controller listAllErrors called');
+      const query = request.query as {
+        channel?: string;
+        type?: string;
+        retryable?: string;
+        dateFrom?: string;
+        dateTo?: string;
+        limit?: string;
+        offset?: string;
+      };
+
+      const filters = {
+        channel: query.channel,
+        type: query.type,
+        retryable: query.retryable !== undefined ? query.retryable === 'true' : undefined,
+        dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
+        dateTo: query.dateTo ? new Date(query.dateTo) : undefined,
+        limit: query.limit ? parseInt(query.limit) : 50,
+        offset: query.offset ? parseInt(query.offset) : 0,
+      };
+
+      const result = await this.notificationService.getAllErrors(filters);
+
+      reply.send({
+        success: true,
+        data: {
+          errors: result.errors,
+          count: result.total,
+        },
+      });
+    } catch (error) {
+      request.log.error('Failed to list all errors:', error);
+      reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve error list',
+      });
+    }
+  }
+
+  // Error statistics
+  async getErrorStatistics(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const query = request.query as {
+        days?: string;
+        groupBy?: string;
+      };
+
+      const days = query.days ? parseInt(query.days) : 7;
+      const groupBy = query.groupBy || 'date';
+
+      const statistics = await this.notificationService.getErrorStatistics(days, groupBy);
+
+      reply.send({
+        success: true,
+        data: {
+          statistics,
+          period: `${days} days`,
+          groupBy,
+        },
+      });
+    } catch (error) {
+      request.log.error('Failed to get error statistics:', error);
+      reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to retrieve error statistics',
+      });
+    }
+  }
+
+  // Error export
+  async exportErrors(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const query = request.query as {
+        format?: string;
+        channel?: string;
+        type?: string;
+        dateFrom?: string;
+        dateTo?: string;
+      };
+
+      const filters = {
+        channel: query.channel,
+        type: query.type,
+        dateFrom: query.dateFrom ? new Date(query.dateFrom) : undefined,
+        dateTo: query.dateTo ? new Date(query.dateTo) : undefined,
+      };
+
+      const format = query.format || 'json';
+      const exportData = await this.notificationService.exportErrors(filters, format);
+
+      if (format === 'csv') {
+        reply.header('Content-Type', 'text/csv');
+        reply.header('Content-Disposition', `attachment; filename="notification_errors_${new Date().toISOString().split('T')[0]}.csv"`);
+      } else {
+        reply.header('Content-Type', 'application/json');
+        reply.header('Content-Disposition', `attachment; filename="notification_errors_${new Date().toISOString().split('T')[0]}.json"`);
+      }
+
+      reply.send(exportData);
+    } catch (error) {
+      request.log.error('Failed to export errors:', error);
+      reply.status(500).send({
+        error: 'Internal Server Error',
+        message: 'Failed to export errors',
       });
     }
   }
