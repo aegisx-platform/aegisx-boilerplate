@@ -8,7 +8,6 @@ import { CardModule } from 'primeng/card';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputTextareaModule } from 'primeng/inputtextarea';
 import { ToastModule } from 'primeng/toast';
 import { MessageModule } from 'primeng/message';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -50,7 +49,6 @@ interface FeatureToggleStats {
     ToggleButtonModule,
     SelectModule,
     InputTextModule,
-    InputTextareaModule,
     ToastModule,
     MessageModule,
     ConfirmDialogModule,
@@ -91,42 +89,41 @@ interface FeatureToggleStats {
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2">
           <p-card header="Environment & Controls" styleClass="h-full border border-gray-200">
-            <div class="flex flex-wrap gap-6">
-              <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Category</label>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
                 <p-select [options]="categories"
                           [(ngModel)]="selectedCategory"
                           (onChange)="onCategoryChange()"
                           placeholder="Select Category"
-                          styleClass="w-48">
+                          styleClass="w-full">
                 </p-select>
               </div>
               
-              <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Environment</label>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Environment</label>
                 <p-select [options]="environments"
                           [(ngModel)]="selectedEnvironment"
                           (onChange)="onEnvironmentChange()"
                           placeholder="Select Environment"
-                          styleClass="w-40">
+                          styleClass="w-full">
                 </p-select>
               </div>
               
-              <div class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">Bulk Actions</label>
+              <div class="md:col-span-2 mt-2">
                 <div class="flex items-center gap-2">
                   <button pButton 
-                          label="Enable All" 
+                          label="Bulk Enable All" 
                           icon="pi pi-check-circle"
-                          class="p-button-success p-button-sm"
+                          class="p-button-success"
                           [disabled]="loading || featureToggles.length === 0"
                           (click)="bulkToggleAll(true)">
                   </button>
                   
                   <button pButton 
-                          label="Disable All" 
+                          label="Bulk Disable All" 
                           icon="pi pi-times-circle"
-                          class="p-button-danger p-button-sm"
+                          class="p-button-danger"
                           [disabled]="loading || featureToggles.length === 0"
                           (click)="bulkToggleAll(false)">
                   </button>
