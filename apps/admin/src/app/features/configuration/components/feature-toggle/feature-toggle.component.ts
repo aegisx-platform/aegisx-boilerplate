@@ -96,6 +96,7 @@ interface FeatureToggleStats {
                           [(ngModel)]="selectedCategory"
                           (onChange)="onCategoryChange()"
                           placeholder="Select Category"
+                          [showClear]="true"
                           styleClass="w-full">
                 </p-select>
               </div>
@@ -106,6 +107,7 @@ interface FeatureToggleStats {
                           [(ngModel)]="selectedEnvironment"
                           (onChange)="onEnvironmentChange()"
                           placeholder="Select Environment"
+                          [showClear]="true"
                           styleClass="w-full">
                 </p-select>
               </div>
@@ -267,7 +269,7 @@ interface FeatureToggleStats {
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
-          <p-select [options]="categories"
+          <p-select [options]="categoriesForCreate"
                     [(ngModel)]="newFeature.category"
                     placeholder="Select Category"
                     class="w-full">
@@ -345,7 +347,7 @@ export class FeatureToggleComponent implements OnInit {
   // UI State
   loading = false;
   selectedEnvironment = 'development';
-  selectedCategory = 'feature_toggles:ui';
+  selectedCategory: string | null = null;
   
   environments = [
     { label: 'Development', value: 'development' },
@@ -355,6 +357,7 @@ export class FeatureToggleComponent implements OnInit {
   ];
 
   categories = [
+    { label: 'All Categories', value: null },
     { label: 'UI Features', value: 'feature_toggles:ui' },
     { label: 'API Features', value: 'feature_toggles:api' },
     { label: 'Mobile Features', value: 'feature_toggles:mobile' },
@@ -363,6 +366,11 @@ export class FeatureToggleComponent implements OnInit {
     { label: 'Experimental', value: 'feature_toggles:experimental' },
     { label: 'System Features', value: 'feature_toggles:system' }
   ];
+
+  // Categories for create dialog (without "All Categories")
+  get categoriesForCreate() {
+    return this.categories.filter(c => c.value !== null);
+  }
 
   // Loading states for individual features
   updatingFeatures = new Set<string>();
@@ -548,7 +556,12 @@ export class FeatureToggleComponent implements OnInit {
       ]
     };
     
-    this.featureToggles = mockData[this.selectedCategory] || [];
+    // If no category selected, show all feature toggles
+    if (!this.selectedCategory) {
+      this.featureToggles = Object.values(mockData).flat();
+    } else {
+      this.featureToggles = mockData[this.selectedCategory] || [];
+    }
 
     this.stats = {
       total: this.featureToggles.length,
@@ -700,7 +713,7 @@ export class FeatureToggleComponent implements OnInit {
     this.newFeature = {
       name: '',
       description: '',
-      category: this.selectedCategory,
+      category: this.selectedCategory || 'feature_toggles:ui',
       environment: this.selectedEnvironment,
       enabled: false
     };
