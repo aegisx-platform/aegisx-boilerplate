@@ -26,7 +26,7 @@ export interface SystemConfiguration {
   category: string;
   configKey: string;
   configValue: string;
-  valueType: 'string' | 'number' | 'boolean' | 'json';
+  valueType: 'string' | 'number' | 'boolean' | 'password' | 'json';
   environment: 'development' | 'production' | 'staging' | 'test';
   isActive: boolean;
   description?: string;
@@ -171,12 +171,24 @@ export class ConfigurationService {
 
     return this.http.get<{
       success: boolean;
-      data: ConfigurationSearchResult;
+      data: {
+        configurations: SystemConfiguration[];
+        pagination: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      };
     }>(`${this.baseUrl}/search`, {
       headers: this.getHeaders(),
       params: httpParams
     }).pipe(
-      map(response => response.data),
+      map(response => ({
+        configurations: response.data.configurations,
+        total: response.data.pagination.total,
+        pagination: response.data.pagination
+      })),
       catchError(this.handleError)
     );
   }

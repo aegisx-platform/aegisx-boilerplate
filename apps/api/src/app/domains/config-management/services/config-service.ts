@@ -648,6 +648,169 @@ export class ConfigService {
   }
 
   /**
+   * Feature Toggle Methods
+   */
+
+  /**
+   * ตรวจสอบว่า feature เปิดใช้งานหรือไม่
+   */
+  async isFeatureEnabled(
+    featureName: string,
+    environment: ConfigEnvironment = 'development'
+  ): Promise<boolean> {
+    try {
+      // ลองดึงจาก cache ก่อน
+      if (this.options.enableCache) {
+        const cached = await this.getFromCache('feature_toggles', environment);
+        if (cached && cached[featureName] !== undefined) {
+          return this.parseValue(cached[featureName], 'boolean');
+        }
+      }
+
+      // ดึงจาก database
+      const config = await this.configRepo.findByKey('feature_toggles', featureName, environment);
+      
+      if (!config || !config.isActive) {
+        return false; // Default to disabled if not found or inactive
+      }
+
+      return this.parseValue(config.configValue || 'false', 'boolean');
+    } catch (error) {
+      this.fastify.log.error(`Failed to check feature toggle ${featureName}:`, error);
+      return false; // Fail-safe: disable feature on error
+    }
+  }
+
+  /**
+   * เปิด/ปิด feature toggle
+   */
+  async setFeatureToggle(
+    featureName: string,
+    enabled: boolean,
+    environment: ConfigEnvironment = 'development',
+    context: {
+      userId?: number;
+      ipAddress?: string;
+      userAgent?: string;
+      changeReason?: string;
+    } = {}
+  ): Promise<SystemConfiguration> {
+    const { userId, ipAddress, userAgent, changeReason } = context;
+
+    // ตรวจสอบว่า feature toggle มีอยู่แล้วหรือไม่
+    const existingConfig = await this.configRepo.findByKey('feature_toggles', featureName, environment);
+
+    if (existingConfig) {
+      // อัพเดท feature toggle ที่มีอยู่
+      return this.updateConfiguration(existingConfig.id, {
+        configValue: enabled.toString(),
+        isActive: true,
+        changeReason: changeReason || `Feature ${featureName} ${enabled ? 'enabled' : 'disabled'}`,
+      }, { userId, ipAddress, userAgent });
+    } else {
+      // สร้าง feature toggle ใหม่
+      return this.createConfiguration({
+        category: 'feature_toggles',
+        configKey: featureName,
+        configValue: enabled.toString(),
+        valueType: 'boolean',
+        isEncrypted: false,
+        isActive: true,
+        environment,
+        changeReason: changeReason || `Feature ${featureName} created and ${enabled ? 'enabled' : 'disabled'}`,
+      }, { userId, ipAddress, userAgent });
+    }
+  }
+
+  /**
+   * ดึงรายการ feature toggles ทั้งหมด
+   */
+  async getAllFeatureToggles(
+    environment: ConfigEnvironment = 'development',
+    includeInactive = false
+  ): Promise<Record<string, boolean>> {
+    try {
+      const configValues = await this.getConfigValues('feature_toggles', environment, !includeInactive);
+      
+      // แปลงเป็น boolean values
+      const featureToggles: Record<string, boolean> = {};
+      for (const [key, value] of Object.entries(configValues)) {
+        featureToggles[key] = this.parseValue(value?.toString() || 'false', 'boolean');
+      }
+
+      return featureToggles;
+    } catch (error) {
+      this.fastify.log.error('Failed to get all feature toggles:', error);
+      return {};
+    }
+  }
+
+  /**
+   * Bulk update feature toggles
+   */
+  async bulkUpdateFeatureToggles(
+    updates: Record<string, boolean>,
+    environment: ConfigEnvironment = 'development',
+    context: {
+      userId?: number;
+      ipAddress?: string;
+      userAgent?: string;
+      changeReason?: string;
+    } = {}
+  ): Promise<SystemConfiguration[]> {
+    const { userId, ipAddress, userAgent, changeReason } = context;
+    const results: SystemConfiguration[] = [];
+
+    // Get all existing feature toggles
+    const existingConfigs = await this.configRepo.findByCategory('feature_toggles', environment, true);
+    const existingConfigMap = new Map(existingConfigs.map(c => [c.configKey, c]));
+
+    const bulkUpdates: { id: number; configValue: string; isActive: boolean; }[] = [];
+    const newConfigs: CreateConfigurationRequest[] = [];
+
+    for (const [featureName, enabled] of Object.entries(updates)) {
+      const existingConfig = existingConfigMap.get(featureName);
+      
+      if (existingConfig) {
+        bulkUpdates.push({
+          id: existingConfig.id,
+          configValue: enabled.toString(),
+          isActive: true,
+        });
+      } else {
+        newConfigs.push({
+          category: 'feature_toggles',
+          configKey: featureName,
+          configValue: enabled.toString(),
+          valueType: 'boolean',
+          isEncrypted: false,
+          isActive: true,
+          environment,
+          changeReason: changeReason || `Feature ${featureName} bulk update`,
+        });
+      }
+    }
+
+    // Bulk update existing configs
+    if (bulkUpdates.length > 0) {
+      const updatedConfigs = await this.bulkUpdateConfigurations({
+        updates: bulkUpdates,
+        changeReason: changeReason || 'Bulk feature toggle update',
+        environment,
+      }, { userId, ipAddress, userAgent });
+      results.push(...updatedConfigs);
+    }
+
+    // Create new configs
+    for (const newConfig of newConfigs) {
+      const created = await this.createConfiguration(newConfig, { userId, ipAddress, userAgent });
+      results.push(created);
+    }
+
+    return results;
+  }
+
+  /**
    * แปลงค่าตาม type
    */
   private parseValue(value: string, valueType: string): any {

@@ -3,7 +3,7 @@
  * สำหรับระบบจัดการ configuration แบบ dynamic
  */
 
-export type ConfigValueType = 'string' | 'number' | 'boolean' | 'json';
+export type ConfigValueType = 'string' | 'number' | 'boolean' | 'password' | 'json';
 export type ConfigInputType = 'text' | 'password' | 'number' | 'select' | 'textarea' | 'checkbox' | 'radio';
 export type ConfigEnvironment = 'development' | 'production' | 'staging' | 'test';
 

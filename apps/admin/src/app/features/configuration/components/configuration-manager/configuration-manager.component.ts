@@ -27,6 +27,7 @@ import { ConfigurationListComponent } from '../configuration-list/configuration-
 import { ConfigurationFormComponent } from '../configuration-form/configuration-form.component';
 import { ConfigurationTemplatesComponent } from '../configuration-templates/configuration-templates.component';
 import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.component';
+import { FeatureToggleComponent } from '../feature-toggle/feature-toggle.component';
 
 @Component({
   selector: 'app-configuration-manager',
@@ -46,7 +47,8 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
     ConfigurationListComponent,
     ConfigurationFormComponent,
     ConfigurationTemplatesComponent,
-    HotReloadStatsComponent
+    HotReloadStatsComponent,
+    FeatureToggleComponent
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -80,6 +82,18 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
                 *ngIf="totalTemplates > 0"
                 [value]="totalTemplates.toString()"
                 severity="secondary"
+                class="text-xs ml-1">
+              </p-tag>
+            </div>
+          </p-tab>
+
+          <p-tab value="feature-toggles">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-flag"></i>
+              <span>Feature Toggles</span>
+              <p-tag
+                value="New"
+                severity="success"
                 class="text-xs ml-1">
               </p-tag>
             </div>
@@ -123,6 +137,14 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
                 [selectedCategory]="selectedCategory"
                 (templateApplied)="onTemplateApplied($event)">
               </app-configuration-templates>
+            </div>
+          </p-tabpanel>
+
+          <!-- Feature Toggles Tab -->
+          <p-tabpanel value="feature-toggles">
+            <div class="feature-toggles-tab">
+              <!-- Feature Toggle Component -->
+              <app-feature-toggle></app-feature-toggle>
             </div>
           </p-tabpanel>
 
@@ -204,6 +226,17 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
     :host ::ng-deep .configuration-tabs .p-tabs-panels {
       flex: 1;
       overflow: hidden;
+    }
+
+    :host ::ng-deep .configuration-tabs .p-tablist {
+      flex-wrap: wrap;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    :host ::ng-deep .configuration-tabs .p-tab {
+      flex-shrink: 0;
+      min-width: fit-content;
     }
 
     :host ::ng-deep .configuration-tabs .p-tabs-panel {

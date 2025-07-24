@@ -33,6 +33,7 @@ import {
   ConfigurationSearchParams 
 } from '../../services/configuration.service';
 
+
 interface FilterOptions {
   category: string;
   environment: string;
@@ -329,8 +330,9 @@ interface FilterOptions {
       <p-dialog 
         [(visible)]="showCreateDialog"
         [modal]="true"
-        header="Add Configuration"
+        [header]="dialogHeader"
         [style]="{ width: '600px' }"
+        [contentStyle]="{ maxHeight: '70vh', overflow: 'auto' }"
         [closable]="true"
         [draggable]="false">
         
@@ -355,17 +357,6 @@ interface FilterOptions {
               class="w-full">
           </div>
 
-          <!-- Config Value -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Value *</label>
-            <p-textarea 
-              [(ngModel)]="newConfig.configValue"
-              placeholder="Configuration value"
-              rows="3"
-              class="w-full">
-            </p-textarea>
-          </div>
-
           <!-- Value Type -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Value Type *</label>
@@ -373,8 +364,51 @@ interface FilterOptions {
               [(ngModel)]="newConfig.valueType"
               [options]="valueTypeOptions"
               placeholder="Select type"
-              class="w-full">
+              class="w-full"
+              (onChange)="onValueTypeChange()">
             </p-select>
+          </div>
+
+          <!-- Config Value -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Value *</label>
+            
+            <!-- String/Number Input -->
+            <input 
+              *ngIf="newConfig.valueType === 'string' || newConfig.valueType === 'number'" 
+              pInputText 
+              [(ngModel)]="newConfig.configValue"
+              [placeholder]="getValuePlaceholder()"
+              class="w-full">
+
+            <!-- Password Input -->
+            <input 
+              *ngIf="newConfig.valueType === 'password'" 
+              pInputText 
+              type="password"
+              [(ngModel)]="newConfig.configValue"
+              placeholder="Enter password..."
+              class="w-full">
+
+            <!-- Boolean Checkbox -->
+            <div *ngIf="newConfig.valueType === 'boolean'" class="flex items-center">
+              <p-checkbox 
+                [(ngModel)]="booleanValue"
+                binary="true"
+                inputId="booleanValue">
+              </p-checkbox>
+              <label for="booleanValue" class="ml-2 text-sm">Enable this configuration</label>
+            </div>
+
+            <!-- JSON Textarea -->
+            <textarea 
+              *ngIf="newConfig.valueType === 'json'" 
+              pInputTextarea
+              [(ngModel)]="newConfig.configValue"
+              placeholder='{"key": "value", "nested": {"property": true}}'
+              rows="4"
+              class="w-full">
+            </textarea>
           </div>
 
           <!-- Environment -->
@@ -391,12 +425,13 @@ interface FilterOptions {
           <!-- Description -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <p-textarea 
+            <textarea 
+              pInputTextarea
               [(ngModel)]="newConfig.description"
               placeholder="Optional description"
               rows="2"
               class="w-full">
-            </p-textarea>
+            </textarea>
           </div>
 
           <!-- Active Status -->
@@ -414,7 +449,7 @@ interface FilterOptions {
           <div class="flex justify-end gap-2">
             <p-button 
               label="Cancel" 
-              (onClick)="showCreateDialog = false"
+              (onClick)="closeDialog()"
               severity="secondary">
             </p-button>
             <p-button 
@@ -449,6 +484,14 @@ interface FilterOptions {
     :host ::ng-deep .p-card {
       border: 1px solid #e5e7eb;
       box-shadow: none !important;
+    }
+    
+    :host ::ng-deep .p-textarea {
+      width: 100%;
+    }
+    
+    :host ::ng-deep .p-dialog .p-dialog-content {
+      overflow-y: visible;
     }
   `]
 })
@@ -486,6 +529,7 @@ export class ConfigurationListComponent implements OnInit, OnDestroy {
     { label: 'String', value: 'string' },
     { label: 'Number', value: 'number' },
     { label: 'Boolean', value: 'boolean' },
+    { label: 'Password', value: 'password' },
     { label: 'JSON', value: 'json' }
   ];
   sortOptions = [
@@ -502,6 +546,11 @@ export class ConfigurationListComponent implements OnInit, OnDestroy {
     valueType: 'string',
     environment: 'development'
   };
+  booleanValue = false;
+
+  get dialogHeader(): string {
+    return this.newConfig.id ? 'Edit Configuration' : 'Add Configuration';
+  }
 
   ngOnInit(): void {
     this.loadDropdownData();
@@ -630,6 +679,7 @@ export class ConfigurationListComponent implements OnInit, OnDestroy {
 
   editConfiguration(config: SystemConfiguration): void {
     this.newConfig = { ...config };
+    this.booleanValue = config.valueType === 'boolean' && config.configValue === 'true';
     this.showCreateDialog = true;
   }
 
@@ -665,7 +715,45 @@ export class ConfigurationListComponent implements OnInit, OnDestroy {
     this.configurationSelected.emit(config);
   }
 
+  onValueTypeChange(): void {
+    // Reset value when type changes
+    this.newConfig.configValue = '';
+    if (this.newConfig.valueType === 'boolean') {
+      this.booleanValue = false;
+      this.newConfig.configValue = 'false';
+    }
+    
+    // Auto-enable encryption for password types
+    if (this.newConfig.valueType === 'password') {
+      // Note: Backend should automatically encrypt password values
+      console.log('Password type selected - encryption will be handled by backend');
+    }
+  }
+
+  getValuePlaceholder(): string {
+    return this.newConfig.valueType === 'number' ? 'Enter numeric value...' : 'Enter string value...';
+  }
+
+  closeDialog(): void {
+    this.showCreateDialog = false;
+    this.resetForm();
+  }
+
+  resetForm(): void {
+    this.newConfig = {
+      isActive: true,
+      valueType: 'string',
+      environment: 'development'
+    };
+    this.booleanValue = false;
+  }
+
   saveConfiguration(): void {
+    // Update boolean value
+    if (this.newConfig.valueType === 'boolean') {
+      this.newConfig.configValue = this.booleanValue.toString();
+    }
+
     if (!this.newConfig.category || !this.newConfig.configKey || !this.newConfig.configValue) {
       this.messageService.add({
         severity: 'warn',
@@ -688,14 +776,10 @@ export class ConfigurationListComponent implements OnInit, OnDestroy {
           summary: 'Success',
           detail: `Configuration ${this.newConfig.id ? 'updated' : 'created'} successfully`
         });
-        this.showCreateDialog = false;
-        this.newConfig = {
-          isActive: true,
-          valueType: 'string',
-          environment: 'development'
-        };
+        this.closeDialog();
         this.loadConfigurations();
         this.saving = false;
+        this.configurationUpdated.emit();
       },
       error: (error) => {
         this.messageService.add({

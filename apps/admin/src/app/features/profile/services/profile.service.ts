@@ -1,8 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment';
+import { AuthService } from '../../../core/services/auth.service';
 
 export interface UserProfile {
   id: string;
@@ -31,14 +32,31 @@ export interface ChangePasswordRequest {
 })
 export class ProfileService {
   private http = inject(HttpClient);
+  private authService = inject(AuthService);
   private apiUrl = `${environment.apiUrl}/v1/auth`;
+
+  private getHeaders(): HttpHeaders {
+    const token = this.authService.getToken();
+    return new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+  }
+
+  private handleError(error: any) {
+    console.error('Profile API Error:', error);
+    return throwError(() => error);
+  }
 
   /**
    * Get current user profile
    */
   getProfile(): Observable<UserProfile> {
-    return this.http.get<{ user: UserProfile }>(`${this.apiUrl}/profile`).pipe(
-      map(response => response.user)
+    return this.http.get<{ user: UserProfile }>(`${this.apiUrl}/profile`, {
+      headers: this.getHeaders()
+    }).pipe(
+      map(response => response.user),
+      catchError(this.handleError)
     );
   }
 
@@ -49,8 +67,11 @@ export class ProfileService {
     return this.http.put<{ 
       message: string; 
       user: UserProfile 
-    }>(`${this.apiUrl}/profile`, data).pipe(
-      map(response => response.user)
+    }>(`${this.apiUrl}/profile`, data, {
+      headers: this.getHeaders()
+    }).pipe(
+      map(response => response.user),
+      catchError(this.handleError)
     );
   }
 
@@ -58,8 +79,11 @@ export class ProfileService {
    * Change user password
    */
   changePassword(data: ChangePasswordRequest): Observable<boolean> {
-    return this.http.put<{ message: string }>(`${this.apiUrl}/change-password`, data).pipe(
-      map(() => true)
+    return this.http.put<{ message: string }>(`${this.apiUrl}/change-password`, data, {
+      headers: this.getHeaders()
+    }).pipe(
+      map(() => true),
+      catchError(this.handleError)
     );
   }
 
@@ -67,8 +91,11 @@ export class ProfileService {
    * Verify user email
    */
   verifyEmail(): Observable<boolean> {
-    return this.http.post<{ message: string }>(`${this.apiUrl}/verify-email`, {}).pipe(
-      map(() => true)
+    return this.http.post<{ message: string }>(`${this.apiUrl}/verify-email`, {}, {
+      headers: this.getHeaders()
+    }).pipe(
+      map(() => true),
+      catchError(this.handleError)
     );
   }
 }

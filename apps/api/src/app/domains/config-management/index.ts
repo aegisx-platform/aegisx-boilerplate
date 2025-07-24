@@ -27,6 +27,15 @@ export {
   type ServiceReloadHandler 
 } from './services/config-hot-reload.service';
 
+// Feature Toggle Middleware
+export {
+  createFeatureToggleMiddleware,
+  createMultiFeatureToggleMiddleware,
+  requireFeature,
+  checkFeatureToggle,
+  type FeatureToggleOptions
+} from './middleware/feature-toggle.middleware';
+
 // Default exports for convenience
 export { ConfigRepository as DefaultConfigRepository } from './repositories/config-repository';
 export { ConfigService as DefaultConfigService } from './services/config-service';

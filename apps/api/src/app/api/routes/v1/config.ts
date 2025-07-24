@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { configRoutes } from '../../../domains/config-management/routes/config-routes';
 import { configTemplateRoutes } from '../../../domains/config-management/routes/config-template-routes';
+import { featureToggleRoutes } from '../../../domains/config-management/routes/feature-toggle-routes';
 import { ConfigController } from '../../../domains/config-management/controllers/config-controller';
 import { ConfigTemplateController } from '../../../domains/config-management/controllers/config-template-controller';
 import { ConfigHistoryRepository } from '../../../domains/config-management/repositories/config-history-repository';
@@ -44,6 +45,11 @@ export default async function configApiRoutes(fastify: FastifyInstance) {
     await fastify.register(async (fastify: FastifyInstance) => {
       await configTemplateRoutes(fastify, configTemplateController);
     }, { prefix: '/templates' });
+    
+    // Register feature toggle routes under /config/feature-toggles
+    await fastify.register(async (fastify: FastifyInstance) => {
+      await featureToggleRoutes(fastify);
+    }, { prefix: '/feature-toggles' });
   }, { prefix: '/config' });
 
     fastify.log.info('✅ Configuration Management API routes loaded (v1)');

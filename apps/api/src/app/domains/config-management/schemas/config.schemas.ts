@@ -13,6 +13,7 @@ const ConfigValueTypeSchema = Type.Union([
   Type.Literal('string'),
   Type.Literal('number'),
   Type.Literal('boolean'),
+  Type.Literal('password'),
   Type.Literal('json'),
 ]);
 

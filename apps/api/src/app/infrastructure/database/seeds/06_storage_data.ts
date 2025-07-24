@@ -21,8 +21,7 @@ export async function seed(knex: any): Promise<void> {
   }
 
   // Create default storage quotas for all users
-  const quotas = users.map((user: any, index: number) => ({
-    id: `550e8400-e29b-41d4-a716-44665544${String(index).padStart(4, '0')}`,
+  const quotas = users.map((user: any) => ({
     user_id: user.id,
     entity_type: 'user',
     entity_id: user.id,
