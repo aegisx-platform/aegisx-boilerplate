@@ -91,11 +91,6 @@ import { FeatureToggleComponent } from '../feature-toggle/feature-toggle.compone
             <div class="flex items-center gap-2">
               <i class="pi pi-flag"></i>
               <span>Feature Toggles</span>
-              <p-tag
-                value="New"
-                severity="success"
-                class="text-xs ml-1">
-              </p-tag>
             </div>
           </p-tab>
 

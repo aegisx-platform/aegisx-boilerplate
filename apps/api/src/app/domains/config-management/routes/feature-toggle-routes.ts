@@ -8,6 +8,15 @@ import { FeatureToggleController } from '../controllers/feature-toggle-controlle
  */
 export async function featureToggleRoutes(fastify: FastifyInstance) {
   const controller = new FeatureToggleController();
+  
+  // Bind controller methods to maintain context
+  const getAllFeatureToggles = controller.getAllFeatureToggles.bind(controller);
+  const checkFeatureToggle = controller.checkFeatureToggle.bind(controller);
+  const setFeatureToggle = controller.setFeatureToggle.bind(controller);
+  const bulkUpdateFeatureToggles = controller.bulkUpdateFeatureToggles.bind(controller);
+  const deleteFeatureToggle = controller.deleteFeatureToggle.bind(controller);
+  const getFeatureToggleStats = controller.getFeatureToggleStats.bind(controller);
+  const exportFeatureToggles = controller.exportFeatureToggles.bind(controller);
 
   // Schemas
   const EnvironmentSchema = Type.Union([
@@ -96,10 +105,10 @@ export async function featureToggleRoutes(fastify: FastifyInstance) {
   // Routes
 
   /**
-   * GET /feature-toggles
+   * GET /
    * ดึงรายการ feature toggles ทั้งหมด
    */
-  fastify.get('/feature-toggles', {
+  fastify.get('/', {
     schema: {
       tags: ['Feature Toggles'],
       summary: 'Get all feature toggles',
@@ -110,13 +119,13 @@ export async function featureToggleRoutes(fastify: FastifyInstance) {
       },
     },
     // preHandler: [fastify.authenticate, fastify.authorize(['config:read'])],
-  }, controller.getAllFeatureToggles);
+  }, getAllFeatureToggles);
 
   /**
-   * GET /feature-toggles/:featureName
+   * GET /:featureName
    * ตรวจสอบสถานะ feature toggle เดียว
    */
-  fastify.get('/feature-toggles/:featureName', {
+  fastify.get('/:featureName', {
     schema: {
       tags: ['Feature Toggles'],
       summary: 'Check feature toggle status',
@@ -130,13 +139,13 @@ export async function featureToggleRoutes(fastify: FastifyInstance) {
       },
     },
     // preHandler: [fastify.authenticate, fastify.authorize(['config:read'])],
-  }, controller.checkFeatureToggle);
+  }, checkFeatureToggle);
 
   /**
-   * PUT /feature-toggles/:featureName
+   * PUT /:featureName
    * เปิด/ปิด feature toggle เดียว
    */
-  fastify.put('/feature-toggles/:featureName', {
+  fastify.put('/:featureName', {
     schema: {
       tags: ['Feature Toggles'],
       summary: 'Enable or disable feature toggle',
@@ -158,13 +167,13 @@ export async function featureToggleRoutes(fastify: FastifyInstance) {
       },
     },
     // preHandler: [fastify.authenticate, fastify.authorize(['config:write'])],
-  }, controller.setFeatureToggle);
+  }, setFeatureToggle);
 
   /**
-   * PUT /feature-toggles/bulk
+   * PUT /bulk
    * Bulk update feature toggles
    */
-  fastify.put('/feature-toggles/bulk', {
+  fastify.put('/bulk', {
     schema: {
       tags: ['Feature Toggles'],
       summary: 'Bulk update feature toggles',
@@ -184,13 +193,13 @@ export async function featureToggleRoutes(fastify: FastifyInstance) {
       },
     },
     // preHandler: [fastify.authenticate, fastify.authorize(['config:write'])],
-  }, controller.bulkUpdateFeatureToggles);
+  }, bulkUpdateFeatureToggles);
 
   /**
-   * DELETE /feature-toggles/:featureName
+   * DELETE /:featureName
    * ลบ feature toggle
    */
-  fastify.delete('/feature-toggles/:featureName', {
+  fastify.delete('/:featureName', {
     schema: {
       tags: ['Feature Toggles'],
       summary: 'Delete feature toggle',
@@ -210,13 +219,13 @@ export async function featureToggleRoutes(fastify: FastifyInstance) {
       },
     },
     // preHandler: [fastify.authenticate, fastify.authorize(['config:delete'])],
-  }, controller.deleteFeatureToggle);
+  }, deleteFeatureToggle);
 
   /**
-   * GET /feature-toggles/stats
+   * GET /stats
    * ดึงสถิติ feature toggles
    */
-  fastify.get('/feature-toggles/stats', {
+  fastify.get('/stats', {
     schema: {
       tags: ['Feature Toggles'],
       summary: 'Get feature toggle statistics',
@@ -229,13 +238,13 @@ export async function featureToggleRoutes(fastify: FastifyInstance) {
       },
     },
     // preHandler: [fastify.authenticate, fastify.authorize(['config:read'])],
-  }, controller.getFeatureToggleStats);
+  }, getFeatureToggleStats);
 
   /**
-   * GET /feature-toggles/export
+   * GET /export
    * Export feature toggles configuration
    */
-  fastify.get('/feature-toggles/export', {
+  fastify.get('/export', {
     schema: {
       tags: ['Feature Toggles'],
       summary: 'Export feature toggles',
@@ -262,5 +271,5 @@ export async function featureToggleRoutes(fastify: FastifyInstance) {
       },
     },
     // preHandler: [fastify.authenticate, fastify.authorize(['config:read'])],
-  }, controller.exportFeatureToggles);
+  }, exportFeatureToggles);
 }
