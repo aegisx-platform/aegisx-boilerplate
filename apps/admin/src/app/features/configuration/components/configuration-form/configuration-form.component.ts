@@ -471,21 +471,21 @@ export class ConfigurationFormComponent implements OnInit, OnDestroy {
   }
 
   private populateForm(config: SystemConfiguration): void {
-    this.selectedValueType = config.value_type;
+    this.selectedValueType = config.valueType;
     
     const formValue: any = {
       category: config.category,
-      config_key: config.config_key,
-      config_value: config.config_value,
-      value_type: config.value_type,
+      config_key: config.configKey,
+      config_value: config.configValue,
+      value_type: config.valueType,
       environment: config.environment,
-      description: config.description || '',
-      is_active: config.is_active
+      // description: config.description || '',
+      is_active: config.isActive
     };
 
     // Handle boolean type
-    if (config.value_type === 'boolean') {
-      formValue.booleanValue = config.config_value === 'true';
+    if (config.valueType === 'boolean') {
+      formValue.booleanValue = config.configValue === 'true';
     }
 
     this.configForm.patchValue(formValue);
@@ -552,12 +552,11 @@ export class ConfigurationFormComponent implements OnInit, OnDestroy {
     // Prepare configuration data
     const configData: Partial<SystemConfiguration> = {
       category: formValue.category,
-      config_key: formValue.config_key,
-      config_value: formValue.config_value,
-      value_type: formValue.value_type,
+      configKey: formValue.config_key,
+      configValue: formValue.config_value,
+      valueType: formValue.value_type,
       environment: formValue.environment,
-      description: formValue.description,
-      is_active: formValue.is_active
+      isActive: formValue.is_active
     };
 
     const operation = this.isEditMode && this.configuration?.id
@@ -637,14 +636,16 @@ export class ConfigurationFormComponent implements OnInit, OnDestroy {
   private loadTemplates(): void {
     this.configService.getTemplates().subscribe({
       next: (templates) => {
-        this.availableTemplates = templates;
-        this.templateOptions = templates.map(template => ({
+        this.availableTemplates = Array.isArray(templates) ? templates : [];
+        this.templateOptions = Array.isArray(templates) ? templates.map(template => ({
           label: `${template.display_name} (${template.category})`,
           value: template
-        }));
+        })) : [];
       },
       error: (error) => {
         console.error('Failed to load templates:', error);
+        this.availableTemplates = [];
+        this.templateOptions = [];
       }
     });
   }
@@ -658,7 +659,7 @@ export class ConfigurationFormComponent implements OnInit, OnDestroy {
       this.configForm.patchValue({
         category: template.category,
         environment: 'development', // Default to development
-        description: template.description || `Configuration from ${template.display_name} template`
+        // description: template.description || `Configuration from ${template.display_name} template`
       });
 
       this.messageService.add({

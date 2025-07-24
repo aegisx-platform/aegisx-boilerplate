@@ -20,10 +20,10 @@ import { SelectModule } from 'primeng/select';
 
 import { MessageService, ConfirmationService } from 'primeng/api';
 
-import { 
+import {
   ConfigurationService,
   HotReloadStats,
-  ReloadRequest 
+  ReloadRequest
 } from '../../services/configuration.service';
 
 interface ServiceStats {
@@ -68,10 +68,10 @@ interface ServiceStats {
           <h3 class="text-xl font-semibold text-gray-800">Hot Reload Statistics</h3>
           <p class="text-sm text-gray-600 mt-1">Monitor configuration hot reload performance and service health</p>
         </div>
-        
+
         <div class="flex gap-2 items-center">
-          <p-button 
-            icon="pi pi-refresh" 
+          <p-button
+            icon="pi pi-refresh"
             [loading]="loading"
             (onClick)="loadStats()"
             pTooltip="Refresh statistics"
@@ -79,9 +79,9 @@ interface ServiceStats {
             severity="secondary"
             size="small">
           </p-button>
-          
-          <p-button 
-            icon="pi pi-trash" 
+
+          <p-button
+            icon="pi pi-trash"
             label="Reset Stats"
             (onClick)="confirmResetStats()"
             pTooltip="Reset all statistics"
@@ -150,11 +150,11 @@ interface ServiceStats {
               <p-tag [value]="getOverallHealthStatus()" [severity]="getOverallHealthSeverity()"></p-tag>
             </div>
           </ng-template>
-          
+
           <ng-template pTemplate="content">
-            <p-chart 
-              type="doughnut" 
-              [data]="healthChartData" 
+            <p-chart
+              type="doughnut"
+              [data]="healthChartData"
               [options]="chartOptions"
               [style]="{ height: '300px' }">
             </p-chart>
@@ -168,11 +168,11 @@ interface ServiceStats {
               <h4 class="font-semibold text-gray-800">Reload Performance</h4>
             </div>
           </ng-template>
-          
+
           <ng-template pTemplate="content">
-            <p-chart 
-              type="bar" 
-              [data]="performanceChartData" 
+            <p-chart
+              type="bar"
+              [data]="performanceChartData"
               [options]="barChartOptions"
               [style]="{ height: '300px' }">
             </p-chart>
@@ -186,8 +186,8 @@ interface ServiceStats {
           <div class="flex justify-between items-center p-4 pb-0">
             <h4 class="font-semibold text-gray-800">Services Details</h4>
             <div class="flex gap-2">
-              <p-button 
-                icon="pi pi-play" 
+              <p-button
+                icon="pi pi-play"
                 label="Test Reload"
                 (onClick)="showTestReloadDialog()"
                 severity="info"
@@ -196,13 +196,13 @@ interface ServiceStats {
             </div>
           </div>
         </ng-template>
-        
+
         <ng-template pTemplate="content">
-          <p-table 
+          <p-table
             [value]="servicesList"
             [paginator]="false"
             styleClass="p-datatable-sm">
-            
+
             <ng-template pTemplate="header">
               <tr>
                 <th>Service</th>
@@ -228,8 +228,8 @@ interface ServiceStats {
 
                 <!-- Status -->
                 <td>
-                  <p-tag 
-                    [value]="service.status" 
+                  <p-tag
+                    [value]="service.status"
                     [severity]="getStatusSeverity(service.status)"
                     class="text-xs">
                   </p-tag>
@@ -254,8 +254,8 @@ interface ServiceStats {
                 <!-- Reliability -->
                 <td>
                   <div class="flex items-center gap-2">
-                    <p-progressbar 
-                      [value]="service.reliability" 
+                    <p-progressbar
+                      [value]="service.reliability"
                       [style]="{ width: '60px', height: '8px' }">
                     </p-progressbar>
                     <span class="text-sm">{{ service.reliability }}%</span>
@@ -265,13 +265,13 @@ interface ServiceStats {
                 <!-- Categories -->
                 <td>
                   <div class="flex flex-wrap gap-1">
-                    <p-tag 
-                      *ngFor="let category of service.categories.slice(0, 2)" 
+                    <p-tag
+                      *ngFor="let category of service.categories.slice(0, 2)"
                       [value]="category"
                       severity="secondary"
                       class="text-xs">
                     </p-tag>
-                    <p-tag 
+                    <p-tag
                       *ngIf="service.categories.length > 2"
                       [value]="'+' + (service.categories.length - 2)"
                       severity="secondary"
@@ -290,8 +290,8 @@ interface ServiceStats {
                 <!-- Actions -->
                 <td>
                   <div class="flex gap-1">
-                    <p-button 
-                      icon="pi pi-info-circle" 
+                    <p-button
+                      icon="pi pi-info-circle"
                       (onClick)="showServiceDetails(service)"
                       pTooltip="View details"
                       tooltipPosition="top"
@@ -299,10 +299,10 @@ interface ServiceStats {
                       size="small"
                       [text]="true">
                     </p-button>
-                    
-                    <p-button 
+
+                    <p-button
                       *ngIf="service.lastError"
-                      icon="pi pi-exclamation-triangle" 
+                      icon="pi pi-exclamation-triangle"
                       (onClick)="showError(service)"
                       pTooltip="View last error"
                       tooltipPosition="top"
@@ -331,18 +331,18 @@ interface ServiceStats {
     </div>
 
     <!-- Test Reload Dialog -->
-    <p-dialog 
+    <p-dialog
       [(visible)]="showTestDialog"
       [modal]="true"
       header="Test Configuration Reload"
       [style]="{ width: '500px' }"
       [closable]="true">
-      
+
       <div class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
-          <input 
-            pInputText 
+          <input
+            pInputText
             [(ngModel)]="testReloadRequest.category"
             placeholder="e.g., smtp, database"
             class="w-full">
@@ -350,7 +350,7 @@ interface ServiceStats {
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Environment</label>
-          <p-select 
+          <p-select
             [(ngModel)]="testReloadRequest.environment"
             [options]="environmentOptions"
             placeholder="Select environment"
@@ -360,8 +360,8 @@ interface ServiceStats {
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Reason (Optional)</label>
-          <input 
-            pInputText 
+          <input
+            pInputText
             [(ngModel)]="testReloadRequest.changeReason"
             placeholder="Test reload from dashboard"
             class="w-full">
@@ -370,13 +370,13 @@ interface ServiceStats {
 
       <ng-template pTemplate="footer">
         <div class="flex justify-end gap-2">
-          <p-button 
-            label="Cancel" 
+          <p-button
+            label="Cancel"
             (onClick)="closeTestDialog()"
             severity="secondary">
           </p-button>
-          <p-button 
-            label="Test Reload" 
+          <p-button
+            label="Test Reload"
             (onClick)="executeTestReload()"
             [loading]="testing"
             [disabled]="!testReloadRequest.category || !testReloadRequest.environment">
@@ -386,13 +386,13 @@ interface ServiceStats {
     </p-dialog>
 
     <!-- Service Details Dialog -->
-    <p-dialog 
+    <p-dialog
       [(visible)]="showDetailsDialog"
       [modal]="true"
       [header]="selectedServiceDetails?.name + ' Details'"
       [style]="{ width: '600px' }"
       [closable]="true">
-      
+
       <div *ngIf="selectedServiceDetails" class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -412,8 +412,8 @@ interface ServiceStats {
         <div>
           <strong>Supported Categories:</strong>
           <div class="flex flex-wrap gap-1 mt-1">
-            <p-tag 
-              *ngFor="let category of selectedServiceDetails.categories" 
+            <p-tag
+              *ngFor="let category of selectedServiceDetails.categories"
               [value]="category"
               severity="info"
               class="text-xs">
@@ -424,8 +424,8 @@ interface ServiceStats {
         <div>
           <strong>Supported Environments:</strong>
           <div class="flex flex-wrap gap-1 mt-1">
-            <p-tag 
-              *ngFor="let env of selectedServiceDetails.environments" 
+            <p-tag
+              *ngFor="let env of selectedServiceDetails.environments"
               [value]="env"
               severity="secondary"
               class="text-xs">
@@ -449,24 +449,29 @@ interface ServiceStats {
     .hot-reload-stats {
       padding: 1rem;
     }
-    
+
     .stat-card {
       padding: 1rem;
       text-align: center;
     }
-    
+
+    :host ::ng-deep .p-card {
+      border: 1px solid #e5e7eb!important;
+      box-shadow: none !important;
+    }
+
     :host ::ng-deep .p-card .p-card-content {
       padding: 1rem;
     }
-    
+
     :host ::ng-deep .p-card .p-card-header {
       padding: 0;
     }
-    
+
     :host ::ng-deep .p-progressbar {
       height: 8px;
     }
-    
+
     :host ::ng-deep .p-chart {
       display: flex;
       justify-content: center;
@@ -560,10 +565,10 @@ export class HotReloadStatsComponent implements OnInit, OnDestroy {
 
   private processStats(stats: HotReloadStats): void {
     const services = Object.entries(stats.services);
-    
+
     this.servicesList = services.map(([name, serviceData]) => {
       const totalOperations = serviceData.successCount + serviceData.errorCount;
-      const reliability = totalOperations > 0 
+      const reliability = totalOperations > 0
         ? Math.round((serviceData.successCount / totalOperations) * 100)
         : 100;
 
@@ -586,16 +591,16 @@ export class HotReloadStatsComponent implements OnInit, OnDestroy {
     });
 
     // Calculate overall stats
-    this.totalReloads = this.servicesList.reduce((sum, service) => 
+    this.totalReloads = this.servicesList.reduce((sum, service) =>
       sum + service.successCount + service.errorCount, 0);
-    
-    const totalSuccess = this.servicesList.reduce((sum, service) => 
+
+    const totalSuccess = this.servicesList.reduce((sum, service) =>
       sum + service.successCount, 0);
-    
-    this.successRate = this.totalReloads > 0 
+
+    this.successRate = this.totalReloads > 0
       ? Math.round((totalSuccess / this.totalReloads) * 100)
       : 100;
-    
+
     this.activeServices = this.servicesList.length;
   }
 
@@ -676,7 +681,7 @@ export class HotReloadStatsComponent implements OnInit, OnDestroy {
   getOverallHealthStatus(): string {
     const healthyCounts = this.servicesList.filter(s => s.status === 'healthy').length;
     const totalServices = this.servicesList.length;
-    
+
     if (totalServices === 0) return 'No Data';
     if (healthyCounts === totalServices) return 'All Healthy';
     if (healthyCounts / totalServices >= 0.8) return 'Mostly Healthy';
@@ -687,7 +692,7 @@ export class HotReloadStatsComponent implements OnInit, OnDestroy {
   getOverallHealthSeverity(): 'success' | 'info' | 'warning' | 'danger' {
     const healthyCounts = this.servicesList.filter(s => s.status === 'healthy').length;
     const totalServices = this.servicesList.length;
-    
+
     if (totalServices === 0) return 'info';
     if (healthyCounts === totalServices) return 'success';
     if (healthyCounts / totalServices >= 0.8) return 'info';

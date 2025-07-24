@@ -92,6 +92,8 @@ export const ConfigurationSearchParamsSchema = Type.Object({
     Type.Literal('category'),
     Type.Literal('updatedAt'),
     Type.Literal('createdAt'),
+    Type.Literal('updated_at'),
+    Type.Literal('created_at'),
   ])),
   sortOrder: Type.Optional(Type.Union([
     Type.Literal('asc'),

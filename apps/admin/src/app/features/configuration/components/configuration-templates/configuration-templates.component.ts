@@ -348,7 +348,7 @@ interface TemplateVariable {
     
     .template-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-color: #e5e7eb;
     }
     
     .template-content {
@@ -364,6 +364,11 @@ interface TemplateVariable {
     
     .variable-field {
       margin-bottom: 1rem;
+    }
+    
+    :host ::ng-deep .p-card {
+      border: 1px solid #e5e7eb;
+      box-shadow: none;
     }
     
     :host ::ng-deep .p-card .p-card-header {
@@ -445,8 +450,8 @@ export class ConfigurationTemplatesComponent implements OnInit, OnDestroy {
     
     this.configService.getTemplates(category).subscribe({
       next: (templates) => {
-        this.templates = templates;
-        this.filteredTemplates = templates;
+        this.templates = Array.isArray(templates) ? templates : [];
+        this.filteredTemplates = Array.isArray(templates) ? templates : [];
         this.updateCategoryOptions();
         this.loading = false;
       },
@@ -463,6 +468,11 @@ export class ConfigurationTemplatesComponent implements OnInit, OnDestroy {
   }
 
   private updateCategoryOptions(): void {
+    if (!Array.isArray(this.templates)) {
+      this.categoryOptions = [];
+      return;
+    }
+    
     const categories = [...new Set(this.templates.map(t => t.category))];
     this.categoryOptions = categories.map(cat => ({
       label: cat.charAt(0).toUpperCase() + cat.slice(1),
@@ -471,6 +481,11 @@ export class ConfigurationTemplatesComponent implements OnInit, OnDestroy {
   }
 
   filterTemplates(): void {
+    if (!Array.isArray(this.templates)) {
+      this.filteredTemplates = [];
+      return;
+    }
+    
     if (this.selectedCategory) {
       this.filteredTemplates = this.templates.filter(t => t.category === this.selectedCategory);
     } else {

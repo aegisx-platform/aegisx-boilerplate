@@ -46,6 +46,13 @@ export class ConfigService {
   }
 
   /**
+   * Get config repository (for direct access)
+   */
+  getConfigRepository(): ConfigRepository {
+    return this.configRepo;
+  }
+
+  /**
    * สร้าง configuration ใหม่
    */
   async createConfiguration(
@@ -235,32 +242,40 @@ export class ConfigService {
    * ค้นหา configuration
    */
   async searchConfigurations(params: ConfigurationSearchParams): Promise<ConfigurationSearchResult> {
-    const { configurations, total } = await this.configRepo.search(params);
-    
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const totalPages = Math.ceil(total / limit);
+    try {
+      console.log('🔧 Service searchConfigurations called with:', params);
+      
+      const { configurations, total } = await this.configRepo.search(params);
+      console.log('🔧 Repository search returned:', { configurationsCount: configurations.length, total });
+      
+      const page = params.page || 1;
+      const limit = params.limit || 50;
+      const totalPages = Math.ceil(total / limit);
 
-    // ดึงข้อมูลสำหรับ filters
-    const categories = await this.configRepo.getCategories(params.environment);
-    const environments = await this.configRepo.getEnvironments();
-    const groups = params.category ? 
-      await this.metadataRepo.getGroupsByCategory(params.category) : [];
+      // ดึงข้อมูลสำหรับ filters
+      const categories = await this.configRepo.getCategories(params.environment);
+      const environments = await this.configRepo.getEnvironments();
+      const groups = params.category ? 
+        await this.metadataRepo.getGroupsByCategory(params.category) : [];
 
-    return {
-      configurations,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-      filters: {
-        categories,
-        environments,
-        groups,
-      },
-    };
+      return {
+        configurations,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+        },
+        filters: {
+          categories,
+          environments,
+          groups,
+        },
+      };
+    } catch (error) {
+      console.error('🔴 Service searchConfigurations error:', error);
+      throw error;
+    }
   }
 
   /**

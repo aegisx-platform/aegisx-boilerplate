@@ -39,12 +39,12 @@ export default async function configApiRoutes(fastify: FastifyInstance) {
   // Register configuration routes with /config prefix
   await fastify.register(async (fastify: FastifyInstance) => {
     await configRoutes(fastify, configController);
+    
+    // Register template routes under /config/templates
+    await fastify.register(async (fastify: FastifyInstance) => {
+      await configTemplateRoutes(fastify, configTemplateController);
+    }, { prefix: '/templates' });
   }, { prefix: '/config' });
-
-  // Register template routes with /templates prefix  
-  await fastify.register(async (fastify: FastifyInstance) => {
-    await configTemplateRoutes(fastify, configTemplateController);
-  }, { prefix: '/templates' });
 
     fastify.log.info('✅ Configuration Management API routes loaded (v1)');
   } catch (error) {

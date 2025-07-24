@@ -231,7 +231,7 @@ export interface ConfigurationSearchParams {
   search?: string; // search ใน configKey, displayName, description
   page?: number;
   limit?: number;
-  sortBy?: 'configKey' | 'category' | 'updatedAt' | 'createdAt';
+  sortBy?: 'configKey' | 'category' | 'updatedAt' | 'createdAt' | 'updated_at' | 'created_at';
   sortOrder?: 'asc' | 'desc';
 }
 

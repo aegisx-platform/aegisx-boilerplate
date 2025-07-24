@@ -171,11 +171,53 @@ export class ConfigRepository {
       search,
       page = 1,
       limit = 50,
-      sortBy = 'config_key',
+      sortBy = 'configKey',
       sortOrder = 'asc',
     } = params;
 
-    let query = this.db('system_configurations as sc')
+    // Helper function to apply filters
+    const applyFilters = (query: any) => {
+      if (category) {
+        query = query.where('sc.category', category);
+      }
+      if (configKey) {
+        query = query.where('sc.config_key', 'like', `%${configKey}%`);
+      }
+      if (environment) {
+        query = query.where('sc.environment', environment);
+      }
+      if (isActive !== undefined) {
+        query = query.where('sc.is_active', isActive);
+      }
+      if (isEncrypted !== undefined) {
+        query = query.where('sc.is_encrypted', isEncrypted);
+      }
+      if (groupName) {
+        query = query.where('cm.group_name', groupName);
+      }
+      if (search) {
+        query = query.where(function(this: any) {
+          this.where('sc.config_key', 'like', `%${search}%`)
+              .orWhere('cm.display_name', 'like', `%${search}%`)
+              .orWhere('cm.description', 'like', `%${search}%`);
+        });
+      }
+      return query;
+    };
+
+    // Get total count first with a clean count query
+    let countQuery = this.db('system_configurations as sc')
+      .leftJoin('configuration_metadata as cm', function() {
+        this.on('sc.category', 'cm.category')
+            .andOn('sc.config_key', 'cm.config_key');
+      });
+
+    countQuery = applyFilters(countQuery);
+    const totalResult = await countQuery.count('sc.id as count').first(); 
+    const total = parseInt(totalResult?.count as string) || 0;
+
+    // Create main query for data retrieval
+    let dataQuery = this.db('system_configurations as sc')
       .leftJoin('configuration_metadata as cm', function() {
         this.on('sc.category', 'cm.category')
             .andOn('sc.config_key', 'cm.config_key');
@@ -193,45 +235,16 @@ export class ConfigRepository {
         'cm.help_text'
       );
 
-    // Apply filters
-    if (category) {
-      query = query.where('sc.category', category);
-    }
-    if (configKey) {
-      query = query.where('sc.config_key', 'like', `%${configKey}%`);
-    }
-    if (environment) {
-      query = query.where('sc.environment', environment);
-    }
-    if (isActive !== undefined) {
-      query = query.where('sc.is_active', isActive);
-    }
-    if (isEncrypted !== undefined) {
-      query = query.where('sc.is_encrypted', isEncrypted);
-    }
-    if (groupName) {
-      query = query.where('cm.group_name', groupName);
-    }
-    if (search) {
-      query = query.where(function() {
-        this.where('sc.config_key', 'like', `%${search}%`)
-            .orWhere('cm.display_name', 'like', `%${search}%`)
-            .orWhere('cm.description', 'like', `%${search}%`);
-      });
-    }
-
-    // Get total count
-    const totalResult = await query.clone().count('sc.id as count').first();
-    const total = parseInt(totalResult?.count as string) || 0;
+    dataQuery = applyFilters(dataQuery);
 
     // Apply pagination and sorting
     const offset = (page - 1) * limit;
     const sortColumn = sortBy === 'configKey' ? 'sc.config_key' :
                       sortBy === 'category' ? 'sc.category' :
-                      sortBy === 'updatedAt' ? 'sc.updated_at' :
-                      sortBy === 'createdAt' ? 'sc.created_at' : 'sc.config_key';
+                      sortBy === 'updatedAt' || sortBy === 'updated_at' ? 'sc.updated_at' :
+                      sortBy === 'createdAt' || sortBy === 'created_at' ? 'sc.created_at' : 'sc.config_key';
 
-    const results = await query
+    const results = await dataQuery
       .orderBy(sortColumn, sortOrder)
       .limit(limit)
       .offset(offset);

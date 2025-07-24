@@ -24,15 +24,15 @@ export interface ConfigurationMetadata {
 export interface SystemConfiguration {
   id?: number;
   category: string;
-  config_key: string;
-  config_value: string;
-  value_type: 'string' | 'number' | 'boolean' | 'json';
+  configKey: string;
+  configValue: string;
+  valueType: 'string' | 'number' | 'boolean' | 'json';
   environment: 'development' | 'production' | 'staging' | 'test';
-  is_active: boolean;
+  isActive: boolean;
   description?: string;
-  updated_by?: string;
-  created_at?: string;
-  updated_at?: string;
+  updatedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ConfigurationTemplate {

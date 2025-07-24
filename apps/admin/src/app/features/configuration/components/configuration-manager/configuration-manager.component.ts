@@ -16,10 +16,10 @@ import { TagModule } from 'primeng/tag';
 
 import { MessageService, ConfirmationService } from 'primeng/api';
 
-import { 
+import {
   ConfigurationService,
   SystemConfiguration,
-  ConfigurationTemplate 
+  ConfigurationTemplate
 } from '../../services/configuration.service';
 
 // Import child components
@@ -52,9 +52,9 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
   template: `
     <div class="configuration-manager">
       <!-- Header Breadcrumb -->
-      <div class="breadcrumb-container mb-6">
+      <!-- <div class="breadcrumb-container mb-6">
         <p-breadcrumb [model]="breadcrumbItems" [home]="homeBreadcrumb"></p-breadcrumb>
-      </div>
+      </div> -->
 
       <!-- Main Content Tabs -->
       <p-tabs [(value)]="activeTabValue" class="configuration-tabs">
@@ -63,7 +63,7 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
             <div class="flex items-center gap-2">
               <i class="pi pi-list"></i>
               <span>Configurations</span>
-              <p-tag 
+              <p-tag
                 *ngIf="totalConfigurations > 0"
                 [value]="totalConfigurations.toString()"
                 severity="info"
@@ -71,12 +71,12 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
               </p-tag>
             </div>
           </p-tab>
-          
+
           <p-tab value="templates">
             <div class="flex items-center gap-2">
               <i class="pi pi-clone"></i>
               <span>Templates</span>
-              <p-tag 
+              <p-tag
                 *ngIf="totalTemplates > 0"
                 [value]="totalTemplates.toString()"
                 severity="secondary"
@@ -84,12 +84,12 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
               </p-tag>
             </div>
           </p-tab>
-          
+
           <p-tab value="monitoring">
             <div class="flex items-center gap-2">
               <i class="pi pi-chart-line"></i>
               <span>Hot Reload Stats</span>
-              <p-tag 
+              <p-tag
                 *ngIf="reloadSuccessRate !== null"
                 [value]="reloadSuccessRate + '%'"
                 [severity]="getSuccessRateSeverity()"
@@ -103,25 +103,6 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
           <!-- Configurations Tab -->
           <p-tabpanel value="configurations">
             <div class="configurations-tab">
-              <!-- Tab Header Actions -->
-              <div class="flex justify-between items-center mb-4">
-                <div>
-                  <h3 class="text-lg font-semibold text-gray-800">Configuration Management</h3>
-                  <p class="text-sm text-gray-600 mt-1">
-                    Manage system configurations with hot reload support
-                  </p>
-                </div>
-                
-                <div class="flex gap-2">
-                  <p-button 
-                    icon="pi pi-plus" 
-                    label="Add Configuration"
-                    (onClick)="showCreateForm()"
-                    severity="primary"
-                    size="small">
-                  </p-button>
-                </div>
-              </div>
 
               <!-- Configuration List -->
               <app-configuration-list
@@ -136,13 +117,6 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
           <!-- Templates Tab -->
           <p-tabpanel value="templates">
             <div class="templates-tab">
-              <!-- Tab Header -->
-              <div class="mb-4">
-                <h3 class="text-lg font-semibold text-gray-800">Configuration Templates</h3>
-                <p class="text-sm text-gray-600 mt-1">
-                  Quick setup templates for common system configurations
-                </p>
-              </div>
 
               <!-- Templates Component -->
               <app-configuration-templates
@@ -155,13 +129,6 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
           <!-- Monitoring Tab -->
           <p-tabpanel value="monitoring">
             <div class="monitoring-tab">
-              <!-- Tab Header -->
-              <div class="mb-4">
-                <h3 class="text-lg font-semibold text-gray-800">Hot Reload Monitoring</h3>
-                <p class="text-sm text-gray-600 mt-1">
-                  Monitor configuration hot reload performance and service health
-                </p>
-              </div>
 
               <!-- Hot Reload Stats Component -->
               <app-hot-reload-stats></app-hot-reload-stats>
@@ -180,18 +147,18 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
       </app-configuration-form>
 
       <!-- History Dialog -->
-      <p-dialog 
+      <p-dialog
         [(visible)]="showHistoryDialog"
         [modal]="true"
-        [header]="'Configuration History: ' + (selectedConfiguration?.config_key || '')"
+        [header]="'Configuration History: ' + (selectedConfiguration?.configKey || '')"
         [style]="{ width: '800px', maxWidth: '90vw' }"
         [closable]="true">
-        
+
         <div *ngIf="selectedConfiguration" class="history-content">
           <p class="text-sm text-gray-600 mb-4">
-            Configuration history for <strong>{{ selectedConfiguration.category }}:{{ selectedConfiguration.config_key }}</strong>
+            Configuration history for <strong>{{ selectedConfiguration.category }}:{{ selectedConfiguration.configKey }}</strong>
           </p>
-          
+
           <!-- History implementation would go here -->
           <div class="text-center py-8 text-gray-500">
             <i class="pi pi-history text-3xl mb-2 block"></i>
@@ -201,8 +168,8 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
         </div>
 
         <ng-template pTemplate="footer">
-          <p-button 
-            label="Close" 
+          <p-button
+            label="Close"
             (onClick)="closeHistoryDialog()"
             severity="secondary">
           </p-button>
@@ -212,7 +179,7 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
 
     <!-- Toast Messages -->
     <p-toast></p-toast>
-    
+
     <!-- Confirmation Dialog -->
     <p-confirmDialog></p-confirmDialog>
   `,
@@ -223,28 +190,28 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
       display: flex;
       flex-direction: column;
     }
-    
+
     .breadcrumb-container {
       flex-shrink: 0;
     }
-    
+
     .configuration-tabs {
       flex: 1;
       display: flex;
       flex-direction: column;
     }
-    
+
     :host ::ng-deep .configuration-tabs .p-tabs-panels {
       flex: 1;
       overflow: hidden;
     }
-    
+
     :host ::ng-deep .configuration-tabs .p-tabs-panel {
       height: 100%;
       overflow-y: auto;
       padding: 1rem 0;
     }
-    
+
     .configurations-tab,
     .templates-tab,
     .monitoring-tab {
@@ -252,47 +219,53 @@ import { HotReloadStatsComponent } from '../hot-reload-stats/hot-reload-stats.co
       display: flex;
       flex-direction: column;
     }
-    
+
     .configurations-tab app-configuration-list,
     .templates-tab app-configuration-templates,
     .monitoring-tab app-hot-reload-stats {
       flex: 1;
       min-height: 0;
     }
-    
+
     :host ::ng-deep .p-breadcrumb {
       background: transparent;
       border: none;
       padding: 0;
     }
-    
+
     :host ::ng-deep .p-breadcrumb .p-breadcrumb-list {
       background: var(--surface-ground);
       border-radius: 6px;
       padding: 0.75rem 1rem;
       border: 1px solid var(--surface-border);
     }
-    
+
     /* Tab styling */
     :host ::ng-deep .p-tabs .p-tablist .p-tab {
       margin-right: 0.25rem;
     }
-    
+
     :host ::ng-deep .p-tabs .p-tablist .p-tab .p-tab-header-content {
       padding: 0.75rem 1rem;
     }
-    
+
     /* History dialog */
     .history-content {
       min-height: 300px;
     }
-    
+
     /* Ensure proper scrolling in nested components */
     :host ::ng-deep app-configuration-list,
     :host ::ng-deep app-configuration-templates,
     :host ::ng-deep app-hot-reload-stats {
       height: 100%;
       overflow-y: auto;
+    }
+
+    /* Remove card shadows and use borders */
+    :host ::ng-deep .p-card {
+      border: 1px solid #e5e7eb;
+      box-shadow: none;
     }
   `]
 })
@@ -381,10 +354,10 @@ export class ConfigurationManagerComponent implements OnInit, OnDestroy {
         // Calculate overall success rate
         const services = Object.values(stats.services);
         const totalSuccess = services.reduce((sum, service) => sum + service.successCount, 0);
-        const totalOperations = services.reduce((sum, service) => 
+        const totalOperations = services.reduce((sum, service) =>
           sum + service.successCount + service.errorCount, 0);
-        
-        this.reloadSuccessRate = totalOperations > 0 
+
+        this.reloadSuccessRate = totalOperations > 0
           ? Math.round((totalSuccess / totalOperations) * 100)
           : null;
       },
@@ -456,7 +429,7 @@ export class ConfigurationManagerComponent implements OnInit, OnDestroy {
     results: { created: SystemConfiguration[]; updated: SystemConfiguration[]; skipped: string[] };
   }): void {
     const { template, results } = event;
-    
+
     this.messageService.add({
       severity: 'success',
       summary: 'Template Applied',

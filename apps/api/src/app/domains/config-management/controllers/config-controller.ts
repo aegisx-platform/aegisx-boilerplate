@@ -150,6 +150,7 @@ export class ConfigController {
     reply: FastifyReply
   ): Promise<void> {
     try {
+      console.log('🔍 Search request query:', request.query);
       const searchResult = await this.configService.searchConfigurations(request.query);
 
       reply.send({
@@ -160,9 +161,10 @@ export class ConfigController {
       });
     } catch (error) {
       request.log.error('Failed to search configurations:', error);
+      console.error('🔴 Search error details:', error);
       reply.code(500).send({
         error: 'Internal Server Error',
-        message: 'Failed to search configurations',
+        message: `Failed to search configurations: ${error instanceof Error ? error.message : 'Unknown error'}`,
         statusCode: 500,
         timestamp: new Date().toISOString(),
         path: request.url,
@@ -438,9 +440,9 @@ export class ConfigController {
   ): Promise<void> {
     try {
       const { environment } = request.query;
-      const categories = await this.configService.searchConfigurations({ category: undefined }).then(configs => 
-        [...new Set(configs.configurations.map((c: any) => c.category))]
-      );
+      
+      // ใช้ direct repository call แทน searchConfigurations เพื่อหลีกเลี่ยง circular dependency
+      const categories = await this.configService.getConfigRepository().getCategories(environment);
 
       reply.send({
         success: true,
@@ -450,9 +452,10 @@ export class ConfigController {
       });
     } catch (error) {
       request.log.error('Failed to get categories:', error);
+      console.error('🔴 Categories error details:', error);
       reply.code(500).send({
         error: 'Internal Server Error',
-        message: 'Failed to get categories',
+        message: `Failed to get categories: ${error instanceof Error ? error.message : 'Unknown error'}`,
         statusCode: 500,
         timestamp: new Date().toISOString(),
         path: request.url,

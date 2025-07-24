@@ -170,51 +170,47 @@ interface FilterOptions {
       </div>
 
       <!-- Configuration Table -->
-      <div class="bg-white rounded-lg shadow">
-        <p-table 
-          [value]="configurations"
-          [loading]="loading"
-          [paginator]="true"
-          [rows]="20"
-          [totalRecords]="totalRecords"
-          [lazy]="true"
-          (onLazyLoad)="onLazyLoad($event)"
-          [showCurrentPageReport]="true"
-          currentPageReportTemplate="Showing {first} to {last} of {totalRecords} configurations"
-          [rowsPerPageOptions]="[10, 20, 50]"
-          styleClass="p-datatable-sm"
-          [scrollable]="true"
-          scrollHeight="600px">
+      <p-table 
+        [value]="configurations"
+        [loading]="loading"
+        [paginator]="true"
+        [rows]="20"
+        [totalRecords]="totalRecords"
+        [lazy]="true"
+        (onLazyLoad)="onLazyLoad($event)"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Showing {first} to {last} of {totalRecords} configurations"
+        [rowsPerPageOptions]="[10, 20, 50]">
           
           <!-- Table Header -->
           <ng-template pTemplate="header">
             <tr>
-              <th pSortableColumn="category" class="w-32">
+              <th pSortableColumn="category">
                 Category
                 <p-sortIcon field="category"></p-sortIcon>
               </th>
-              <th pSortableColumn="config_key" class="w-48">
+              <th pSortableColumn="configKey">
                 Key
-                <p-sortIcon field="config_key"></p-sortIcon>
+                <p-sortIcon field="configKey"></p-sortIcon>
               </th>
-              <th class="w-64">Value</th>
-              <th pSortableColumn="value_type" class="w-24">
+              <th>Value</th>
+              <th pSortableColumn="valueType">
                 Type
-                <p-sortIcon field="value_type"></p-sortIcon>
+                <p-sortIcon field="valueType"></p-sortIcon>
               </th>
-              <th pSortableColumn="environment" class="w-32">
+              <th pSortableColumn="environment">
                 Environment
                 <p-sortIcon field="environment"></p-sortIcon>
               </th>
-              <th pSortableColumn="is_active" class="w-24">
+              <th pSortableColumn="isActive">
                 Status
-                <p-sortIcon field="is_active"></p-sortIcon>
+                <p-sortIcon field="isActive"></p-sortIcon>
               </th>
-              <th pSortableColumn="updated_at" class="w-40">
+              <th pSortableColumn="updatedAt">
                 Updated
-                <p-sortIcon field="updated_at"></p-sortIcon>
+                <p-sortIcon field="updatedAt"></p-sortIcon>
               </th>
-              <th class="w-32">Actions</th>
+              <th>Actions</th>
             </tr>
           </ng-template>
 
@@ -232,7 +228,7 @@ interface FilterOptions {
 
               <!-- Config Key -->
               <td>
-                <div class="font-mono text-sm">{{ config.config_key }}</div>
+                <div class="font-mono text-sm">{{ config.configKey }}</div>
                 <div class="text-xs text-gray-500" *ngIf="config.description">
                   {{ config.description }}
                 </div>
@@ -240,21 +236,18 @@ interface FilterOptions {
 
               <!-- Config Value -->
               <td>
-                <div class="max-w-xs">
-                  <div 
-                    class="truncate text-sm font-mono"
-                    [pTooltip]="getFormattedValue(config)"
-                    tooltipPosition="top">
-                    {{ getDisplayValue(config) }}
-                  </div>
+                <div class="font-mono" 
+                     [pTooltip]="getFormattedValue(config)"
+                     tooltipPosition="top">
+                  {{ getDisplayValue(config) }}
                 </div>
               </td>
 
               <!-- Value Type -->
               <td>
                 <p-tag 
-                  [value]="config.value_type" 
-                  [severity]="getValueTypeSeverity(config.value_type)"
+                  [value]="config.valueType" 
+                  [severity]="getValueTypeSeverity(config.valueType)"
                   class="text-xs">
                 </p-tag>
               </td>
@@ -271,20 +264,16 @@ interface FilterOptions {
               <!-- Status -->
               <td>
                 <p-tag 
-                  [value]="config.is_active ? 'Active' : 'Inactive'" 
-                  [severity]="config.is_active ? 'success' : 'danger'"
+                  [value]="config.isActive ? 'Active' : 'Inactive'" 
+                  [severity]="config.isActive ? 'success' : 'danger'"
                   class="text-xs">
                 </p-tag>
               </td>
 
               <!-- Updated At -->
               <td>
-                <div class="text-sm">
-                  {{ formatDate(config.updated_at) }}
-                </div>
-                <div class="text-xs text-gray-500" *ngIf="config.updated_by">
-                  by {{ config.updated_by }}
-                </div>
+                <div>{{ formatDate(config.updatedAt) }}</div>
+                <div *ngIf="config.updatedBy">by {{ config.updatedBy }}</div>
               </td>
 
               <!-- Actions -->
@@ -335,7 +324,6 @@ interface FilterOptions {
             </tr>
           </ng-template>
         </p-table>
-      </div>
 
       <!-- Create/Edit Dialog -->
       <p-dialog 
@@ -362,7 +350,7 @@ interface FilterOptions {
             <label class="block text-sm font-medium text-gray-700 mb-1">Configuration Key *</label>
             <input 
               pInputText 
-              [(ngModel)]="newConfig.config_key"
+              [(ngModel)]="newConfig.configKey"
               placeholder="e.g., host, port, username"
               class="w-full">
           </div>
@@ -371,7 +359,7 @@ interface FilterOptions {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Value *</label>
             <p-textarea 
-              [(ngModel)]="newConfig.config_value"
+              [(ngModel)]="newConfig.configValue"
               placeholder="Configuration value"
               rows="3"
               class="w-full">
@@ -382,7 +370,7 @@ interface FilterOptions {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Value Type *</label>
             <p-select 
-              [(ngModel)]="newConfig.value_type"
+              [(ngModel)]="newConfig.valueType"
               [options]="valueTypeOptions"
               placeholder="Select type"
               class="w-full">
@@ -414,7 +402,7 @@ interface FilterOptions {
           <!-- Active Status -->
           <div class="flex items-center">
             <p-checkbox 
-              [(ngModel)]="newConfig.is_active"
+              [(ngModel)]="newConfig.isActive"
               binary="true"
               inputId="active">
             </p-checkbox>
@@ -454,26 +442,13 @@ interface FilterOptions {
       padding: 1rem;
     }
     
-    .p-datatable .p-datatable-tbody > tr > td {
-      padding: 0.75rem 0.5rem;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .p-datatable .p-datatable-thead > tr > th {
-      padding: 1rem 0.5rem;
-      background-color: #f9fafb;
-      border-bottom: 2px solid #e5e7eb;
-      font-weight: 600;
-      color: #374151;
-    }
-    
-    .p-tag {
-      font-size: 0.75rem;
-      padding: 0.25rem 0.5rem;
-    }
-    
     .font-mono {
       font-family: 'Courier New', monospace;
+    }
+    
+    :host ::ng-deep .p-card {
+      border: 1px solid #e5e7eb;
+      box-shadow: none !important;
     }
   `]
 })
@@ -500,7 +475,7 @@ export class ConfigurationListComponent implements OnInit, OnDestroy {
     category: '',
     environment: '',
     valueType: '',
-    sortBy: 'updated_at',
+    sortBy: 'updatedAt',
     sortOrder: 'desc'
   };
 
@@ -514,17 +489,17 @@ export class ConfigurationListComponent implements OnInit, OnDestroy {
     { label: 'JSON', value: 'json' }
   ];
   sortOptions = [
-    { label: 'Recently Updated', value: 'updated_at' },
+    { label: 'Recently Updated', value: 'updatedAt' },
     { label: 'Category', value: 'category' },
-    { label: 'Key', value: 'config_key' },
+    { label: 'Key', value: 'configKey' },
     { label: 'Environment', value: 'environment' }
   ];
 
   // Dialog States
   showCreateDialog = false;
   newConfig: Partial<SystemConfiguration> = {
-    is_active: true,
-    value_type: 'string',
+    isActive: true,
+    valueType: 'string',
     environment: 'development'
   };
 
@@ -660,7 +635,7 @@ export class ConfigurationListComponent implements OnInit, OnDestroy {
 
   deleteConfiguration(config: SystemConfiguration): void {
     this.confirmationService.confirm({
-      message: `Are you sure you want to delete the configuration "${config.config_key}" in ${config.category}?`,
+      message: `Are you sure you want to delete the configuration "${config.configKey}" in ${config.category}?`,
       header: 'Confirm Delete',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
@@ -691,7 +666,7 @@ export class ConfigurationListComponent implements OnInit, OnDestroy {
   }
 
   saveConfiguration(): void {
-    if (!this.newConfig.category || !this.newConfig.config_key || !this.newConfig.config_value) {
+    if (!this.newConfig.category || !this.newConfig.configKey || !this.newConfig.configValue) {
       this.messageService.add({
         severity: 'warn',
         summary: 'Validation Error',
@@ -715,8 +690,8 @@ export class ConfigurationListComponent implements OnInit, OnDestroy {
         });
         this.showCreateDialog = false;
         this.newConfig = {
-          is_active: true,
-          value_type: 'string',
+          isActive: true,
+          valueType: 'string',
           environment: 'development'
         };
         this.loadConfigurations();
@@ -735,18 +710,18 @@ export class ConfigurationListComponent implements OnInit, OnDestroy {
 
   // Utility Methods
   getDisplayValue(config: SystemConfiguration): string {
-    return this.configService.formatConfigValue(config.config_value, config.value_type);
+    return this.configService.formatConfigValue(config.configValue, config.valueType);
   }
 
   getFormattedValue(config: SystemConfiguration): string {
-    if (config.value_type === 'json') {
+    if (config.valueType === 'json') {
       try {
-        return JSON.stringify(JSON.parse(config.config_value), null, 2);
+        return JSON.stringify(JSON.parse(config.configValue), null, 2);
       } catch {
-        return config.config_value;
+        return config.configValue;
       }
     }
-    return config.config_value;
+    return config.configValue;
   }
 
   getValueTypeSeverity(valueType: string): 'success' | 'info' | 'warning' | 'danger' | 'secondary' {
