@@ -91,9 +91,9 @@ interface FeatureToggleStats {
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2">
           <p-card header="Environment & Controls" styleClass="h-full border border-gray-200">
-            <div class="flex flex-wrap items-center gap-4">
-              <div class="flex items-center gap-2">
-                <label class="text-sm font-medium text-gray-700">Category:</label>
+            <div class="flex flex-wrap gap-6">
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-gray-700">Category</label>
                 <p-select [options]="categories"
                           [(ngModel)]="selectedCategory"
                           (onChange)="onCategoryChange()"
@@ -102,8 +102,8 @@ interface FeatureToggleStats {
                 </p-select>
               </div>
               
-              <div class="flex items-center gap-2">
-                <label class="text-sm font-medium text-gray-700">Environment:</label>
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-gray-700">Environment</label>
                 <p-select [options]="environments"
                           [(ngModel)]="selectedEnvironment"
                           (onChange)="onEnvironmentChange()"
@@ -112,22 +112,25 @@ interface FeatureToggleStats {
                 </p-select>
               </div>
               
-              <div class="flex items-center gap-2">
-                <button pButton 
-                        label="Bulk Enable All" 
-                        icon="pi pi-check-circle"
-                        class="p-button-success p-button-sm"
-                        [disabled]="loading || featureToggles.length === 0"
-                        (click)="bulkToggleAll(true)">
-                </button>
-                
-                <button pButton 
-                        label="Bulk Disable All" 
-                        icon="pi pi-times-circle"
-                        class="p-button-danger p-button-sm"
-                        [disabled]="loading || featureToggles.length === 0"
-                        (click)="bulkToggleAll(false)">
-                </button>
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-gray-700">Bulk Actions</label>
+                <div class="flex items-center gap-2">
+                  <button pButton 
+                          label="Enable All" 
+                          icon="pi pi-check-circle"
+                          class="p-button-success p-button-sm"
+                          [disabled]="loading || featureToggles.length === 0"
+                          (click)="bulkToggleAll(true)">
+                  </button>
+                  
+                  <button pButton 
+                          label="Disable All" 
+                          icon="pi pi-times-circle"
+                          class="p-button-danger p-button-sm"
+                          [disabled]="loading || featureToggles.length === 0"
+                          (click)="bulkToggleAll(false)">
+                  </button>
+                </div>
               </div>
             </div>
           </p-card>
