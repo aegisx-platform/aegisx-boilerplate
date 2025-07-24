@@ -8,6 +8,7 @@ import { CardModule } from 'primeng/card';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
+import { InputTextareaModule } from 'primeng/inputtextarea';
 import { ToastModule } from 'primeng/toast';
 import { MessageModule } from 'primeng/message';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -15,7 +16,6 @@ import { TagModule } from 'primeng/tag';
 import { DataViewModule } from 'primeng/dataview';
 import { SkeletonModule } from 'primeng/skeleton';
 import { DialogModule } from 'primeng/dialog';
-import { TextareaModule } from 'primeng/textarea';
 
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ConfigurationService, SystemConfiguration } from '../../services/configuration.service';
@@ -50,14 +50,14 @@ interface FeatureToggleStats {
     ToggleButtonModule,
     SelectModule,
     InputTextModule,
+    InputTextareaModule,
     ToastModule,
     MessageModule,
     ConfirmDialogModule,
     TagModule,
     DataViewModule,
     SkeletonModule,
-    DialogModule,
-    TextareaModule
+    DialogModule
   ],
   providers: [MessageService, ConfirmationService],
   template: `
@@ -257,11 +257,12 @@ interface FeatureToggleStats {
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-          <p-textarea [(ngModel)]="newFeature.description"
-                      placeholder="Brief description of this feature"
-                      rows="3"
-                      class="w-full">
-          </p-textarea>
+          <textarea pInputTextarea 
+                    [(ngModel)]="newFeature.description"
+                    placeholder="Brief description of this feature"
+                    rows="3"
+                    class="w-full">
+          </textarea>
         </div>
 
         <div>
